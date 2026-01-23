@@ -1,0 +1,89 @@
+app-contracts {
+    .ctn-filter {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+
+        .ctn-others {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+
+            .ctn-search {
+                .input-search {
+                    position: relative;
+
+                    input {
+                        padding: 7px 11px;
+                        padding-right: 32px;
+                        border-radius: 6px;
+                        border: 1px solid #a6aab2;
+                        color: #1f384c;
+                    }
+
+                    mat-icon {
+                        position: absolute;
+                        right: 0px;
+                        top: 5px;
+                        right: 7px;
+                        color: #a6aab2;
+                    }
+                }
+            }
+
+            .ctn-expiring-contracts {
+                button {
+                    font-size: 12px;
+                    font-weight: normal;
+                    border-radius: 8px;
+                    padding-top: 5px;
+                    padding-bottom: 5px;
+                    max-height: 34px;
+                }
+            }
+        }
+    }
+
+    .ctn-export {
+        button {
+            font-size: 12px;
+            font-weight: normal;
+            border-radius: 8px;
+            padding-top: 5px;
+            padding-bottom: 5px;
+            max-height: 34px;
+        }
+    }
+
+    table {
+        tbody {
+            tr {
+                &.expiring-warning {
+                    background-color: rgb(255, 229, 182) !important;
+
+                    &:hover {
+                        background-color: rgb(255, 220, 156) !important;
+                    }
+                }
+
+                &.expiring-error {
+                    background-color: rgb(255, 200, 200) !important;
+
+                    &:hover {
+                        background-color: rgb(251, 154, 154) !important;
+                    }
+                }
+
+                .no-action, .rehire, .no-rehire {
+                    font-size: 12px;
+                    padding: 5px 8px;
+                }
+
+                .no-action {
+                    background-color: #e0e0e0 !important;
+                    color: #4f4f4f !important;
+                }
+            }
+        }
+    }
+}

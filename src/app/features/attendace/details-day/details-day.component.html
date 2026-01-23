@@ -1,0 +1,42 @@
+<h2 mat-dialog-title>Detalles del dia {{ data.date | date: 'dd/MM/yyyy' }}</h2>
+<mat-dialog-content>
+    <div class="ctn-employee">
+        <app-avatar [name]="data.name" />
+        <div class="name">
+            <p>{{ data.name }}</p>
+            <span>Código {{ data.codigo }} | {{ data.activity }}</span>
+        </div>
+    </div>
+    <mat-divider></mat-divider>
+    <p>Checadas: {{ data.checkEntry || 'N/A' }} > {{ data.checkOut || 'N/A' }}</p>
+    <mat-divider></mat-divider>
+    <h2 class="title-incident">Incidencias</h2>
+    <mat-list>
+        <mat-list-item *ngFor="let incident of data.assistanceIncidents" [ngClass]="{'delete': isForDelete(incident.id)}">
+            <span matListItemTitle>{{ incident.incidentCode }} | {{ incident.label }}</span>
+            <span matListItemLine>{{ incident.updatedAt | date: 'dd/MM/yyyy HH:mm:ss' }}</span>
+            <button mat-icon-button [disabled]="data.closedPeriod" matListItemMeta (click)="deleteItem(incident.id)" *ngIf="!isForDelete(incident.id)">
+                <mat-icon>delete</mat-icon>
+            </button>
+            <button mat-icon-button [disabled]="data.closedPeriod" matListItemMeta (click)="rollbackDelete(incident.id)" *ngIf="isForDelete(incident.id)">
+                <mat-icon>history</mat-icon>
+            </button>
+        </mat-list-item>
+    </mat-list>
+</mat-dialog-content>
+<mat-dialog-actions *ngIf="!loading()">
+    <button mat-button [disabled]="disabledDelete || data.closedPeriod" *ngIf="!confirmDelete()" (click)="applyDelete()">Eliminar</button>
+    <button
+        mat-button
+        [disabled]="disabledDelete || data.closedPeriod"
+        *ngIf="confirmDelete()"
+        appLongPress
+        (longPress)="deleteItems()"
+        class="confirm-delete"
+        matTooltip="Manten Presionado por 2 segundos"
+    >Confirmar Eliminación</button>
+    <button mat-button (click)="onCancel()">Cancelar</button>
+</mat-dialog-actions>
+<mat-dialog-actions *ngIf="loading()" fxLayoutAlign="center center">
+    <mat-spinner diameter="30"></mat-spinner>
+</mat-dialog-actions>

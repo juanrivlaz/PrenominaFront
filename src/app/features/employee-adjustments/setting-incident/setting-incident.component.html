@@ -1,0 +1,19 @@
+<h2 mat-dialog-title>Ajuste de Incidencias</h2>
+<mat-dialog-content>
+    <span>Lista de incidencias a excluir para <b>{{ data.name }}</b></span>
+    <mat-divider class="mt-12 mb-12"></mat-divider>
+    <div class="ctn-loading" *ngIf="loading()">
+        <mat-spinner diameter="30"></mat-spinner>
+    </div>
+    <mat-list>
+        <mat-list-item *ngFor="let incident of incidents()">
+            <span matListItemTitle>{{ incident.code }} | {{ incident.label }}</span>
+            <span matListItemLine>{{ incident.notes || 'sin descripción' }}</span>
+            <mat-checkbox matListItemMeta [(ngModel)]="incident.ignore" />
+        </mat-list-item>
+    </mat-list>
+</mat-dialog-content>
+<mat-dialog-actions>
+    <button mat-button (click)="onCancel()">Cancelar</button>
+    <button mat-button (click)="onSave()">Guardar</button>
+</mat-dialog-actions>

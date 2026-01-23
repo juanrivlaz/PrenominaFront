@@ -1,0 +1,381 @@
+@use "sass:map";
+// Media step breakpoint mixin based on Angular Material lib
+$breakpoints: (
+    xs: 'screen and (max-width: 599px)',
+    sm: 'screen and (min-width: 600px) and (max-width: 959px)',
+    md: 'screen and (min-width: 960px) and (max-width: 1280px)',
+    lg: 'screen and (min-width: 1280px) and (max-width: 1919px)',
+    xl: 'screen and (min-width: 1920px) and (max-width: 5000px)',
+    lt-sm: 'screen and (max-width: 599px)',
+    lt-md: 'screen and (max-width: 959px)',
+    lt-lg: 'screen and (max-width: 1280px)',
+    lt-xl: 'screen and (max-width: 1919px)',
+    gt-xs: 'screen and (min-width: 600px)',
+    gt-sm: 'screen and (min-width: 960px)',
+    gt-md: 'screen and (min-width: 1280px)',
+    gt-lg: 'screen and (min-width: 1920px)'
+) !default;
+
+$grid-breakpoints: (
+    xs: 0,
+    sm: 600px,
+    md: 960px,
+    lg: 1280px,
+    xl: 1920px
+) !default;
+
+@mixin media-breakpoint($breakpointName) {
+
+    $mediaQuery: map_get($breakpoints, $breakpointName);
+
+    @if ($mediaQuery != null) {
+
+        @media #{$mediaQuery} {
+            @content
+        }
+    }
+}
+
+//    >> breakpoint-next(sm)
+//    md
+//    >> breakpoint-next(sm, (xs: 0, sm: 576px, md: 768px, lg: 992px, xl: 1200px))
+//    md
+//    >> breakpoint-next(sm, $breakpoint-names: (xs sm md lg xl))
+//    md
+
+@function breakpoint-next($name, $breakpoints: $grid-breakpoints, $breakpoint-names: map.keys($breakpoints)) {
+    $n: index($breakpoint-names, $name);
+    @return if($n < length($breakpoint-names), nth($breakpoint-names, $n + 1), null);
+}
+
+// Minimum breakpoint width. Null for the smallest (first) breakpoint.
+//
+//    >> breakpoint-min(sm, (xs: 0, sm: 576px, md: 768px, lg: 992px, xl: 1200px))
+//    576px
+@function breakpoint-min($name, $breakpoints: $grid-breakpoints) {
+    $min: map.get($breakpoints, $name);
+    @return if($min != 0, $min, null);
+}
+
+// Maximum breakpoint width. Null for the largest (last) breakpoint.
+// The maximum value is calculated as the minimum of the next one less 0.1.
+//
+//    >> breakpoint-max(sm, (xs: 0, sm: 576px, md: 768px, lg: 992px, xl: 1200px))
+//    767px
+@function breakpoint-max($name, $breakpoints: $grid-breakpoints) {
+    $next: breakpoint-next($name, $breakpoints);
+    @return if($next, breakpoint-min($next, $breakpoints) - 1px, null);
+}
+
+// Returns a blank string if smallest breakpoint, otherwise returns the name with a dash infront.
+// Useful for making responsive utilities.
+//
+//    >> breakpoint-infix(xs, (xs: 0, sm: 576px, md: 768px, lg: 992px, xl: 1200px))
+//    ""  (Returns a blank string)
+//    >> breakpoint-infix(sm, (xs: 0, sm: 576px, md: 768px, lg: 992px, xl: 1200px))
+//    "-sm"
+@function breakpoint-infix($name, $breakpoints: $grid-breakpoints) {
+    @return if(breakpoint-min($name, $breakpoints) == null, "", "-#{$name}");
+}
+
+// Media of at least the minimum breakpoint width. No query for the smallest breakpoint.
+// Makes the @content apply to the given breakpoint and wider.
+@mixin media-breakpoint-up($name, $breakpoints: $grid-breakpoints) {
+    $min: breakpoint-min($name, $breakpoints);
+    @if $min {
+        @media (min-width: $min) {
+            @content;
+        }
+    } @else {
+        @content;
+    }
+}
+
+// Media of at most the maximum breakpoint width. No query for the largest breakpoint.
+// Makes the @content apply to the given breakpoint and narrower.
+@mixin media-breakpoint-down($name, $breakpoints: $grid-breakpoints) {
+    $max: breakpoint-max($name, $breakpoints);
+    @if $max {
+        @media (max-width: $max) {
+            @content;
+        }
+    } @else {
+        @content;
+    }
+}
+
+// Media that spans multiple breakpoint widths.
+// Makes the @content apply between the min and max breakpoints
+@mixin media-breakpoint-between($lower, $upper, $breakpoints: $grid-breakpoints) {
+    $min: breakpoint-max($lower, $breakpoints);
+    $max: breakpoint-max($upper, $breakpoints);
+
+    @media (min-width: $min) and (max-width: $max) {
+        @content;
+    }
+}
+
+// Media between the breakpoint's minimum and maximum widths.
+// No minimum for the smallest breakpoint, and no maximum for the largest one.
+// Makes the @content apply only to the given breakpoint, not viewports any wider or narrower.
+@mixin media-breakpoint-only($name, $breakpoints: $grid-breakpoints) {
+    $min: breakpoint-min($name, $breakpoints);
+    $max: breakpoint-max($name, $breakpoints);
+
+    @media (min-width: $min) and (max-width: $max) {
+        @content;
+    }
+}
+
+// ######################
+// POSITION HELPERS
+// ######################
+@each $breakpoint in map.keys($grid-breakpoints) {
+
+    @include media-breakpoint-up($breakpoint) {
+
+        $infix: breakpoint-infix($breakpoint, $grid-breakpoints);
+
+        .position#{$infix}-relative {
+            position: relative;
+        }
+
+        .position#{$infix}-absolute {
+            position: absolute;
+        }
+
+        .position#{$infix}-static {
+            position: static;
+        }
+    }
+}
+
+// ####################################
+// ABSOLUTE POSITION ALIGNMENT HELPERS
+// ####################################
+@each $breakpoint in map.keys($grid-breakpoints) {
+
+    @include media-breakpoint-up($breakpoint) {
+
+        $infix: breakpoint-infix($breakpoint, $grid-breakpoints);
+
+        .align#{$infix}-top {
+            top: 0;
+        }
+
+        .align#{$infix}-right {
+            right: 0;
+        }
+
+        .align#{$infix}-bottom {
+            bottom: 0;
+        }
+
+        .align#{$infix}-left {
+            left: 0;
+        }
+    }
+}
+
+// ######################
+// SIZE HELPERS
+// ######################
+@each $prop, $abbrev in (height: h, width: w) {
+
+    @for $index from 0 through 180 {
+        $size: $index * 4;
+        $length: #{$size}px;
+
+        .#{$abbrev}-#{$size} {
+            #{$prop}: $length !important;
+            min-#{$prop}: $length !important;
+            max-#{$prop}: $length !important;
+        }
+    }
+
+    // Percentage
+    @for $i from 0 through 20 {
+        $i-p: 5 * $i;
+        $size-p: 5% * $i;
+
+        .#{$abbrev}-#{$i-p}-p {
+            #{$prop}: $size-p !important;
+        }
+    }
+}
+
+// ######################
+// FONT SIZE
+// ######################
+@each $prop, $abbrev in (font-size: fs) {
+  // px
+  @for $index from 0 through 100 {
+    $size: $index;
+    $length: #{$size}px;
+
+    .#{$abbrev}-#{$size} {
+      #{$prop}: $length !important;
+    }
+  }
+
+  // rem
+  @for $index from 1 through 20 {
+    $size: $index * 0.25;
+    $length: #{$size}rem;
+
+    .#{$abbrev}-#{$index}r {
+      #{$prop}: $length !important;
+    }
+  }
+
+  // percentage
+  @for $i from 1 through 20 {
+    $size-p: 5% * $i;
+
+    .#{$abbrev}-#{$i*5}-p {
+      #{$prop}: $size-p !important;
+    }
+  }
+}
+
+// ######################
+// SPACING HELPERS
+// ######################
+@each $breakpoint in map.keys($grid-breakpoints) {
+
+    @include media-breakpoint-up($breakpoint) {
+
+        $infix: breakpoint-infix($breakpoint, $grid-breakpoints);
+
+        @each $prop, $abbrev in (margin: m, padding: p) {
+
+            @for $index from 0 through 64 {
+                $size: $index * 4;
+                $length: #{$size}px;
+
+                .#{$abbrev}#{$infix}-#{$size} {
+                    #{$prop}: $length !important;
+                }
+            }
+
+            @for $index from 0 through 64 {
+                $size: $index * 4;
+                $length: #{$size}px;
+
+                .#{$abbrev}x#{$infix}-#{$size} {
+                    #{$prop}-right: $length !important;
+                    #{$prop}-left: $length !important;
+                }
+
+                .#{$abbrev}y#{$infix}-#{$size} {
+                    #{$prop}-top: $length !important;
+                    #{$prop}-bottom: $length !important;
+                }
+            }
+
+            @for $index from 0 through 64 {
+                $size: $index * 4;
+                $length: #{$size}px;
+
+                .#{$abbrev}t#{$infix}-#{$size} {
+                    #{$prop}-top: $length !important;
+                }
+
+                .#{$abbrev}r#{$infix}-#{$size} {
+                    #{$prop}-right: $length !important;
+                }
+
+                .#{$abbrev}b#{$infix}-#{$size} {
+                    #{$prop}-bottom: $length !important;
+                }
+
+                .#{$abbrev}l#{$infix}-#{$size} {
+                    #{$prop}-left: $length !important;
+                }
+            }
+
+            @if ($abbrev == m) {
+
+                // Some special margin utils for flex alignments
+                .m#{$infix}-auto {
+                    margin: auto !important;
+                }
+
+                .mt#{$infix}-auto {
+                    margin-top: auto !important;
+                }
+
+                .mr#{$infix}-auto {
+                    margin-right: auto !important;
+                }
+
+                .mb#{$infix}-auto {
+                    margin-bottom: auto !important;
+                }
+
+                .ml#{$infix}-auto {
+                    margin-left: auto !important;
+                }
+
+                .mx#{$infix}-auto {
+                    margin-right: auto !important;
+                    margin-left: auto !important;
+                }
+
+                .my#{$infix}-auto {
+                    margin-top: auto !important;
+                    margin-bottom: auto !important;
+                }
+            }
+        }
+    }
+}
+
+// ######################
+// BORDER HELPERS
+// ######################
+$border-style: 1px solid rgba(0, 0, 0, 0.12);
+
+.border,
+.b {
+    border: $border-style;
+}
+
+.border-top,
+.bt {
+    border-top: $border-style;
+}
+
+.border-right,
+.br {
+    border-right: $border-style;
+}
+
+.border-bottom,
+.bb {
+    border-bottom: $border-style;
+}
+
+.border-left,
+.bl {
+    border-left: $border-style;
+}
+
+.border-horizontal,
+.b-x {
+    border-left: $border-style;
+    border-right: $border-style;
+}
+
+.border-vertical,
+.by {
+    border-top: $border-style;
+    border-bottom: $border-style;
+}
+
+// ######################
+// BORDER RADIUS HELPERS
+// ######################
+.border-radius-100 {
+    border-radius: 100%;
+}

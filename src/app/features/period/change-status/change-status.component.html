@@ -1,0 +1,11 @@
+<h2 mat-dialog-title>Cambiar Estatus</h2>
+<mat-dialog-content>
+  <p>¿Está seguro de que deseas <b>{{ data.isActive ? 'Desactivar' : 'Activar' }}</b> el período (<b>{{ data.numPeriod }} | {{ data.startDate | date:'dd/MM/yyyy' }} - {{ data.closingDate | date:'dd/MM/yyyy' }}</b>)?</p>
+</mat-dialog-content>
+<mat-dialog-actions *ngIf="loading" fxLayoutAlign="center center">
+    <mat-spinner diameter="30"></mat-spinner>
+</mat-dialog-actions>
+<mat-dialog-actions *ngIf="!loading" fxLayoutAlign="end center">
+  <button mat-button [disabled]="loading" color="warn" (click)="closeDialog(false)">Cancelar</button>
+  <button mat-flat-button [disabled]="loading" (click)="changeStatus()">Confirmar</button>
+</mat-dialog-actions>

@@ -1,0 +1,24 @@
+app-add-incident-code {
+    form {
+        display: flex;
+        flex-direction: column;
+
+        .config {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .extra-setting-config {
+            margin-bottom: 12px;
+            .mat-expansion-panel-header-description {
+                justify-content: end;
+                align-items: center;
+                margin-right: 0;
+            }
+
+            .mat-expansion-panel-header-title {
+                min-width: fit-content;
+            }
+        }
+    }
+}

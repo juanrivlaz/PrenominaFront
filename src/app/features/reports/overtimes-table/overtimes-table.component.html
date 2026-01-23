@@ -1,0 +1,44 @@
+<table mat-table #table [dataSource]="dataSource">
+    <ng-container matColumnDef="code">
+        <th mat-header-cell *matHeaderCellDef> Código </th>
+        <td mat-cell *matCellDef="let row"> {{row.code}} </td>
+    </ng-container>
+    <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef> Nombre </th>
+        <td mat-cell *matCellDef="let row"> {{row.fullName}} </td>
+    </ng-container>
+    <ng-container matColumnDef="department">
+        <th mat-header-cell *matHeaderCellDef> Departamento </th>
+        <td mat-cell *matCellDef="let row"> {{row.department}} </td>
+    </ng-container>
+    <ng-container matColumnDef="jobPosition">
+        <th mat-header-cell *matHeaderCellDef> Puesto </th>
+        <td mat-cell *matCellDef="let row"> {{row.jobPosition}} </td>
+    </ng-container>
+    <ng-container matColumnDef="date">
+        <th mat-header-cell *matHeaderCellDef> Fecha </th>
+        <td mat-cell *matCellDef="let row"> {{row.date}} </td>
+    </ng-container>
+    <ng-container matColumnDef="checkIn">
+        <th mat-header-cell *matHeaderCellDef> Checada Entrada </th>
+        <td mat-cell *matCellDef="let row"> {{row.checkIn}} </td>
+    </ng-container>
+    <ng-container matColumnDef="checkOut">
+        <th mat-header-cell *matHeaderCellDef> Checada Salida </th>
+        <td mat-cell *matCellDef="let row"> {{row.checkOut}} </td>
+    </ng-container>
+    <ng-container matColumnDef="overtime">
+        <th mat-header-cell *matHeaderCellDef> Tiempo Extra </th>
+        <td mat-cell *matCellDef="let row"> {{formatToTime(row.overtime - (8 * 60))}} </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="columns"></tr>
+    <tr mat-row *matRowDef="let row; columns: columns;"></tr>
+</table>
+
+<mat-paginator
+    [length]="totalRecords"
+    [pageSize]="pageSize"
+    [pageSizeOptions]="[5, 10, 25, 100]"
+    (page)="onPageChange($event)">
+</mat-paginator>

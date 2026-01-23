@@ -1,0 +1,8 @@
+<h2 mat-dialog-title>Confirmar Descanso Laborado</h2>
+<mat-dialog-content>
+  <p>Se le asignará un <b>descanso laborado</b> a <b>{{ data.employeName }}</b> para el día <b>{{ dateFormat }}</b></p>
+</mat-dialog-content>
+<mat-dialog-actions>
+  <button mat-button (click)="onCancel()">Cancelar</button>
+  <button mat-button [mat-dialog-close]="workedDayOff()" cdkFocusInitial>Confirmar</button>
+</mat-dialog-actions>

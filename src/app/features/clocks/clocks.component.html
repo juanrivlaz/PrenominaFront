@@ -1,0 +1,52 @@
+<div class="container module-container">
+    <div class="ctn-title">
+        <div class="title">
+            <h2>Reloj</h2>
+            <span>Lista de relojes</span>
+        </div>
+        <div class="ctn-btns">
+            <button mat-flat-button matTooltip="Agregar reloj" (click)="addClock()">
+                <mat-icon>add</mat-icon>
+                Reloj
+            </button>
+            <button mat-flat-button matTooltip="Exportar usuarios">
+                <mat-icon>output</mat-icon>
+                Usuarios
+            </button>
+        </div>
+    </div>
+    <div class="ctn-items">
+        <div class="item" *ngFor="let clock of listClocks()">
+            <p>{{ clock.label }}</p>
+            <mat-list>
+                <mat-list-item>
+                    <mat-icon matListItemIcon>dns</mat-icon>
+                    <div matListItemTitle>{{ clock.ip }}</div>
+                    <div matListItemLine>Dirección IP</div>
+                </mat-list-item>
+                <mat-list-item>
+                    <mat-icon matListItemIcon>input</mat-icon>
+                    <div matListItemTitle>{{ clock.port }}</div>
+                    <div matListItemLine>Puerto</div>
+                </mat-list-item>
+                <mat-list-item>
+                    <mat-icon matListItemIcon>event_repeat</mat-icon>
+                    <div matListItemTitle>2025-04-01 03:08:01</div>
+                    <div matListItemLine>Últ. Sincronización</div>
+                </mat-list-item>
+            </mat-list>
+            <div class="actions">
+                <mat-spinner diameter="30" *ngIf="isLoading(clock)"></mat-spinner>
+                <button mat-button *ngIf="!isLoading(clock)" (click)="sendPing(clock)">Ping</button>
+                <button mat-button *ngIf="!isLoading(clock)" (click)="showClockUsers(clock)" matTooltip="Ver usuarios">
+                    <mat-icon>visibility</mat-icon>
+                    usuarios
+                </button>
+                <button mat-button *ngIf="!isLoading(clock)" (click)="syncAttendace(clock.id)" matTooltip="Sincronizar checadas">
+                    <mat-icon>sync</mat-icon>
+                    checadas
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

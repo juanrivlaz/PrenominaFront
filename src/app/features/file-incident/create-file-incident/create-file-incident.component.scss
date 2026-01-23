@@ -1,0 +1,57 @@
+app-create-file-incident {
+    mat-dialog-content {
+        .ctn-forms {
+            display: flex;
+            gap: 12px;
+
+            .ctn-table-column {
+                width: 100%;
+                table {
+                    width: 100%;
+                    min-width: 250px;
+                    font-size: 12px;
+                    border-collapse: collapse;
+
+                    thead {
+                        th {
+                            text-align: center;
+                            background-color: #ecf0f3;
+                            color: #686f7c;
+                            font-weight: normal;
+                            padding: 6px 8px;
+                            text-align: center;
+            
+                            &:first-child {
+                                border-top-left-radius: 8px;
+                            }
+            
+                            &:last-child {
+                                border-top-right-radius: 8px;
+                            }
+                        }
+                    }
+
+                    tbody {
+                        tr {
+                            background-color: white;
+
+                            &:nth-child(even) {
+                                background-color: #f9fbfc;
+                            }
+
+                            td {
+                                padding: 6px 9px;
+                                text-align: center;
+                                border-bottom: 1px solid #e4e8ef;
+                            }
+                        }
+                    }
+                }
+            }
+
+            .ctn-fields {
+                width: min-content;
+            }
+        }
+    }
+}

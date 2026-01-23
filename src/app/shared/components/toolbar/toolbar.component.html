@@ -1,0 +1,32 @@
+<mat-toolbar>
+    <div class="company">
+        <button class="btn-filter-tn" mat-button [matMenuTriggerFor]="menuCompany" matTooltip="Empresas">
+            {{ company }}
+        </button>
+        <mat-menu #menuCompany="matMenu">
+            <button mat-menu-item *ngFor="let item of companies()" (click)="selectCompany(item.id)">{{ item.name }} | {{ item.rfc }}</button>
+        </mat-menu>
+        <mat-icon>arrow_forward_ios</mat-icon>
+        <button class="btn-filter-tn" mat-button [matMenuTriggerFor]="menuDepartment" matTooltip="Departamentos">
+            {{ tenant }}
+        </button>
+        <mat-menu #menuDepartment="matMenu">
+            <button mat-menu-item *ngFor="let item of tenants" (click)="selectTenant(item.id)">{{ item.label }}</button>
+        </mat-menu>
+    </div>
+    <div class="avatar">
+        <button mat-button [matMenuTriggerFor]="session">
+            <app-avatar [name]="userName" />
+            <div class="info">
+                <p>{{userName}}</p>
+                <span>{{ role }}</span>
+            </div>
+        </button>
+        <mat-menu #session="matMenu">
+            <button mat-menu-item (click)="logOut()">
+                <mat-icon>logout</mat-icon>
+                Cerrar Sesión
+            </button>
+        </mat-menu>
+    </div>
+</mat-toolbar>

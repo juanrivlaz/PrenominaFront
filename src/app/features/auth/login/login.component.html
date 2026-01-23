@@ -1,0 +1,36 @@
+<div class="container module-container">
+    <div class="content">
+        <div class="ctn-icon">
+            <img width="40px" class="mb-12" [src]="logo" alt="logo">
+        </div>
+        <form [formGroup]="loginForm">
+            <h2>Bienvenido de nuevo</h2>
+            <label class="mb-48 subtitle"> Ingresa tus credenciales para acceder a tu cuenta.</label>
+            <mat-form-field class="mb-12">
+                <mat-label>Ingresa tu correo</mat-label>
+                <mat-icon matPrefix>mail</mat-icon>
+                <input type="email" matInput formControlName="email">
+                @if (hasEmailError) {
+                    <mat-error>{{emailError()}}</mat-error>
+                }
+            </mat-form-field>
+
+            <mat-form-field class="mb-12">
+                <mat-label>Ingresa tu contraseña</mat-label>
+                <mat-icon matPrefix>lock</mat-icon>
+                <input type="password" matInput formControlName="password">
+                @if (hasPasswordError) {
+                    <mat-error>{{passwordError()}}</mat-error>
+                }
+            </mat-form-field>
+
+            <button mat-flat-button [disabled]="loading()" (click)="submit()">
+                <ng-content *ngIf="!loading()">Iniciar Sesión</ng-content>
+                <mat-spinner diameter="25" *ngIf="loading()"></mat-spinner>
+            </button>
+        </form>
+        <div class="forgot-password">
+            <label>¿Olvidaste tú contraseña? <a routerLink="/dashboard">Restablecer contraseña </a></label>
+        </div>
+    </div>
+</div>

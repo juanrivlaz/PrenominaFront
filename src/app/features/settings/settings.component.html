@@ -1,0 +1,139 @@
+<div class="container module-container">
+    <div class="ctn-steps">
+        <h3>Configuración</h3>
+        <span class="subtitle mb-24">Configuración general de la app</span>
+
+        <mat-chip-set>
+            <mat-chip (click)="handleChangeSection('Application')" [ngClass]="{'active': sectionIsActive('Application')}">Application</mat-chip>
+            <mat-chip (click)="handleChangeSection('Reports')" [ngClass]="{'active': sectionIsActive('Reports')}">Reports</mat-chip>
+            <mat-chip (click)="handleChangeSection('Profile')" [ngClass]="{'active': sectionIsActive('Profile')}">Profile</mat-chip>
+            <mat-chip (click)="handleChangeSection('Security')" [ngClass]="{'active': sectionIsActive('Security')}">Security</mat-chip>
+            <mat-chip (click)="handleChangeSection('Appearance')" [ngClass]="{'active': sectionIsActive('Appearance')}">Apariencia</mat-chip>
+        </mat-chip-set>
+    </div>
+    <mat-divider class="divider"></mat-divider>
+    <div class="ctn-step-content">
+        <div class="ctn-item-step content-application" [@fadeInOut]="sectionIsActive('Application') ? '1' : '0'">
+            <div class="item-setting ctn-zonetime">
+                <div class="labels">
+                    <p>Time Zone</p>
+                    <span>Select or customize you timezone.</span>
+                </div>
+                <div class="values">
+                    <mat-form-field class="mt-12">
+                        <mat-label>Select an option</mat-label>
+                        <mat-select [(ngModel)]="timeZone">
+                          <mat-option *ngFor="let item of timeZoneOptions" [value]="item.id">{{ item.label }}</mat-option>
+                        </mat-select>
+                    </mat-form-field>
+                </div>
+            </div>
+            <mat-divider class="divider"></mat-divider>
+            <div class="item-setting ctn-type-tenant">
+                <div class="labels">
+                    <p>Tipo de Relación</p>
+                    <span>Seleccione una opción.</span>
+                </div>
+                <div class="values">
+                    <mat-form-field class="mt-12">
+                        <mat-label>Tipo de relación</mat-label>
+                        <mat-select [(ngModel)]="typeTenant">
+                          <mat-option *ngFor="let item of typeTenantsOptions" [value]="item.id">{{ item.label }}</mat-option>
+                        </mat-select>
+                        <button [disabled]="loadingTypeTenant()" mat-icon-button matSuffix (click)="handleSaveTypeTenant($event)"><mat-icon>save</mat-icon></button>
+                    </mat-form-field>
+                </div>
+            </div>
+            <mat-divider class="divider"></mat-divider>
+            <div class="item-setting ctn-zonetime">
+                <div class="labels">
+                    <p>Intervalo de Reloj</p>
+                    <span>Importación automatica de checadas en min.</span>
+                </div>
+                <div class="values">
+                    <mat-form-field class="mt-12">
+                        <mat-label>Intervalo en minutos</mat-label>
+                        <input matInput type="number" step="1" placeholder="ejem: 10" [formControl]="clockInterval">
+                        <button [disabled]="loadingClockInterval()" mat-icon-button matSuffix (click)="handleSaveClockInterval()"><mat-icon>save</mat-icon></button>
+                    </mat-form-field>
+                </div>
+            </div>
+            <mat-divider class="divider"></mat-divider>
+        </div>
+        <div class="ctn-item-step content-reports" [@fadeInOut]="sectionIsActive('Reports') ? '1' : '0'">
+            <div class="item-setting ctn-zonetime">
+                <div class="labels">
+                    <p>Template Días Trabajados Excel</p>
+                    <span>Tipo de platilla excel a descargar.</span>
+                </div>
+                <div class="values">
+                    <mat-form-field class="mt-12">
+                        <mat-label>Select an option</mat-label>
+                        <mat-select [(ngModel)]="typeDayOffReport">
+                          <mat-option *ngFor="let item of typeDayOffReportOptions" [value]="item.id">{{ item.label }}</mat-option>
+                        </mat-select>
+                        <button [disabled]="loadingTypeDayOffReport()" mat-icon-button matSuffix (click)="handleSaveTypeDayOffReport($event)"><mat-icon>save</mat-icon></button>
+                    </mat-form-field>
+                </div>
+            </div>
+            <div class="item-setting ctn-zonetime">
+                <div class="labels">
+                    <p>Minutos Para Tiempo Extra</p>
+                    <span>Determina los minutos necesarios para considerar tiempo extra.</span>
+                </div>
+                <div class="values">
+                    <mat-form-field class="mt-12">
+                        <mat-label>Select an option</mat-label>
+                        <input matInput type="number" min="1" step="1" placeholder="ejem: 10" [formControl]="minToOvertimeReport">
+                        <button [disabled]="loadingMinToOvertimeReport()" mat-icon-button matSuffix (click)="handleSaveMinToOvertimeReport()"><mat-icon>save</mat-icon></button>
+                    </mat-form-field>
+                </div>
+            </div>
+        </div>
+        <div class="ctn-item-step content-profile" [@fadeInOut]="sectionIsActive('Profile') ? '1' : '0'">
+            <editor [init]="initConfigEditor" apiKey="xytfj3h4rcrw729f3lyufzobzqhexl3eerdgs133my63rjko" [(ngModel)]="contentDocument"></editor>
+            <button mat-button (click)="saveDoc()">Save</button>
+        </div>
+        <div class="ctn-item-step content-security" [@fadeInOut]="sectionIsActive('Security') ? '1' : '0'">
+            <p>security</p>
+        </div>
+        <div class="ctn-item-step content-appearence" [@fadeInOut]="sectionIsActive('Appearance') ? '1' : '0'">
+            <div class="item-setting ctn-primary-color">
+                <div class="labels">
+                    <p>Primary color</p>
+                    <span>Select or customize you primary color.</span>
+                </div>
+                <div class="values">
+                    <ngx-colors ngx-colors-trigger [(ngModel)]="primaryColor"></ngx-colors>
+                    <span>{{ primaryColor() }}</span>
+                </div>
+            </div>
+            <mat-divider class="divider"></mat-divider>
+            <div class="item-setting ctn-secondary-color">
+                <div class="labels">
+                    <p>Secondary color</p>
+                    <span>Select or customize you secondary color.</span>
+                </div>
+                <div class="values">
+                    <ngx-colors ngx-colors-trigger [(ngModel)]="secondayColor"></ngx-colors>
+                    <span>{{ secondayColor() }}</span>
+                </div>
+            </div>
+            <mat-divider class="divider"></mat-divider>
+            <div class="item-setting ctn-logo">
+                <div class="labels">
+                    <p>Logo</p>
+                    <span>Upload your logo.</span>
+                </div>
+                <div class="values">
+                    <button mat-mini-fab (click)="inputLogo.click()">
+                        <mat-icon>add_photo_alternate</mat-icon>
+                        <input #inputLogo type="file" name="logo" id="logo" (change)="handleChangeLogo($event)" accept="image/png, image/jpeg, image/svg+xml">
+                    </button>
+                    <img class="logo" width="45" alt="icon" [src]="previewLogo()">
+                </div>
+            </div>
+            <mat-divider class="divider"></mat-divider>
+        </div>
+    </div>
+</div>

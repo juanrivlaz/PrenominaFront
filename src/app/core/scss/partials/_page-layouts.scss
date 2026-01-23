@@ -1,0 +1,47 @@
+.module-container {
+    width: 100%;
+    padding: 15px;
+}
+
+.mat-mdc-table {
+    width: 100%;
+    font-size: 12px;
+    border-collapse: collapse;
+    margin-top: 24px;
+
+    thead {
+        th {
+            background-color: #ecf0f3 !important;
+            color: #686f7c !important;
+            font-weight: normal;
+            padding: 8px 11px;
+
+            &:first-child {
+                border-top-left-radius: 8px;
+            }
+
+            &:last-child {
+                border-top-right-radius: 8px;
+            }
+        }
+    }
+
+    tbody {
+        tr {
+            background-color: white;
+
+            &:nth-child(even) {
+                background-color: #f9fbfc;
+            }
+
+            &:hover {
+                background-color: #e8edff;
+            }
+
+            td {
+                padding: 5px 11px;
+                border-bottom: 1px solid #e4e8ef !important;
+            }
+        }
+    }
+}

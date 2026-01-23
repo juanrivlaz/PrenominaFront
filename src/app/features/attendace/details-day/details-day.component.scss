@@ -1,0 +1,49 @@
+app-detail-day {
+    .ctn-employee {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        margin-bottom: 12px;
+        padding-top: 12px;
+
+        > .name {
+            margin-left: 12px;
+            display: flex;
+            flex-direction: column;
+
+            p {
+                margin: 0;
+                font-size: 15px;
+                font-weight: 600;
+            }
+
+            span {
+                font-size: 11px;
+            }
+        }
+    }
+
+    .title-incident {
+        text-align: center;
+        margin-bottom: 0;
+        font-weight: normal;
+    }
+
+    mat-list-item {
+        &.delete {
+            span {
+                color: red !important;
+                text-decoration: line-through;
+            }
+        }
+
+        button {
+            align-self: center !important;
+            display: flex !important;
+        }
+    }
+
+    .confirm-delete {
+        color: red !important;
+    }
+}

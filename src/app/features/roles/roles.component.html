@@ -1,0 +1,36 @@
+<div class="container module-container">
+    <div class="ctn-filter">
+        <div class="ctn-others">
+            <div class="ctn-add">
+                <button mat-flat-button (click)="addRole()">
+                    <mat-icon>add</mat-icon>
+                    Role
+                </button>
+            </div>
+        </div>
+    </div>
+    <mat-progress-bar mode="indeterminate" class="mt-24" *ngIf="loading()"></mat-progress-bar>
+    <table>
+        <thead>
+            <tr>
+                <th>Código</th>
+                <th>Etiqueta</th>
+                <th>Secciones</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr *ngFor="let item of listRoles">
+                <td>{{ item.code }}</td>
+                <td>{{ item.label }}</td>
+                <td><button mat-button>Ver</button></td>
+                <td>
+                    <div class="actions">
+                        <button mat-icon-button><mat-icon>edit</mat-icon></button>
+                        <button mat-icon-button><mat-icon>delete</mat-icon></button>
+                    </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>

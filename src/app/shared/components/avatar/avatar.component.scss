@@ -1,0 +1,20 @@
+@use '../../../core/scss/app';
+
+app-avatar {
+    .ctn-avatar {
+        width: fit-content;
+        padding: 8px;
+        height: fit-content;
+        border-radius: 50%;
+        background-color: var(--second-color);
+
+        .ctn-name {
+            min-width: 20px;
+            min-height: 20px;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+    }
+}

@@ -1,0 +1,122 @@
+<div class="container module-container">
+    <div class="ctn-filter">
+        <div class="ctn-others">
+            <div class="ctn-search">
+                <div class="input-search">
+                    <input type="search" name="search" id="search" placeholder="Buscar" [(ngModel)]="search" (keyup)="handleChangeSearch($event)">
+                    <mat-icon>search</mat-icon>
+                </div>
+            </div>
+
+            <div class="ctn-expiring-contracts">
+                <button mat-flat-button [matMenuTriggerFor]="expiringContracts">
+                    {{ catalogStatus[filterStatus()] }}
+                </button>
+                <mat-menu #expiringContracts="matMenu">
+                    <button mat-menu-item (click)="handleChangeFilterStatus('about-to-expire')">
+                        <mat-icon style="color: orange;">warning</mat-icon>
+                        A 5 días por vencer
+                    </button>
+                    <button mat-menu-item (click)="handleChangeFilterStatus('expired')">
+                        <mat-icon style="color: red;">error</mat-icon>
+                        A 1 día o ya vencido
+                    </button>
+                    <button mat-menu-item (click)="handleChangeFilterStatus('all')">
+                        <mat-icon>checklist</mat-icon>
+                        Todos
+                    </button>
+                </mat-menu>
+            </div>
+
+            <div class="ctn-export">
+                <button mat-flat-button (click)="download()">
+                    <mat-icon>download</mat-icon>
+                    PDF
+                </button>
+            </div>
+        </div>
+    </div>
+    <table mat-table #table [dataSource]="listContract">
+        <ng-container matColumnDef="code">
+            <th mat-header-cell *matHeaderCellDef> Codigó </th>
+            <td mat-cell *matCellDef="let row"> {{row.codigo}} </td>
+        </ng-container>
+        <ng-container matColumnDef="name">
+            <th mat-header-cell *matHeaderCellDef> Nombre </th>
+            <td mat-cell *matCellDef="let row"> {{ row.lastName }} {{ row.mLastName }} {{ row.name }} </td>
+        </ng-container>
+        <ng-container matColumnDef="ocupation">
+            <th mat-header-cell *matHeaderCellDef> Ocupación </th>
+            <td mat-cell *matCellDef="let row"> {{row.ocupation}} </td>
+        </ng-container>
+        <ng-container matColumnDef="activity">
+            <th mat-header-cell *matHeaderCellDef> Actividad </th>
+            <td mat-cell *matCellDef="let row"> {{row.activity}} </td>
+        </ng-container>
+        <ng-container matColumnDef="schedule">
+            <th mat-header-cell *matHeaderCellDef> Horario </th>
+            <td mat-cell *matCellDef="let row"> {{row.schedule}} </td>
+        </ng-container>
+        <ng-container matColumnDef="seniority">
+            <th mat-header-cell *matHeaderCellDef> Antigüedad </th>
+            <td mat-cell *matCellDef="let row"> {{row.seniorityDate | date: 'dd/MM/yy'}} </td>
+        </ng-container>
+        <ng-container matColumnDef="initContract">
+            <th mat-header-cell *matHeaderCellDef> Inicio de Contrato </th>
+            <td mat-cell *matCellDef="let row"> {{row.startDate | date: 'dd/MM/yy'}} </td>
+        </ng-container>
+        <ng-container matColumnDef="finalContract">
+            <th mat-header-cell *matHeaderCellDef> Termino de Contrato </th>
+            <td mat-cell *matCellDef="let row"> {{row.terminationDate | date: 'dd/MM/yy'}} </td>
+        </ng-container>
+        <ng-container matColumnDef="days">
+            <th mat-header-cell *matHeaderCellDef> Días para termino </th>
+            <td mat-cell *matCellDef="let row"> {{row.expireInDays}} </td>
+        </ng-container>
+        <ng-container matColumnDef="generateContract">
+            <th mat-header-cell *matHeaderCellDef> Generar Contrato? </th>
+            <td mat-cell *matCellDef="let row">
+                <button 
+                    [ngClass]="{
+                        'no-action': row.applyRehired === null,
+                        'rehire': row.applyRehired === true,
+                        'no-rehire': row.applyRehired === false
+                    }" mat-flat-button
+                    (click)="handleChangeContract(row)"
+                    [matTooltip]="row.observation"
+                >
+                    {{ row.applyRehired === null ? 'Sin Acción' : row.applyRehired ? 'SÍ' : 'NO' }}
+                </button>
+                <!--<mat-slide-toggle
+                    [checked]="row.applyRehired"
+                    (change)="handleChangeContract(row, $event)"
+                    [matTooltip]="row.observation"
+                />-->
+            </td>
+        </ng-container>
+        <!--<ng-container matColumnDef="Acciones">
+            <th mat-header-cell *matHeaderCellDef> Acciones </th>
+            <td mat-cell *matCellDef="let row">
+                <button mat-button [matMenuTriggerFor]="generateFile">
+                    Generar Archivo
+                </button>
+                <mat-menu #generateFile="matMenu">
+                    <button mat-menu-item>
+                        Vencimiento
+                    </button>
+                    <button mat-menu-item>
+                        Salida
+                    </button>
+                    <button mat-menu-item>
+                        Liberación
+                    </button>
+                    <button mat-menu-item>
+                        Renovación
+                    </button>
+                </mat-menu>
+            </td>
+        </ng-container>-->
+        <tr mat-header-row *matHeaderRowDef="columns"></tr>
+        <tr mat-row *matRowDef="let row; columns: columns;" [ngClass]="{'expiring-warning': row.expireInDays <= 5 && row.expireInDays > 1, 'expiring-error': row.expireInDays <= 1}"></tr>
+    </table>
+</div>

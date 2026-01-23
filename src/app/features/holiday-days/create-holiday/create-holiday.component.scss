@@ -1,0 +1,19 @@
+app-create-holiday {
+    mat-dialog-content {
+        min-width: 350px;
+    }
+
+    form {
+        display: flex;
+        flex-direction: column;
+
+        .date-hint {
+            color: rgb(231, 85, 0);
+            display: flex;
+            align-items: center;
+            mat-icon {
+                margin-right: 5px;
+            }
+        }
+    }
+}

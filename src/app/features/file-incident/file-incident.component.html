@@ -1,0 +1,43 @@
+<div class="container module-container">
+    <div class="ctn-filter">
+        <div class="ctn-others">
+            <div class="ctn-search">
+                <div class="input-search">
+                    <input type="search" name="search" id="search" placeholder="Buscar">
+                    <mat-icon>search</mat-icon>
+                </div>
+            </div>
+
+            <div class="ctn-add">
+                <button mat-flat-button (click)="addFile()">
+                    <mat-icon>add</mat-icon>
+                    Archivo
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Columnas</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    Faltas.xls
+                </td>
+                <td>
+                    6 Colmnas
+                </td>
+                <td>
+                    <button mat-icon-button><mat-icon>edit</mat-icon></button>
+                    <button mat-icon-button><mat-icon>delete</mat-icon></button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>

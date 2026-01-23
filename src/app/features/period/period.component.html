@@ -1,0 +1,67 @@
+<div class="container module-container">
+    <div class="ctn-filter">
+        <div class="ctn-period">
+            <button class="btn-filter-tn" mat-flat-button [matMenuTriggerFor]="menuTypeNom" matTooltip="Tipo De Nómina">
+                T. Nómina | {{ payroll?.typeNom }} - {{ payroll?.label ?? 'Selecionar' }}
+            </button>
+            <mat-menu #menuTypeNom="matMenu">
+                <button mat-menu-item *ngFor="let item of listPayrolls()" (click)="setPayroll(item.typeNom)">
+                    <mat-icon *ngIf="payroll?.typeNom === item.typeNom">done</mat-icon>
+                    {{ item.typeNom }} | {{ item.label || item.typeNom }}
+                </button>
+            </mat-menu>
+        </div>
+        <div class="ctn-upload">
+            <button mat-stroked-button (click)="filePeriod.click()">
+                <mat-icon fontIcon="upload_file"></mat-icon>
+                Cargar Periodos
+            </button>
+            <input type="file" accept=".xlsx, .csv" name="file_period" id="file_period" #filePeriod (change)="onFileSelected($event)">
+        </div>
+    </div>
+
+    <table mat-table #table [dataSource]="listPeriods">
+        <ng-container matColumnDef="number">
+            <th mat-header-cell *matHeaderCellDef> Numero </th>
+            <td mat-cell *matCellDef="let row"> {{ row.numPeriod }} </td>
+        </ng-container>
+        <ng-container matColumnDef="startOfCut">
+            <th mat-header-cell *matHeaderCellDef> Inicio de Corte </th>
+            <td mat-cell *matCellDef="let row"> {{ row.startDate | date: 'dd/MM/yyyy' }} </td>
+        </ng-container>
+        <ng-container matColumnDef="closeOfCut">
+            <th mat-header-cell *matHeaderCellDef> Cierre de Corte </th>
+            <td mat-cell *matCellDef="let row"> {{ row.closingDate | date: 'dd/MM/yyyy' }} </td>
+        </ng-container>
+        <ng-container matColumnDef="days">
+            <th mat-header-cell *matHeaderCellDef> Días </th>
+            <td mat-cell *matCellDef="let row"> {{ row.totalDays }} </td>
+        </ng-container>
+        <ng-container matColumnDef="start">
+            <th mat-header-cell *matHeaderCellDef> Inicio Admin </th>
+            <td mat-cell *matCellDef="let row"> {{ row.startAdminDate | date: 'dd/MM/yyyy' }} </td>
+        </ng-container>
+        <ng-container matColumnDef="close">
+            <th mat-header-cell *matHeaderCellDef> Cierre Admin </th>
+            <td mat-cell *matCellDef="let row"> {{ row.closingAdminDate | date: 'dd/MM/yyyy' }} </td>
+        </ng-container>
+        <ng-container matColumnDef="pay">
+            <th mat-header-cell *matHeaderCellDef> Fecha de Pago </th>
+            <td mat-cell *matCellDef="let row"> {{ row.datePayment | date: 'dd/MM/yyyy' }} </td>
+        </ng-container>
+        <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef> Activo </th>
+            <td mat-cell *matCellDef="let row;">
+                <button
+                    mat-icon-button
+                    [matTooltip]="row.isActive ? 'Periodo Activo' : 'Periodo Inactivo'"
+                    (click)="changeStatusPeriod(row)"
+                >
+                    <mat-icon [ngClass]="{'icon-active': row.isActive}">{{ row.isActive ? 'verified' : 'block'}}</mat-icon>
+                </button>
+            </td>
+        </ng-container>
+        <tr mat-header-row *matHeaderRowDef="columnTable"></tr>
+        <tr mat-row *matRowDef="let row; columns: columnTable;"></tr>
+    </table>
+</div>

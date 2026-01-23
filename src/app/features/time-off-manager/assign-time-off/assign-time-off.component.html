@@ -1,0 +1,25 @@
+<h2 mat-dialog-title>Confirmar Permisos</h2>
+<mat-dialog-content>
+    <form [formGroup]="timeOffForm">
+        <mat-form-field class="mt-12">
+            <mat-label>Seleccione un código</mat-label>
+            <mat-icon matPrefix>code</mat-icon>
+            <mat-select formControlName="incidentCode">
+                <mat-option *ngFor="let incidentCode of data.incidentCodes" [value]="incidentCode.code">{{ incidentCode.label }}</mat-option>
+            </mat-select>
+            @if (incidentCodeControl.hasError('required')) {
+              <mat-error>
+                El código es requerido
+              </mat-error>
+            }
+        </mat-form-field>
+    </form>
+    <p>Se le asignarán <b>permisos</b> a <b>{{ data.employeeName }}</b> los siguientes días <br /></p>
+    <ul>
+        <li *ngFor="let item of datesFormat">{{ item }}</li>
+    </ul>
+</mat-dialog-content>
+<mat-dialog-actions>
+  <button mat-button (click)="onCancel()">Cancelar</button>
+  <button mat-button [disabled]="timeOffForm.invalid" (click)="submit()">Confirmar</button>
+</mat-dialog-actions>

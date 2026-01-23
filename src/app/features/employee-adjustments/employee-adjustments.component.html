@@ -1,0 +1,92 @@
+<div class="container module-container">
+    <div class="ctn-filter">
+        <div class="ctn-others">
+            <div class="ctn-search">
+                <div class="input-search">
+                    <input type="search" name="search" id="search" placeholder="Buscar" (keyup)="handleChangeSearch($event)">
+                    <mat-icon>search</mat-icon>
+                </div>
+            </div>
+        </div>
+    </div>
+    <mat-tab-group mat-stretch-tabs="false" mat-align-tabs="start">
+        <!--<mat-tab label="Departamento/Supervisor">
+            <table mat-table #table [dataSource]="tenants">
+                <ng-container matColumnDef="id">
+                    <th mat-header-cell *matHeaderCellDef> ID </th>
+                    <td mat-cell *matCellDef="let row"> {{row.id}} </td>
+                </ng-container>
+                <ng-container matColumnDef="label">
+                    <th mat-header-cell *matHeaderCellDef> Nombre </th>
+                    <td mat-cell *matCellDef="let row"> {{row.label}} </td>
+                </ng-container>
+
+                <ng-container matColumnDef="actions">
+                    <th mat-header-cell *matHeaderCellDef> Acciones </th>
+                    <td mat-cell *matCellDef="let row">
+                        <button mat-button (click)="openIncidents(row)">Incidencias</button>
+                    </td>
+                </ng-container>
+                <tr mat-header-row *matHeaderRowDef="columnTableTenants"></tr>
+                <tr mat-row *matRowDef="let row; columns: columnTableTenants;"></tr>
+            </table>
+        </mat-tab>-->
+        <mat-tab label="Actividad">
+            <table mat-table #table [dataSource]="activities">
+                <ng-container matColumnDef="id">
+                    <th mat-header-cell *matHeaderCellDef> ID </th>
+                    <td mat-cell *matCellDef="let row"> {{row.ocupation}} </td>
+                </ng-container>
+                <ng-container matColumnDef="label">
+                    <th mat-header-cell *matHeaderCellDef> Nombre </th>
+                    <td mat-cell *matCellDef="let row"> {{row.activity}} </td>
+                </ng-container>
+
+                <ng-container matColumnDef="actions">
+                    <th mat-header-cell *matHeaderCellDef> Acciones </th>
+                    <td mat-cell *matCellDef="let row">
+                        <button mat-button (click)="openIncidentsActivity(row)">Incidencias</button>
+                    </td>
+                </ng-container>
+                <tr mat-header-row *matHeaderRowDef="columnTableActivities"></tr>
+                <tr mat-row *matRowDef="let row; columns: columnTableActivities;"></tr>
+            </table>
+        </mat-tab>
+        <mat-tab label="Empleados">
+            <table mat-table #table [dataSource]="employees">
+                <ng-container matColumnDef="code">
+                    <th mat-header-cell *matHeaderCellDef> Código </th>
+                    <td mat-cell *matCellDef="let row"> {{row.codigo}} </td>
+                </ng-container>
+                <ng-container matColumnDef="name">
+                    <th mat-header-cell *matHeaderCellDef> Nombre </th>
+                    <td mat-cell *matCellDef="let row"> {{ row.name }} {{ row.lastName }} {{ row.mLastName }} </td>
+                </ng-container>
+                <ng-container matColumnDef="activity">
+                    <th mat-header-cell *matHeaderCellDef> Puesto </th>
+                    <td mat-cell *matCellDef="let row"> {{ row.activity }} </td>
+                </ng-container>
+                <ng-container matColumnDef="tenant">
+                    <th mat-header-cell *matHeaderCellDef> Departamento/Supervisor </th>
+                    <td mat-cell *matCellDef="let row"> {{ row.tenantName }} </td>
+                </ng-container>
+
+                <ng-container matColumnDef="actions">
+                    <th mat-header-cell *matHeaderCellDef> Acciones </th>
+                    <td mat-cell *matCellDef="let row">
+                        <button mat-button (click)="openIncidentsEmployee(row)">Incidencias</button>
+                    </td>
+                </ng-container>
+
+                <ng-container matColumnDef="block-clock">
+                    <th mat-header-cell *matHeaderCellDef> Bloqueo en Relojes </th>
+                    <td mat-cell *matCellDef="let row">
+                        <mat-slide-toggle />
+                    </td>
+                </ng-container>
+                <tr mat-header-row *matHeaderRowDef="columnTableEmployees"></tr>
+                <tr mat-row *matRowDef="let row; columns: columnTableEmployees;"></tr>
+            </table>
+        </mat-tab>
+    </mat-tab-group>
+</div>

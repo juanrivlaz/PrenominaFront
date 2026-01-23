@@ -1,0 +1,59 @@
+mat-toolbar {
+    display: flex;
+    flex-direction: row;
+    box-sizing: border-box;
+    width: 100%;
+    border-bottom: 1px solid #d7d9e4;
+    justify-content: space-between;
+
+    .avatar, .company {
+        font-size: 14px;
+        color: #1f384c;
+    }
+
+    .avatar {
+        button {
+            .mdc-button__label{
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                app-avatar {
+                    .ctn-avatar {
+                        width: 40px;
+                        height: 40px;
+                        padding: 5px;
+                    }
+                }
+
+                .info {
+                    display: flex;
+                    flex-direction: column;
+                    text-align: left;
+
+                    p, span {
+                        margin: 0;
+                        line-height: 18px;
+                    }
+
+                    span {
+                        font-size: 12px;
+                        color: #9b9b9b;
+                    }
+                }
+            }
+        }
+    }
+
+    .company {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+
+        mat-icon {
+            height: 12px;
+            width: 12px;
+            font-size: 12px;
+            color: #9b9b9b;
+        }
+    }
+}

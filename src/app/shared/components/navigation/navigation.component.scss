@@ -1,0 +1,135 @@
+@use '../../../core/scss/app';
+
+app-navigation {
+    .nav-item {
+        .nav-link {
+            text-decoration: none !important;
+            display: flex;
+            align-items: center;
+            height: 48px;
+            padding: 0 21px;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            user-select: none;
+            color: #787f89;
+
+            > .nav-link-title {
+                flex: 1;
+                white-space: nowrap;
+            }
+
+            .nav-link-badge {
+                display: flex;
+                align-items: center;
+                min-width: 20px;
+                height: 20px;
+                padding: 0 7px;
+                font-size: 11px;
+                font-weight: 500;
+                border-radius: 20px;
+                transition: opacity 0.2s ease-in-out 0.1s;
+                margin-left: 8px;
+
+                + .collapse-arrow {
+                    margin-left: 8px;
+                }
+            }
+
+            .nav-link-icon {
+                margin-right: 10px;
+                color: #c4c7db;
+            }
+
+            &:hover {                
+                background-color: #e4e7f4;
+                width: 100%;
+                color: var(--primary-color);
+
+                .nav-link-icon {
+                    color: var(--primary-color);
+                }
+            }
+
+            .mat-ripple-element {
+                background-color: orange;
+            }
+
+            &.active {
+                background-color: var(--primary-color);
+                width: 100%;
+
+                .mat-ripple-element {
+                    background-color: olive;
+                }
+
+                &, .nav-link-icon {
+                    color: white;
+                }
+
+                .nav-link-badge {
+                    background: #FFFFFF !important;
+                    color: rgba(0, 0, 0, 0.87) !important;
+                }
+            }
+
+            .nav-link-icon,
+            .nav-link-icon-custom {
+                font-size: 21px;
+                width: 21px;
+                height: 21px;
+                min-width: 21px;
+                min-height: 21px;
+                line-height: 21px;
+            }
+
+            .collapse-arrow {
+                font-size: 18px;
+                width: 18px;
+                height: 18px;
+                min-width: 18px;
+                min-height: 18px;
+                line-height: 18px;
+            }
+
+            .nav-link-icon-custom {
+                font-size: 16px;
+                font-size: 16px;
+                width: 16px;
+                height: 16px;
+                min-width: 16px;
+                min-height: 16px;
+                line-height: 16px;
+            }
+        }
+
+        &.nav-collapse {
+            display: block;
+
+            > .children {
+
+                > .nav-item {
+
+                    > .nav-link,
+                    &.nav-group > .group-title,
+                    &.nav-group > .group-items > .nav-item > .nav-link {
+                        padding-left: 56px;
+                    }
+
+                    > .children {
+
+                        > .nav-item {
+
+                            > .nav-link,
+                            &.nav-group > .group-title,
+                            &.nav-group > .group-items > .nav-item > .nav-link {
+                                padding-left: 72px;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+    }
+}

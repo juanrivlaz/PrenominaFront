@@ -1,0 +1,11 @@
+app-create-role {
+    form {
+        display: flex;
+        flex-direction: column;
+
+        .config {
+            display: flex;
+            flex-direction: column;
+        }
+    }
+}

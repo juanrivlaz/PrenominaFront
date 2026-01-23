@@ -1,0 +1,151 @@
+app-reports {
+    .ctn-steps {
+        h3 {
+            margin: 0;
+        }
+
+        .subtitle {
+            margin-top: 4px;
+            display: block;
+            color: #818181;
+            font-size: 13px;
+        }
+
+        .ctn-filter {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+
+            .ctn-period {
+                button {
+                    font-size: 12px;
+                    font-weight: normal;
+                    border-radius: 6px;
+                    padding-top: 5px;
+                    padding-bottom: 5px;
+                    max-height: 30px;
+                }
+
+                .btn-filter-pc, .btn-filter-tn {
+                    border: 1px solid #a6aab2;
+                    background-color: white;
+                    color: #1f384c;
+                }
+
+                .btn-filter-pc {
+                    border-top-left-radius: 0px;
+                    border-bottom-left-radius: 0px;
+                    border-left: 1px solid #a6aab2;
+                }
+
+                .btn-filter-tn {
+                    border-top-right-radius: 0px;
+                    border-bottom-right-radius: 0px;
+                    border-right: none;
+                }
+            }
+
+            .ctn-others {
+                display: flex;
+                gap: 12px;
+                align-items: center;
+
+                .ctn-filter-date {
+                    position: relative;
+
+                    mat-form-field {
+                        margin-bottom: -21px;
+                    }
+
+                    .mat-mdc-form-field-infix {
+                        padding-top: 10px;
+                        padding-bottom: 10px;
+                        min-height: 40px;
+                    }
+                }
+
+                .ctn-search {
+                    .input-search {
+                        position: relative;
+
+                        input {
+                            padding: 7px 11px;
+                            padding-right: 32px;
+                            border-radius: 6px;
+                            border: 1px solid #a6aab2;
+                            color: #1f384c;
+                        }
+
+                        mat-icon {
+                            position: absolute;
+                            right: 0px;
+                            top: 5px;
+                            right: 7px;
+                            color: #a6aab2;
+                        }
+                    }
+                }
+
+                .ctn-export {
+                    button {
+                        font-size: 12px;
+                        font-weight: normal;
+                        border-radius: 8px;
+                        padding-top: 5px;
+                        padding-bottom: 5px;
+                        max-height: 34px;
+                    }
+                }
+            }
+        }
+
+        .mdc-evolution-chip__action--primary::before {
+            border-color: transparent !important;
+        }
+
+        .mdc-evolution-chip__text-label {
+            color: #818181 !important;
+            font-weight: normal;
+        }
+
+        .mdc-evolution-chip__action--primary:hover {
+            .mdc-evolution-chip__text-label {
+                color: #43464d !important;
+                font-weight: 500;
+            }
+        }
+
+        mat-chip {
+            &.active {
+                .mdc-evolution-chip__action--primary::before {
+                    background-color: #eaeaee !important;
+                }
+
+                .mdc-evolution-chip__action--primary {
+                    .mdc-evolution-chip__text-label {
+                        color: #43464d !important;
+                        font-weight: 500;
+                    }
+                }
+            }
+        }
+    }
+
+    .divider {
+        margin: 6px 0;
+    }
+
+    .ctn-step-content {
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: row;
+        width: 100%;
+
+        .ctn-item-step {
+            width: 100%;
+            min-width: 100%;
+        }
+    }
+}

@@ -1,0 +1,69 @@
+<div class="container module-container">
+    <div class="ctn-filter">
+        <div class="ctn-others">
+            <div class="ctn-search">
+                <div class="input-search">
+                    <input type="search" name="search" id="search" placeholder="Buscar">
+                    <mat-icon>search</mat-icon>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Incidencia</th>
+                <th>Fecha</th>
+                <th>Aprobado</th>
+                <th>Fecha Asignación</th>
+                <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="name">
+                    <div class="ctn-name">
+                        <app-avatar name="Axel Daniel Rivera Maravillas" />
+                        <div class="labels">
+                            <p>Axel Daniel Rivera Maravillas</p>
+                            <span>Concinero B</span>
+                        </div>
+                    </div>
+                </td>
+                <td>F | Falta</td>
+                <td>Sab, 29 de Marzo del 2025</td>
+                <td>1 de 4</td>
+                <td>Sab, 29 de Marzo del 2025</td>
+                <td>
+                    <div class="ctn-actions">
+                        <button mat-button (click)="handleClickAction(true)"><mat-icon>done</mat-icon>Aprobar</button>
+                        <button mat-button class="warning" (click)="handleClickAction(false)"><mat-icon>close</mat-icon>Rechazar</button>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td class="name">
+                    <div class="ctn-name">
+                        <app-avatar name="Daniel Rivera Maravillas" />
+                        <div class="labels">
+                            <p>Daniel Rivera Maravillas</p>
+                            <span>Administrador</span>
+                        </div>
+                    </div>
+                </td>
+                <td>D | Descanso Laborado</td>
+                <td>Sab, 29 de Marzo del 2025</td>
+                <td>3 de 4</td>
+                <td>Sab, 29 de Marzo del 2025</td>
+                <td>
+                    <div class="ctn-actions">
+                        <button mat-button (click)="handleClickAction(true)"><mat-icon>done</mat-icon>Aprobar</button>
+                        <button mat-button class="warning" (click)="handleClickAction(false)"><mat-icon>close</mat-icon>Rechazar</button>
+                    </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>

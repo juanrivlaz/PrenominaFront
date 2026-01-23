@@ -1,0 +1,64 @@
+@use '../../core/scss/app';
+
+app-clocks {
+    .ctn-title {
+        padding: 0 14px;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 24px;
+
+        .title {
+            h2, span {
+                margin: 0;
+            }
+
+            span {
+                color: darkgray;
+            }
+        }
+
+        .ctn-btns {
+            display: flex;
+            gap: 12px;
+
+            button {
+                background-color: var(--second-color);
+            }
+        }
+    }
+
+    .ctn-items {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+        padding: 1rem;
+
+        .item {
+            box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px;
+            max-width: 340px;
+            padding: 12px;
+            border-radius: 8px;
+            background-color: white;
+
+            p {
+                margin: 0 auto;
+                width: fit-content;
+                padding: 5px 12px;
+                background-color: var(--second-color);
+                color: white;
+                border-radius: 8px;
+            }
+
+            .actions {
+                display: flex;
+
+                button {
+                    border-radius: 0;
+                    flex: 1 1 auto;
+                }
+            }
+        }
+    }
+}

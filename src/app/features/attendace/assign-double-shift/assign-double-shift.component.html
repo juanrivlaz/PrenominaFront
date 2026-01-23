@@ -1,0 +1,8 @@
+<h2 mat-dialog-title>Confirmar Doble Turno</h2>
+<mat-dialog-content>
+  <p>Se le asignará un <b>doble turno</b> a <b>{{ data.employeName }}</b> para el día <b>{{ dateFormat }}</b></p>
+</mat-dialog-content>
+<mat-dialog-actions>
+  <button mat-button (click)="confirm()">Confirmar</button>
+  <button mat-button (click)="onNoClick()" cdkFocusInitial>Cancelar</button>
+</mat-dialog-actions>

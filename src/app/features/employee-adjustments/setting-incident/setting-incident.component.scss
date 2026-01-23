@@ -1,0 +1,13 @@
+app-setting-incident {
+    .ctn-loading {
+        display: flex;
+        justify-content: center;
+        padding: 24px 0;
+    }
+
+    mat-list-item {
+        mat-checkbox {
+            align-self: center !important;
+        }
+    }
+}

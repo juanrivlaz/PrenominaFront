@@ -1,0 +1,289 @@
+@use '../../core/scss/app';
+
+app-attendace {
+    .container {
+        .ctn-filter {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            .ctn-period {
+                button {
+                    font-size: 12px;
+                    font-weight: normal;
+                    border-radius: 6px;
+                    padding-top: 5px;
+                    padding-bottom: 5px;
+                    max-height: 30px;
+                }
+
+                .btn-filter-pc, .btn-filter-tn {
+                    border: 1px solid #a6aab2;
+                    background-color: white;
+                    color: #1f384c;
+                }
+
+                .btn-filter-pc {
+                    border-top-left-radius: 0px;
+                    border-bottom-left-radius: 0px;
+                    border-left: 1px solid #a6aab2;
+                }
+
+                .btn-filter-tn {
+                    border-top-right-radius: 0px;
+                    border-bottom-right-radius: 0px;
+                    border-right: none;
+                }
+            }
+
+            .ctn-others {
+                display: flex;
+                gap: 12px;
+                align-items: center;
+
+                .ctn-search {
+                    .input-search {
+                        position: relative;
+
+                        input {
+                            padding: 7px 11px;
+                            padding-right: 32px;
+                            border-radius: 6px;
+                            border: 1px solid #a6aab2;
+                            color: #1f384c;
+                        }
+
+                        mat-icon {
+                            position: absolute;
+                            right: 0px;
+                            top: 5px;
+                            right: 7px;
+                            color: #a6aab2;
+                        }
+                    }
+                }
+
+                .ctn-export {
+                    button {
+                        font-size: 12px;
+                        font-weight: normal;
+                        border-radius: 8px;
+                        padding-top: 5px;
+                        padding-bottom: 5px;
+                        max-height: 34px;
+                    }
+                }
+            }
+        }
+
+        table {
+            width: 100%;
+            font-size: 12px;
+            border-collapse: collapse;
+
+            thead {
+                th {
+                    text-align: left;
+                    background-color: #ecf0f3;
+                    color: #686f7c;
+                    font-weight: normal;
+                    padding: 8px 11px;
+
+                    &.active {
+                        font-weight: 600;
+                        color: #009e00;
+                    }
+                }
+            }
+
+            tbody {
+                tr {
+                    td {
+                        background-color: white;
+                        padding: 8px 11px;
+                    }
+                }
+            }
+        }
+
+        .alert-closed-period {
+            width: 100%;
+            background-color: #ffe2aa;
+            color: red;
+            text-align: center;
+            padding: 6px 0;
+            border-radius: 5px;
+        }
+
+        .list-employees {
+            margin-top: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding-bottom: 24px;
+
+            .ctn-employee {
+                background-color: white;
+                padding: 8px;
+                border-radius: 8px;
+                position: relative;
+
+                .color-identify {
+                    position: absolute;
+                    left: 0;
+                    top: 0;
+                    width: 5px;
+                    height: 100%;
+                    background-color: var(--primary-color);
+                    border-top-left-radius: 8px;
+                    border-bottom-left-radius: 8px;
+                    opacity: .4;
+                }
+
+                &:nth-child(2n + 1) {
+                    .color-identify {
+                        background-color: var(--primary-color);
+                        opacity: 1;
+                    }
+                }
+
+                .head {
+                    display: flex;
+                    justify-content: space-between;
+                    font-size: 13px;
+                    padding: 0 6px;
+                    margin-bottom: 8px;
+
+                    p {
+                        margin: 6px 0;
+                    }
+
+                    .actions {
+                        font-size: 12px;
+                    }
+                }
+
+                .entry-checks {
+                    .table-card {
+                        thead {
+                            th {
+                                background-color: transparent;
+                                padding: 8px 6px;
+                                text-align: center;
+                                
+                                .ctn-day {
+                                    display: flex;
+                                    flex-direction: column;
+                                    align-items: center;
+
+                                    &.active {
+                                        font-weight: 600;
+                                        color: #009e00;
+                                    }
+                                }
+
+                                &.isSunday {
+                                    background-color: #ffe8af;
+                                }
+
+                                &.isDayOff {
+                                    background-color: #d6ffd6;
+                                }
+                            }
+
+                            tr {
+                                &:first-child {
+                                    th {
+                                        padding-bottom: 2px;
+                                    }
+                                }
+
+                                &:last-child {
+                                    th {
+                                        padding-top: 2px;
+                                        padding-bottom: 4px;
+                                    }
+                                }
+                            }
+                        }
+
+                        tbody {
+                            tr {
+                                td {
+                                    padding: 8px 6px;
+
+                                    .ctn-registers {
+                                        display: flex;
+                                        flex-direction: column;
+                                        gap: 6px;
+                                        align-items: center;
+
+                                        .entry, .output {
+                                            width: fit-content;
+                                            padding: 5px 8px;
+                                            border-radius: 5px;
+                                            background-color: #cce9ff;
+                                            min-width: 62px;
+                                            min-height: 24px;
+                                            cursor: pointer;
+                                        }
+
+                                        &.isInconsistency {
+                                            .entry, .output {
+                                                background-color: #ffe8af;
+                                            }
+                                        }
+
+                                        &.no-data {
+                                            .entry, .output {
+                                                background-color: #ffcaca;
+
+                                                button {
+                                                    border-radius: 0;
+                                                    height: 100%;
+                                                    width: 100%;
+                                                    padding: 0;
+                                                    min-width: auto;
+                                                    color: red;
+                                                    font-weight: normal;
+                                                    font-size: 12px;
+                                                }
+                                            }
+                                        }
+
+                                        &.saved {
+                                            .entry, .output {
+                                                background-color: #bfffbf;
+
+                                                button {
+                                                    color: green;
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    &.isSunday {
+                                        background-color: #fff0cb;
+                                    }
+
+                                    &.isDayOff {
+                                        background-color: #eaffea;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        mat-paginator {
+            padding-bottom: 24px;
+        }
+    }
+}
+
+.list-period-menu {
+    max-height: 300px;
+    overflow-y: auto;
+}

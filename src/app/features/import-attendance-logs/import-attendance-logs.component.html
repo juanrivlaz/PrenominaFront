@@ -1,0 +1,29 @@
+<div class="container module-container">
+    <div class="ctn-input-upload">
+        <mat-icon>upload_file</mat-icon>
+        <p>Arrastre o seleccione un archivo</p>
+        <span>Formatos permitidos: .txt, .xls</span>
+        <input class="file-input" type="file" (change)="onFileSelected($event)">
+    </div>
+
+    <div class="ctn-process-files">
+        <p>Archivos procesados</p>
+        <ul>
+            <li *ngFor="let file of files">
+                <div class="ctn-info">
+                    <div class="icon">
+                        <mat-icon>task</mat-icon>
+                    </div>
+                    <div class="info">
+                        <p>Importados: {{ file.totalImported }} - Errores: {{ file.totalErrors }}</p>
+                        <span>{{file.file.name}}</span>
+                    </div>
+                </div>
+                <div class="status">
+                    <mat-spinner *ngIf="file.loading" diameter="28"></mat-spinner>
+                    <button *ngIf="!file.loading" mat-button><mat-icon>sim_card_download</mat-icon> Errores</button>
+                </div>
+            </li>
+        </ul>
+    </div>
+</div>

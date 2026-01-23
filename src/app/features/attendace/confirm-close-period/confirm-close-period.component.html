@@ -1,0 +1,22 @@
+<h2 mat-dialog-title>{{ isClosed ? 'Abrir' : 'Cerrar' }} Periodo</h2>
+<mat-dialog-content>
+    <p>¿Está seguro de {{ isClosed ? 'abrir' : 'cerrar' }} el Periodo <b>{{ data.periodName }}</b> ?</p>
+    <form [formGroup]="formGroup">
+        <mat-form-field class="mb-12">
+            <mat-label>Selecciona un Departamento/Supervisor</mat-label>
+            <mat-icon matPrefix>event</mat-icon>
+            <mat-select formControlName="tenant">
+                <mat-option *ngFor="let item of tenants" [value]="item.id">{{ item.label }}</mat-option>
+            </mat-select>
+            @if (getFieldControl('tenant')?.hasError('required')) {
+                <mat-error>
+                  El departamento/supervisor es requerido
+                </mat-error>
+            }
+        </mat-form-field>
+    </form>
+</mat-dialog-content>
+<mat-dialog-actions>
+    <button mat-button (click)="confirm()" [disabled]="formGroup.invalid">Confirmar</button>
+    <button mat-button (click)="onNoClick()" cdkFocusInitial>Cancelar</button>
+</mat-dialog-actions>

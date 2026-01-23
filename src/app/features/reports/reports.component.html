@@ -1,0 +1,90 @@
+<div class="container module-container">
+
+    <div class="ctn-steps">
+        <h3>Reportes</h3>
+        <span class="subtitle mb-24">Generación de reportes varios</span>
+
+        <div class="ctn-filter">
+            <div class="ctn-period">
+                <button class="btn-filter-tn" mat-flat-button [matMenuTriggerFor]="menuTypeNom" matTooltip="Tipo De Nómina">
+                    T. Nómina | {{ payroll?.typeNom }} - {{ payroll?.label }}
+                </button>
+                <mat-menu #menuTypeNom="matMenu">
+                    <button mat-menu-item *ngFor="let item of listPayrolls()" (click)="setPayroll(item.typeNom)">
+                        <mat-icon *ngIf="payroll?.typeNom === item.typeNom">done</mat-icon>
+                        {{ item.typeNom }} | {{ item.label || item.typeNom }}
+                    </button>
+                </mat-menu>
+                <button class="btn-filter-pc" mat-flat-button [matMenuTriggerFor]="menuPeriodo" matTooltip="Periodo de Corte">
+                    <mat-icon>calendar_month</mat-icon> P. Corte {{ period?.numPeriod }} | {{ period?.startDate | date: 'dd/MM/yyyy' }} - {{ period?.closingDate | date: 'dd/MM/yyyy' }}
+                </button>
+                <mat-menu #menuPeriodo="matMenu" class="list-period-menu">
+                    <button mat-menu-item *ngFor="let item of listPeriods" (click)="setPeriod(item.numPeriod)">
+                        <mat-icon *ngIf="period?.numPeriod === item.numPeriod">done</mat-icon>
+                        {{ item.numPeriod }} | {{ item.startDate | date: 'dd/MM/yyyy' }} - {{ item.closingDate | date: 'dd/MM/yyyy' }}
+                    </button>
+                </mat-menu>
+            </div>
+            <div class="ctn-others">
+                <div class="ctn-filter-date">
+                    <mat-form-field>
+                        <mat-label>Filtrar Por Fecha</mat-label>
+                        <mat-date-range-input [formGroup]="filterForDates" [rangePicker]="dateFilter">
+                            <input matStartDate formControlName="start" placeholder="Fecha Inicio">
+                            <input matEndDate formControlName="end" placeholder="Fecha Fin">
+                        </mat-date-range-input>
+                        <mat-datepicker-toggle matIconSuffix [for]="dateFilter"></mat-datepicker-toggle>
+                        <mat-date-range-picker #dateFilter></mat-date-range-picker>
+
+                        @if (filterForDates.controls.start.hasError('matStartDateInvalid')) {
+                            <mat-error>Fecha de inicio inválida</mat-error>
+                        }
+                        @if (filterForDates.controls.end.hasError('matEndDateInvalid')) {
+                            <mat-error>Fecha de fin inválida</mat-error>
+                        }
+                    </mat-form-field>
+                </div>
+                <div class="ctn-search">
+                    <div class="input-search">
+                        <input type="search" name="search" id="search" placeholder="Buscar" [formControl]="searchControl">
+                        <mat-icon>search</mat-icon>
+                    </div>
+                </div>
+                <div class="ctn-export">
+                    <button class="btn-filter-tn" mat-flat-button [matMenuTriggerFor]="downloadFile" matTooltip="Exportar A PDF | EXCEL">
+                        <mat-icon>download</mat-icon>
+                        Exportar
+                    </button>
+                    <mat-menu #downloadFile="matMenu">
+                        <button mat-menu-item (click)="downloadReport(1)">
+                            <img src="assets/icons/xls.png" alt="xlsx" class="mr-12" width="25px">
+                            EXCEL
+                        </button>
+                    </mat-menu>
+                </div>
+            </div>
+        </div>
+
+        <mat-chip-set>
+            <mat-chip (click)="handleChangeSection('Delays')" [ngClass]="{'active': sectionIsActive('Delays')}">Retardos</mat-chip>
+            <mat-chip (click)="handleChangeSection('Overtimes')" [ngClass]="{'active': sectionIsActive('Overtimes')}">Horas Extras</mat-chip>
+            <mat-chip (click)="handleChangeSection('HoursWorked')" [ngClass]="{'active': sectionIsActive('HoursWorked')}">Horas Laboradas</mat-chip>
+            <mat-chip (click)="handleChangeSection('Attendance')" [ngClass]="{'active': sectionIsActive('Attendance')}">Asistencia</mat-chip>
+        </mat-chip-set>
+    </div>
+    <mat-divider class="divider"></mat-divider>
+    <div class="ctn-step-content">
+        <div class="ctn-item-step" [@fadeInOut]="sectionIsActive('Delays') ? '1' : '0'">
+            <app-delays-table [dataSource]="delays" [totalRecords]="totalDelayRecords" [pageSize]="delayPageSize"></app-delays-table>
+        </div>
+        <div class="ctn-item-step" [@fadeInOut]="sectionIsActive('Overtimes') ? '1' : '0'">
+            <app-overtimes-table [dataSource]="overtimes" [totalRecords]="totalOvertimeRecords" [pageSize]="overtimePageSize"></app-overtimes-table>
+        </div>
+        <div class="ctn-item-step" [@fadeInOut]="sectionIsActive('HoursWorked') ? '1' : '0'">
+            <app-hours-worked-table [dataSource]="hoursWorked" [totalRecords]="totalHoursWorkedRecords" [pageSize]="hoursWorkedPageSize"></app-hours-worked-table>
+        </div>
+        <div class="ctn-item-step" [@fadeInOut]="sectionIsActive('Attendance') ? '1' : '0'">
+            <app-attendance-table [dataSource]="attendance" [totalRecords]="totalAttendanceRecords" [pageSize]="attendancePageSize"></app-attendance-table>
+        </div>
+    </div>
+</div>

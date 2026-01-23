@@ -1,0 +1,42 @@
+<h2 mat-dialog-title>Agregar Rol</h2>
+<mat-dialog-content>
+    <form [formGroup]="createForm" class="mt-12">
+        <mat-form-field class="mb-12">
+            <mat-label>Ingrese etiqueta</mat-label>
+            <mat-icon matPrefix>label</mat-icon>
+            <input type="text" matInput formControlName="label">
+            @if (getFieldControl('label')?.hasError('required')) {
+                <mat-error>
+                  La etiqueta es requerida
+                </mat-error>
+            }
+
+            @if (getFieldControl('label')?.hasError('minlength')) {
+              <mat-error>
+                Ingrese al menos 5 caracteres
+              </mat-error>
+          }
+        </mat-form-field>
+        <mat-form-field>
+            <mat-label>Seleccionar secciones</mat-label>
+            <mat-icon matPrefix>group</mat-icon>
+            <mat-select formControlName="sections" multiple>
+              <mat-option *ngFor="let item of listSections" [value]="item.code">
+                {{ item.label }}
+              </mat-option>
+            </mat-select>
+            @if (getFieldControl('sections')?.hasError('required')) {
+                <mat-error>
+                  Las secciones son requeridas
+                </mat-error>
+            }
+        </mat-form-field>
+
+        <mat-checkbox *ngIf="hasTasistencia" formControlName="canClosePayrollPeriod">Cierre de Periodo</mat-checkbox>
+    </form>
+</mat-dialog-content>
+<mat-dialog-actions>
+  <mat-spinner diameter="25" *ngIf="loading()"></mat-spinner>
+  <button *ngIf="!loading()" mat-button mat-dialog-close>Cancelar</button>
+  <button *ngIf="!loading()" mat-button (click)="submit()" cdkFocusInitial>Confirmar</button>
+</mat-dialog-actions>

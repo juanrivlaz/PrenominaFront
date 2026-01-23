@@ -1,0 +1,37 @@
+<h2 mat-dialog-title>{{isEdit ? 'Editar' : 'Agregar' }} Día Festivo</h2>
+<mat-dialog-content>
+  <form [formGroup]="createForm" class="mt-12">
+    <mat-form-field class="mb-24">
+        <mat-label>Seleccione una fecha</mat-label>
+        <mat-icon matPrefix>calendar_month</mat-icon>
+        <input matInput [matDatepicker]="picker" formControlName="date">
+        <mat-hint class="date-hint"><mat-icon matPrefix>info</mat-icon> Se ignorará el año</mat-hint>
+        <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+        <mat-datepicker #picker startView="year" [startAt]="startDate"></mat-datepicker>
+        @if (getFieldControl('date')?.hasError('required')) {
+          <mat-error>
+            La fecha es requerida
+          </mat-error>
+        }
+    </mat-form-field>
+    <mat-form-field class="mb-12">
+        <mat-label>Ingrese una descripción</mat-label>
+        <mat-icon matPrefix>edit_note</mat-icon>
+        <input type="text" matInput formControlName="description">
+    </mat-form-field>
+
+    <mat-form-field>
+        <mat-label>Seleccione un código</mat-label>
+        <mat-icon matPrefix>code</mat-icon>
+        <mat-select formControlName="incidentCode">
+            <mat-option *ngFor="let incident of data.incidentCodes" [value]="incident.code">{{ incident.label }}</mat-option>
+        </mat-select>
+    </mat-form-field>
+
+    <mat-checkbox formControlName="isUnion">Sindicato</mat-checkbox>
+  </form>
+</mat-dialog-content>
+<mat-dialog-actions>
+  <button mat-button mat-dialog-close>Cancelar</button>
+  <button mat-button (click)="submit()" cdkFocusInitial>Confirmar</button>
+</mat-dialog-actions>

@@ -1,0 +1,10 @@
+app-add-observation {
+    mat-dialog-content {
+        min-width: 350px;
+    }
+
+    form {
+        display: flex;
+        flex-direction: column;
+    }
+}

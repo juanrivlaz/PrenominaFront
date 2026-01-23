@@ -1,0 +1,66 @@
+app-roles {
+    .ctn-filter {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+
+        .ctn-others {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+
+            .ctn-add {
+                button {
+                    font-size: 12px;
+                    font-weight: normal;
+                    border-radius: 8px;
+                    padding-top: 5px;
+                    padding-bottom: 5px;
+                    max-height: 34px;
+                }
+            }
+        }
+    }
+
+    table {
+        width: 100%;
+        font-size: 12px;
+        border-collapse: collapse;
+        margin-top: 24px;
+
+        thead {
+            th {
+                text-align: center;
+                background-color: #ecf0f3;
+                color: #686f7c;
+                font-weight: normal;
+                padding: 8px 11px;
+                text-align: center;
+
+                &:first-child {
+                    border-top-left-radius: 8px;
+                }
+
+                &:last-child {
+                    border-top-right-radius: 8px;
+                }
+            }
+        }
+
+        tbody {
+            tr {
+                background-color: white;
+
+                &:nth-child(even) {
+                    background-color: #f9fbfc;
+                }
+
+                td {
+                    padding: 9px 11px;
+                    text-align: center;
+                    border-bottom: 1px solid #e4e8ef;
+                }
+            }
+        }
+    }
+}

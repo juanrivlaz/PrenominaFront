@@ -1,0 +1,52 @@
+<div class="container module-container">
+    <div class="ctn-filter">
+        <div class="ctn-others">
+            <div class="ctn-add">
+                <button mat-flat-button (click)="createHoliday()">
+                    <mat-icon>add</mat-icon>
+                    Día Festivo
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Descripción</th>
+                <th>Dominical</th>
+                <th>Sindicato</th>
+                <th>Código de incidencia</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr *ngFor="let dayoff of dayoffs()">
+                <td class="date-label">{{ dayoff.isSunday ? 'Domingo' : dayoff.date | date: 'd MMMM' }}</td>
+                <td>{{ dayoff.description }}</td>
+                <td>
+                    <mat-icon *ngIf="dayoff.isSunday">check_circle</mat-icon>
+                </td>
+                <td>
+                    <mat-icon *ngIf="dayoff.isUnion">check_circle</mat-icon>
+                </td>
+                <td>{{ dayoff.incidentCode }}</td>
+                <td class="actions">
+                    <mat-spinner *ngIf="isLoding(dayoff)" diameter="25"></mat-spinner>
+                    <button *ngIf="!isLoding(dayoff)" mat-icon-button [matMenuTriggerFor]="actions"><mat-icon>more_vert</mat-icon></button>
+                    <mat-menu #actions="matMenu">
+                        <button mat-menu-item>
+                            <mat-icon>edit</mat-icon>
+                            <span>Editar</span>
+                        </button>
+                        <button mat-menu-item (click)="deleteDayOff(dayoff)">
+                            <mat-icon>delete</mat-icon>
+                            <span>Eliminar</span>
+                        </button>
+                    </mat-menu>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>

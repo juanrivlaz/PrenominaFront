@@ -1,0 +1,82 @@
+<div class="container module-container">
+    <div class="ctn-filter">
+        <div class="ctn-period">
+            <button class="btn-filter-tn" mat-flat-button [matMenuTriggerFor]="menuTypeNom" matTooltip="Tipo De Nómina">
+                T. Nómina | {{ payroll?.typeNom }} - {{ payroll?.label }}
+            </button>
+            <mat-menu #menuTypeNom="matMenu">
+                <button mat-menu-item *ngFor="let item of listPayrolls()" (click)="setPayroll(item.typeNom)">
+                    <mat-icon *ngIf="payroll?.typeNom === item.typeNom">done</mat-icon>
+                    {{ item.typeNom }} | {{ item.label || item.typeNom }}
+                </button>
+            </mat-menu>
+            <button class="btn-filter-pc" mat-flat-button [matMenuTriggerFor]="menuPeriodo" matTooltip="Periodo de Corte">
+                <mat-icon>calendar_month</mat-icon> P. Corte {{ period?.numPeriod }} | {{ period?.startDate | date: 'dd/MM/yyyy' }} - {{ period?.closingDate | date: 'dd/MM/yyyy' }}
+            </button>
+            <mat-menu #menuPeriodo="matMenu" class="list-period-menu">
+                <button mat-menu-item *ngFor="let item of listPeriods" (click)="setPeriod(item.numPeriod)">
+                    <mat-icon *ngIf="period?.numPeriod === item.numPeriod">done</mat-icon>
+                    {{ item.numPeriod }} | {{ item.startDate | date: 'dd/MM/yyyy' }} - {{ item.closingDate | date: 'dd/MM/yyyy' }}
+                </button>
+            </mat-menu>
+        </div>
+        <div class="ctn-others">
+            <div class="ctn-search">
+                <div class="input-search">
+                    <input type="search" name="search" id="search" placeholder="Buscar" [formControl]="searchControl">
+                    <mat-icon>search</mat-icon>
+                </div>
+            </div>
+            <div class="ctn-sync-incapacity">
+                <button mat-icon-button (click)="syncIncapacity()" color="primary" matTooltip="Sincronizar Incapacidades / Vacaciones">
+                    <mat-icon>sync</mat-icon>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th class="day" *ngFor="let date of listDates()">
+                    <span>{{ date.day }}</span>
+                    <span>{{ date.label }}</span>
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr *ngFor="let employee of listEmployees()">
+                <td class="employee">
+                    <div class="ctn-employee">
+                        <app-avatar name="{{ employee.name }} {{ employee.lastName }} {{ employee.mLastName }}" />
+                        <div class="name">
+                            <p>{{ employee.name }} {{ employee.lastName }} {{ employee.mLastName }}</p>
+                            <span>{{ employee.codigo }}</span>
+                        </div>
+                    </div>
+                </td>
+                <td
+                    *ngFor="let date of listDates()"
+                    (mouseover)="handleOverDay(date.key)"
+                    (click)="handleClickDay(date.key, employee.codigo)"
+                    [ngClass]="{
+                        'active': selectedEmployee === employee.codigo && (initialItem === date.key || isActive(date.key)),
+                        'with-data': getIncidentForDate(employee.codigo, date.date)
+                    }"
+                    class="day d-{{ date.key }}"
+                >
+                    <div class="item">{{ getIncidentForDate(employee.codigo, date.date) }}</div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <mat-paginator
+        [length]="paginatorDetails().totalRecord"
+        [pageSize]="paginatorDetails().pageSize"
+        [pageSizeOptions]="[30]"
+        [hidePageSize]="false"
+        (page)="handlePageEvent($event)"
+    ></mat-paginator>
+</div>

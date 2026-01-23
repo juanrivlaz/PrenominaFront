@@ -1,0 +1,168 @@
+<h2 mat-dialog-title>{{ isEditMode ? 'Editar' : 'Agregar' }} código de incidencia</h2>
+<mat-dialog-content>
+  <form [formGroup]="incidentForm" class="mt-12" [ngClass]="{'with-config': valueWithOperation}">
+    <mat-form-field class="mb-12">
+      <mat-label>Ingrese un código</mat-label>
+      <mat-icon matPrefix>code</mat-icon>
+      <input type="text" matInput formControlName="code">
+      @if (codeControl.hasError('required')) {
+        <mat-error>
+          El código es requerido
+        </mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field class="mb-12">
+      <mat-label>Ingrese un código externo</mat-label>
+      <mat-icon matPrefix>code</mat-icon>
+      <input type="text" matInput formControlName="externalCode">
+      @if (externalCodeControl.hasError('minlength')) {
+        <mat-error>
+          Se requieren al menos 1 caracter
+        </mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field class="mb-12">
+      <mat-label>Ingrese una etiqueta</mat-label>
+      <mat-icon matPrefix>label</mat-icon>
+      <input type="text" matInput formControlName="label">
+      @if (labelControl.hasError('required')) {
+        <mat-error>
+          La etiqueta es requerida
+        </mat-error>
+      }
+
+      @if (labelControl.hasError('minlength')) {
+        <mat-error>
+          Se requieren al menos 2 caracteres
+        </mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>Ingrese una nota</mat-label>
+      <mat-icon matPrefix>notes</mat-icon>
+      <textarea matInput formControlName="notes"></textarea>
+    </mat-form-field>
+
+    <mat-form-field class="mb-6">
+      <mat-label>Seleccione tipo de aplicación</mat-label>
+      <mat-icon matPrefix>checklist</mat-icon>
+      <mat-select formControlName="applyMode">
+        <mat-option [value]="0">
+          Día
+        </mat-option>
+        <mat-option [value]="1">
+          Periodo
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-checkbox class="mb-12" formControlName="isAdditional">Es Adicional</mat-checkbox>
+
+    <mat-accordion multi class="extra-setting-config">
+        <mat-expansion-panel
+          [expanded]="valueWithOperation"
+          (opened)="setValueWithOperation(true)" 
+          (closed)="setValueWithOperation(false)"
+          hideToggle
+        >
+          <mat-expansion-panel-header>
+            <mat-panel-title>
+              Asignar Operación
+            </mat-panel-title>
+            <mat-panel-description>
+              <mat-checkbox formControlName="withOperation"></mat-checkbox>
+            </mat-panel-description>
+          </mat-expansion-panel-header>
+
+          <div class="config" formGroupName="metadata">
+            <label class="mb-24">Configuración</label>
+
+            <mat-form-field class="mb-12">
+              <mat-label>Seleccione una columna</mat-label>
+              <mat-icon matPrefix>storage</mat-icon>
+              <mat-select formControlName="columnForOperation">
+                <mat-option [value]="1">
+                  Empleado:Sueldo
+                </mat-option>
+                <mat-option [value]="2">
+                  Custom
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field class="mb-12" *ngIf="showMetadataAmount()">
+              <mat-label>Ingrese un monto</mat-label>
+              <mat-icon matPrefix>123</mat-icon>
+              <input type="number" matInput formControlName="amount">
+              @if (getMetadataField('amount')?.hasError('min')) {
+                <mat-error>
+                  El valor minimo es 1
+                </mat-error>
+              }
+
+              @if (getMetadataField('amount')?.hasError('required')) {
+                <mat-error>
+                  El monto es requerido
+                </mat-error>
+              }
+            </mat-form-field>
+
+            <mat-form-field class="mb-12">
+              <mat-label>Seleccione una operación</mat-label>
+              <mat-icon matPrefix>calculate</mat-icon>
+              <mat-select formControlName="mathOperation">
+                <mat-option [value]="1">
+                  Suma
+                </mat-option>
+                <mat-option [value]="2">
+                  Resta
+                </mat-option>
+                <mat-option [value]="3">
+                  Multiplicación
+                </mat-option>
+                <mat-option [value]="4">
+                  Divición
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+        </mat-expansion-panel>
+
+        <mat-expansion-panel
+          [expanded]="valueRequiredApproval"
+          (opened)="setValueRequiredApproval(true)" 
+          (closed)="setValueRequiredApproval(false)"
+          hideToggle
+        >
+          <mat-expansion-panel-header>
+            <mat-panel-title>
+              Aprovación Requerida
+            </mat-panel-title>
+            <mat-panel-description>
+              <mat-checkbox formControlName="requiredApproval"></mat-checkbox>
+            </mat-panel-description>
+          </mat-expansion-panel-header>
+
+          <div class="config">
+            <label class="mb-12 mt-12">Seleccione usuarios aprovadores</label>
+            <mat-form-field class="mb-12">
+              <mat-label>Seleccionar usuarios</mat-label>
+              <mat-icon matPrefix>group</mat-icon>
+              <mat-select formControlName="incidentApprovers" multiple>
+                <mat-option *ngFor="let user of data.listUsers" [value]="user.id">
+                  {{ user.name }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+        </mat-expansion-panel>
+    </mat-accordion>
+  </form>
+</mat-dialog-content>
+<mat-dialog-actions>
+  <button mat-button (click)="onCancel()">Cancelar</button>
+  <button mat-button (click)="submit()" cdkFocusInitial>{{ isEditMode ? 'Guardar' : 'Agregar' }}</button>
+</mat-dialog-actions>

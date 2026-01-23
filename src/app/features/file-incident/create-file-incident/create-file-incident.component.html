@@ -1,0 +1,98 @@
+<h2 mat-dialog-title>Agregar Archivo</h2>
+<mat-dialog-content>
+    <div class="mt-12 ctn-forms">
+        <div class="ctn-fields">
+            <form [formGroup]="createForm">
+                <mat-form-field class="mb-12">
+                    <mat-label>Nombre del archivo</mat-label>
+                    <mat-icon matPrefix>book</mat-icon>
+                    <input type="text" matInput formControlName="name">
+                    @if (getFieldControl('name')?.hasError('required')) {
+                        <mat-error>
+                          El nombre es requerido
+                        </mat-error>
+                    }
+                </mat-form-field>
+            </form>
+            <mat-divider class="mb-12"></mat-divider>
+            <label>Agregar Columna</label>
+            <form [formGroup]="columnForm" class="mt-12">
+                <mat-form-field class="mb-12">
+                    <mat-label>Nombre</mat-label>
+                    <mat-icon matPrefix>text_format</mat-icon>
+                    <input type="text" matInput formControlName="label">
+                    @if (getColumnFielControl('label')?.hasError('required')) {
+                        <mat-error>
+                          El nombre es requerido
+                        </mat-error>
+                    }
+                </mat-form-field>
+
+                <mat-form-field class="mb-12">
+                    <mat-label>Valor</mat-label>
+                    <mat-icon matPrefix>text_format</mat-icon>
+                    <mat-select formControlName="value">
+                        <mat-option value="employe:codigo">Código de empleado</mat-option>
+                        <mat-option value="employe:name">Nombre de empleado</mat-option>
+                        <mat-option value="employe:salary">Sueldo de empleado</mat-option>
+                        <mat-option value="incident:date">Fecha de incidencia</mat-option>
+                        <mat-option value="incident:value">Valor de incidencia</mat-option>
+                        <mat-option value="incident:code">Código de incidencia</mat-option>
+                        <mat-option value="incident:external-code">Código externo de incidencia</mat-option>
+                    </mat-select>
+                </mat-form-field>
+
+                <mat-form-field class="mb-12">
+                    <mat-label>Valor Fijo</mat-label>
+                    <mat-icon matPrefix>text_format</mat-icon>
+                    <input type="text" matInput formControlName="fixedValue">
+                </mat-form-field>
+
+                @if (messageError()) {
+                    <mat-error class="mb-12">
+                      {{ messageError() }}
+                    </mat-error>
+                }
+
+                <button mat-flat-button (click)="addColumn()">
+                    <mat-icon>add</mat-icon>
+                    Agregar
+                </button>
+            </form>
+        </div>
+        <div class="ctn-table-column">
+            <table>
+                <thead>
+                    <tr>
+                        <th>
+                            Etiqueta
+                        </th>
+                        <th>
+                            Valor de Columna
+                        </th>
+                        <th>
+                            Valor Fijo
+                        </th>
+                        <th>
+                            Eliminar
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let column of columns.value; let i = index;">
+                        <td>{{ column.label }}</td>
+                        <td>{{ column.value }}</td>
+                        <td>{{ column.fixedValue }}</td>
+                        <td>
+                            <button mat-icon-button (click)="removeColumn(i)"><mat-icon>delete</mat-icon></button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</mat-dialog-content>
+<mat-dialog-actions>
+    <button mat-button>Cancelar</button>
+    <button mat-button cdkFocusInitial>Guardar</button>
+</mat-dialog-actions>

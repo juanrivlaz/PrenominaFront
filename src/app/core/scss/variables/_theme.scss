@@ -1,0 +1,73 @@
+@use '@angular/material' as mat;
+
+:root {
+    --primary-color: #5a6acf;
+    --second-color: #2196f3;
+}
+
+.bg-primary-color {
+    background-color: var(--primary-color);
+}
+
+.primary-color {
+    color: var(--primary-color);
+}
+
+.bg-second-color {
+    background-color: var(--second-color);
+}
+
+.second-color {
+    color: var(--second-color);
+}
+
+.alert-error {
+    text-align: center;
+
+    & > div {
+        background-color: #ff5a5a !important;
+        padding: 0 !important;
+    }
+}
+
+.alert-success {
+    & > div {
+        background-color: #bfffbf !important;
+        padding: 0 !important;
+        color: #003300 !important;
+    }
+}
+
+.dialog-file-incident {
+    min-width: 750px !important;
+}
+
+
+
+@include mat.form-field-overrides((
+    outlined-outline-color: #e9eef7,
+    outlined-hover-outline-color: #dfe7f7,
+    outlined-focus-outline-color: #277ffe,
+    outlined-label-text-color: #647188,
+    outlined-hover-label-text-color: #647188,
+
+    // prefix icon
+    leading-icon-color: #277ffe,
+));
+
+@include mat.button-overrides((
+    filled-container-color: #277ffe
+));
+
+@include mat.menu-overrides((
+    container-color: #f2f5ff,
+    item-label-text-size: 12px
+));
+
+@include mat.divider-overrides((
+    color: #d7d9e4,
+));
+
+@include mat.progress-bar-overrides((
+    active-indicator-color: var(--primary-color),
+));
