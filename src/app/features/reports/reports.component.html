@@ -70,6 +70,7 @@
             <mat-chip (click)="handleChangeSection('Overtimes')" [ngClass]="{'active': sectionIsActive('Overtimes')}">Horas Extras</mat-chip>
             <mat-chip (click)="handleChangeSection('HoursWorked')" [ngClass]="{'active': sectionIsActive('HoursWorked')}">Horas Laboradas</mat-chip>
             <mat-chip (click)="handleChangeSection('Attendance')" [ngClass]="{'active': sectionIsActive('Attendance')}">Asistencia</mat-chip>
+            <mat-chip (click)="handleChangeSection('Incidences')" [ngClass]="{'active': sectionIsActive('Incidences')}">Incidencias</mat-chip>
         </mat-chip-set>
     </div>
     <mat-divider class="divider"></mat-divider>
@@ -85,6 +86,9 @@
         </div>
         <div class="ctn-item-step" [@fadeInOut]="sectionIsActive('Attendance') ? '1' : '0'">
             <app-attendance-table [dataSource]="attendance" [totalRecords]="totalAttendanceRecords" [pageSize]="attendancePageSize"></app-attendance-table>
+        </div>
+        <div class="ctn-item-step" [@fadeInOut]="sectionIsActive('Incidences') ? '1' : '0'">
+            <app-incidences-table [dataSource]="incidences" [totalRecords]="totalIncidencesRecords" [pageSize]="incidencesPageSize"></app-incidences-table>
         </div>
     </div>
 </div>

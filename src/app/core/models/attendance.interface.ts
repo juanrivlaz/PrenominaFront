@@ -6,7 +6,9 @@ export interface IAttendance {
     label: string,
     day: string,
     typeNom?: number;
+    checkEntryId?: string | null;
     checkEntry?: string | null;
+    checkOutId?: string | null;
     checkOut?: string | null;
     assistanceIncidents?: Array<IAssistanceIncident>;
     customValue?: string;

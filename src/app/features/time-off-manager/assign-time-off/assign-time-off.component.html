@@ -5,7 +5,9 @@
             <mat-label>Seleccione un código</mat-label>
             <mat-icon matPrefix>code</mat-icon>
             <mat-select formControlName="incidentCode">
-                <mat-option *ngFor="let incidentCode of data.incidentCodes" [value]="incidentCode.code">{{ incidentCode.label }}</mat-option>
+                @for (incidentCode of data.incidentCodes; track $index) {
+                    <mat-option [value]="incidentCode.code">{{ incidentCode.label }}</mat-option>
+                }
             </mat-select>
             @if (incidentCodeControl.hasError('required')) {
               <mat-error>
@@ -13,13 +15,26 @@
               </mat-error>
             }
         </mat-form-field>
+    
+        <p>Se le asignarán <b>permisos</b> a <b>{{ data.employeeName }}</b> los siguientes días <br /></p>
+        <ul>
+            @for (item of datesFormat; track $index) {
+                <li>{{ item }}</li>
+            }
+        </ul>
+        <mat-checkbox formControlName="requireAbsenceRequest">
+            ¿Requiere solicitud de ausencia?
+        </mat-checkbox>
+
+        @if (requireAbsenceRequest) {
+            <mat-form-field class="mt-12">
+                <mat-label>Observaciones</mat-label>
+                <textarea matInput formControlName="notes" rows="3"></textarea>
+            </mat-form-field>
+        }
     </form>
-    <p>Se le asignarán <b>permisos</b> a <b>{{ data.employeeName }}</b> los siguientes días <br /></p>
-    <ul>
-        <li *ngFor="let item of datesFormat">{{ item }}</li>
-    </ul>
 </mat-dialog-content>
 <mat-dialog-actions>
   <button mat-button (click)="onCancel()">Cancelar</button>
-  <button mat-button [disabled]="timeOffForm.invalid" (click)="submit()">Confirmar</button>
+  <button mat-flat-button [disabled]="timeOffForm.invalid" (click)="submit()">Confirmar</button>
 </mat-dialog-actions>

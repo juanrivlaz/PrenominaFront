@@ -9,6 +9,28 @@ app-roles {
             gap: 12px;
             align-items: center;
 
+            .ctn-search {
+                .input-search {
+                    position: relative;
+
+                    input {
+                        padding: 7px 11px;
+                        padding-right: 32px;
+                        border-radius: 6px;
+                        border: 1px solid #a6aab2;
+                        color: #1f384c;
+                    }
+
+                    mat-icon {
+                        position: absolute;
+                        right: 0px;
+                        top: 5px;
+                        right: 7px;
+                        color: #a6aab2;
+                    }
+                }
+            }
+
             .ctn-add {
                 button {
                     font-size: 12px;

@@ -59,6 +59,20 @@
                 </div>
             </div>
             <mat-divider class="divider"></mat-divider>
+            <div class="item-setting ctn-zonetime">
+                <div class="labels">
+                    <p>Año del Sistema</p>
+                    <span>Ingresa el año actual del sistema.</span>
+                </div>
+                <div class="values">
+                    <mat-form-field class="mt-12">
+                        <mat-label>Año</mat-label>
+                        <input matInput type="number" step="1" placeholder="ejem: 2025" [formControl]="year">
+                        <button [disabled]="loadingYear()" mat-icon-button matSuffix (click)="handleSaveYear()"><mat-icon>save</mat-icon></button>
+                    </mat-form-field>
+                </div>
+            </div>
+            <mat-divider class="divider"></mat-divider>
         </div>
         <div class="ctn-item-step content-reports" [@fadeInOut]="sectionIsActive('Reports') ? '1' : '0'">
             <div class="item-setting ctn-zonetime">
@@ -70,9 +84,28 @@
                     <mat-form-field class="mt-12">
                         <mat-label>Select an option</mat-label>
                         <mat-select [(ngModel)]="typeDayOffReport">
-                          <mat-option *ngFor="let item of typeDayOffReportOptions" [value]="item.id">{{ item.label }}</mat-option>
+                            @for (item of typeDayOffReportOptions; track $index) {
+                                <mat-option [value]="item.id">{{ item.label }}</mat-option>
+                            }
                         </mat-select>
                         <button [disabled]="loadingTypeDayOffReport()" mat-icon-button matSuffix (click)="handleSaveTypeDayOffReport($event)"><mat-icon>save</mat-icon></button>
+                    </mat-form-field>
+                </div>
+            </div>
+            <div class="item-setting ctn-zonetime">
+                <div class="labels">
+                    <p>Template Prenomina PDF</p>
+                    <span>Tipo de platilla pdf a descargar.</span>
+                </div>
+                <div class="values">
+                    <mat-form-field class="mt-12">
+                        <mat-label>Select an option</mat-label>
+                        <mat-select [(ngModel)]="typePrenominaPdfReport">
+                            @for (item of typePrenominaPdfReportOptions; track $index) {
+                                <mat-option [value]="item.id">{{ item.label }}</mat-option>
+                            }
+                        </mat-select>
+                        <button [disabled]="loadingTypePrenominaPdfReport()" mat-icon-button matSuffix (click)="handleSaveTypePrenominaPdfReport($event)"><mat-icon>save</mat-icon></button>
                     </mat-form-field>
                 </div>
             </div>

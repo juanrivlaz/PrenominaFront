@@ -146,7 +146,7 @@ export class WorkedDayOffComponent implements OnInit, OnDestroy{
             this.configService.setLoading(false);
         })).subscribe({
             next: (response) => {
-                this.listDayOffs.set(response.filter(item => !item.isSunday));
+                this.listDayOffs.set(response.filter(item => !item.isSunday).sort((a, b) => dayjs(a.date).format('MMDD').localeCompare(dayjs(b.date).format('MMDD'))));
             },
             error: (err) => {
                 const message = err.error?.message || 'Ocurrió un error, por favor intentalo más tarde';

@@ -11,5 +11,6 @@ export enum SysKey {
     StylePrimaryColor = '--primary-color',
     StyleSecondColor = '--second-color',
     ActiveTypeNom = 'sys_type-nom',
-    ActiveNumPeriod = 'sys_num-period'
+    ActiveNumPeriod = 'sys_num-period',
+    Year = 'sys_year'
 };

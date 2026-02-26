@@ -20,6 +20,7 @@ export class AuthService {
     private sessionKey = 'auth-token';
     public token?: string;
     public typeTenant: BehaviorSubject<number> = new BehaviorSubject(TypeTenant.Department);
+    public year: BehaviorSubject<number> = new BehaviorSubject(0);
     public timeZone: BehaviorSubject<string> = new BehaviorSubject(TimeZone.Bahia_Banderas.toString());
     public activeCompany: BehaviorSubject<number> = new BehaviorSubject(0);
     public activeTenant: BehaviorSubject<string> = new BehaviorSubject('0');
@@ -81,6 +82,7 @@ export class AuthService {
         this.companies.next(loginResponse.userDetails?.companies || []);
         this.centers.next(loginResponse.userDetails?.centers || []);
         this.supervisors.next(loginResponse.userDetails?.supervisors || []);
+        this.year.next(loginResponse.year);
 
         this.setTypeTenant(loginResponse.typeTenant);
 
@@ -172,6 +174,11 @@ export class AuthService {
         this.timeZone.next(timeZone);
     }
 
+    public setYear(year: number): void {
+        window.localStorage.setItem(SysKey.Year, year.toString());
+        this.year.next(year);
+    }
+
     public getMe(): void {
         this.httpService.get<ILoginResponse>('/User/me').subscribe({
             next: (response) => {
@@ -195,6 +202,12 @@ export class AuthService {
         const activeTenantValue = window.sessionStorage.getItem(SysKey.ActiveTenant);
         const payrollPeriodValue = window.sessionStorage.getItem(SysKey.PayrollPeriod);
         const payrollTypeValue = window.sessionStorage.getItem(SysKey.PayrollType);
+        const yearValue = window.localStorage.getItem(SysKey.Year);
+
+        if (yearValue) {
+            const parseYear = parseInt(yearValue, 10);
+            this.year.next(parseYear);
+        }
 
         if (typeTenantValue) {
             const parseTypeTenant = parseInt(typeTenantValue, 10);

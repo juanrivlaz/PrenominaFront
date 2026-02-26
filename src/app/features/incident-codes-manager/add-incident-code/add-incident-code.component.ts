@@ -8,6 +8,8 @@ import { MatSelectModule } from "@angular/material/select";
 import { IncidentCodesManagerService } from "../incident-codes-manager.service";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { MatExpansionModule } from "@angular/material/expansion";
+import { finalize } from "rxjs";
+import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 
 @Component({
     selector: 'app-add-incident-code',
@@ -19,7 +21,8 @@ import { MatExpansionModule } from "@angular/material/expansion";
         MatDialogActions,
         MatDialogTitle,
         MatSelectModule,
-        MatExpansionModule
+        MatExpansionModule,
+        MatProgressSpinnerModule
     ],
     providers: [IncidentCodesManagerService],
     templateUrl: './add-incident-code.component.html',
@@ -34,6 +37,7 @@ export class AddIncidentCodeComponent {
     public incidentForm: FormGroup;
     public showMetadataAmount: WritableSignal<boolean> = signal(false);
     public isEditMode: boolean = !!this.data.item;
+    public loading = false;
 
     constructor(private readonly service: IncidentCodesManagerService) {
         this.incidentForm = new FormGroup({
@@ -62,6 +66,8 @@ export class AddIncidentCodeComponent {
                 columnForOperation: new FormControl(this.data.item?.incidentCodeMetadata?.columnForOperation ?? ''),
             }),
             incidentApprovers: new FormControl(this.data.item?.incidentApprovers?.map(approver => approver.userId) ?? ''),
+            restrictedWithRoles: new FormControl<boolean>(this.data.item?.restrictedWithRoles ?? false),
+            allowedRoles: new FormControl<Array<string>>(this.data.item?.incidentCodeAllowedRoles?.map(role => role.roleId) ?? []),
         });
 
         this.incidentForm.get('withOperation')?.valueChanges.subscribe((value) => {
@@ -86,8 +92,16 @@ export class AddIncidentCodeComponent {
             }
         });
 
+        this.incidentForm.get('restrictedWithRoles')?.valueChanges.subscribe((value) => {
+            if (value) {
+                this.incidentForm.get('allowedRoles')?.setValidators([Validators.required, Validators.minLength(1)]);
+            } else {
+                this.incidentForm.get('allowedRoles')?.clearValidators();
+            }
+        });
+
         this.incidentForm.get('metadata')?.get('columnForOperation')?.valueChanges.subscribe((value) => {
-            if (value === 2) {
+            if (value === 1) {
                 this.incidentForm.get('metadata')?.get('amount')?.setValidators([Validators.required, Validators.min(1)]);
                 this.showMetadataAmount.set(true);
             } else {
@@ -96,7 +110,7 @@ export class AddIncidentCodeComponent {
             }
         });
 
-        if (this.data.item?.incidentCodeMetadata?.columnForOperation === 2) {
+        if (this.data.item?.incidentCodeMetadata?.columnForOperation === 1) {
             this.showMetadataAmount.set(true);
         }
     }
@@ -129,12 +143,20 @@ export class AddIncidentCodeComponent {
         return this.incidentForm.get('requiredApproval')?.value || false;
     }
 
+    public get valueRestricted(): boolean {
+        return this.incidentForm.get('restrictedWithRoles')?.value || false;
+    }
+
     public setValueWithOperation(value: boolean): void {
         this.incidentForm.get('withOperation')?.setValue(value);
     }
 
     public setValueRequiredApproval(value: boolean): void {
         this.incidentForm.get('requiredApproval')?.setValue(value);
+    }
+
+    public setValueRestricted(value: boolean): void {
+        this.incidentForm.get('restrictedWithRoles')?.setValue(value);
     }
 
     public getMetadataField(field: string): AbstractControl | null {
@@ -161,8 +183,10 @@ export class AddIncidentCodeComponent {
                 code: this.data.item.code
             });
         }
+
+        this.loading = true;
         
-        fetchService.subscribe({
+        fetchService.pipe(finalize(() => this.loading = false)).subscribe({
             next: (response) => {
                 this.dialogRef.close(response);
                 this._snackBar.open(`La incidencia ha sido ${this.isEditMode ? 'actualizada' : 'creada'}`, '✅', {

@@ -12,7 +12,9 @@
             <mat-label>Seleccione un código</mat-label>
             <mat-icon matPrefix>code</mat-icon>
             <mat-select formControlName="incidentCode">
-                <mat-option *ngFor="let incident of data.incidentCodes" [value]="incident.code">{{ incident.label }}</mat-option>
+                @for (incident of data.incidentCodes; track $index ) {
+                    <mat-option [value]="incident.code">{{ incident.label }}</mat-option>
+                }
             </mat-select>
             @if (getFieldControl('incidentCode')?.hasError('required')) {
               <mat-error>
@@ -32,19 +34,21 @@
                 </mat-error>
             }
         </mat-form-field>
-        <mat-form-field *ngIf="withOperation">
-            <mat-label>Ingrese un valor</mat-label>
-            <mat-icon matPrefix>123</mat-icon>
-            <input type="number" matInput formControlName="customValue">
-            @if (getFieldControl('customValue')?.hasError('required')) {
-                <mat-error>
-                  El valor es requerido
-                </mat-error>
-            }
-        </mat-form-field>
+        @if (withOperation) {
+            <mat-form-field>
+                <mat-label>Ingrese un valor</mat-label>
+                <mat-icon matPrefix>123</mat-icon>
+                <input type="number" matInput formControlName="customValue">
+                @if (getFieldControl('customValue')?.hasError('required')) {
+                    <mat-error>
+                    El valor es requerido
+                    </mat-error>
+                }
+            </mat-form-field>
+        }
     </form>
 </mat-dialog-content>
 <mat-dialog-actions>
     <button mat-button (click)="onCancel()">Cancelar</button>
-    <button mat-button (click)="submit()">Asignar</button>
+    <button mat-button [disabled]="formGroup.invalid" (click)="submit()">Asignar</button>
 </mat-dialog-actions>

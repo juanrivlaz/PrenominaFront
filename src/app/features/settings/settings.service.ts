@@ -29,9 +29,21 @@ export class SettingsService {
         });
     }
 
+    public updateTypePrenominaPdfReport(TypePrenominaPdfReport: number): Observable<boolean> {
+        return this.httpService.put<boolean>('/SystemConfig/type-prenomina-pdf-report', {
+            TypePrenominaPdfReport,
+        });
+    }
+
     public updateMinToOvertimeReport(Minutes: number): Observable<boolean> {
         return this.httpService.put<boolean>('/SystemConfig/min-to-overtime-report', {
             Minutes,
+        });
+    }
+
+    public updateYear(Year: number): Observable<boolean> {
+        return this.httpService.put<boolean>('/SystemConfig/year', {
+            Year,
         });
     }
 }

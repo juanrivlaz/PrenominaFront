@@ -26,6 +26,9 @@ import { combineLatest, debounceTime, finalize } from "rxjs";
 import { IAttendanceReport } from "@core/models/reports/attendance.interface";
 import { AttendanceTableComponent } from "./attendance-table/attendance-table.component";
 import { MatDatepicker, MatDatepickerModule } from "@angular/material/datepicker";
+import { IncidencesTableComponent } from "./incidences-table/incidences-table.component";
+import { IIncidenceReport } from "@core/models/reports/incidences.interface";
+import dayjs from "dayjs";
 
 @Component({
     selector: 'app-reports',
@@ -35,12 +38,13 @@ import { MatDatepicker, MatDatepickerModule } from "@angular/material/datepicker
         MatChipsModule,
         MatDividerModule,
         MatMenuModule,
+        MatDatepickerModule,
         ReactiveFormsModule,
         DelaysTableComponent,
         HoursWorkedTableComponent,
         OvertimesTableComponent,
         AttendanceTableComponent,
-        MatDatepickerModule
+        IncidencesTableComponent,
     ],
     providers: [ReportsService],
     templateUrl: './reports.component.html',
@@ -69,6 +73,10 @@ export class ReportsComponent implements OnInit {
     public attendance: MatTableDataSource<IAttendanceReport> = new MatTableDataSource<IAttendanceReport>([]);
     public totalAttendanceRecords: number = 0;
     public attendancePageSize: number = 1;
+
+    public incidences: MatTableDataSource<IIncidenceReport> = new MatTableDataSource<IIncidenceReport>([]);
+    public totalIncidencesRecords: number = 0;
+    public incidencesPageSize: number = 1;
 
     public activeSection = model<Section>(Section.Delays);
     public searchControl = new FormControl<string>('');
@@ -180,6 +188,8 @@ export class ReportsComponent implements OnInit {
             this.getHoursWorked(search, filterDates);
         } else if (this.activeSection() === Section.Attendance) {
             this.getAttendance(search, filterDates);
+        } else if (this.activeSection() === Section.Incidences) {
+            this.getIncidences(search, filterDates);
         }
     }
 
@@ -193,6 +203,8 @@ export class ReportsComponent implements OnInit {
         } else if (this.activeSection() === Section.HoursWorked && this.hoursWorked.data.length) {
             return;
         } else if (this.activeSection() === Section.Attendance && this.attendance.data.length) {
+            return;
+        } else if (this.activeSection() === Section.Incidences && this.incidences.data.length) {
             return;
         }
 
@@ -302,6 +314,21 @@ export class ReportsComponent implements OnInit {
             });
         } else if (this.activeSection() === Section.Attendance) {
             service = this.reportsService.downloadExcelAttendance(
+            {
+                page: 1,
+                pageSize: 30,
+                payroll: this.payroll?.typeNom || undefined,
+                numPeriod: this.period?.numPeriod,
+                search: this.searchControl.value || '',
+                ...(this.filterForDates.value.start && this.filterForDates.value.end ? {
+                    filterDates: {
+                        start: this.filterForDates.value.start!,
+                        end: this.filterForDates.value.end!,
+                    }
+                } : {})
+            });
+        } else if (this.activeSection() === Section.Incidences) {
+            service = this.reportsService.downloadExcelIncidences(
             {
                 page: 1,
                 pageSize: 30,
@@ -453,6 +480,42 @@ export class ReportsComponent implements OnInit {
                 this.attendance.data = response;
                 this.totalAttendanceRecords = response.length;
                 this.attendancePageSize = 30;
+            },
+            error: (err) => {
+                const message = err.error?.message || 'Ocurrió un error, por favor intentalo más tarde';
+
+                this._snackBar.open(message, '❌', {
+                    horizontalPosition: 'center',
+                    verticalPosition: 'top',
+                    panelClass: 'alert-error',
+                    duration: 3000
+                });
+            }
+        });
+    }
+
+    private getIncidences(search: string = '', filterDates?: { start: Date; end: Date }): void {
+        this.appConfigService.setLoading(true);
+        this.reportsService.getIncidences({
+            page: 1,
+            pageSize: 30,
+            payroll: this.payroll?.typeNom || undefined,
+            numPeriod: this.period?.numPeriod,
+            search: search || this.searchControl.value || '',
+            filterDates,
+        }).pipe(finalize(() => {
+            this.appConfigService.setLoading(false);
+        })).subscribe({
+            next: (response) => {
+                this.incidences.data = response.sort((a, b) => {
+                    if (a.code !== b.code) {
+                        return a.code - b.code;
+                    }
+
+                    return dayjs(a.date).valueOf() - dayjs(b.date).valueOf();
+                });
+                this.totalIncidencesRecords = response.length;
+                this.incidencesPageSize = 30;
             },
             error: (err) => {
                 const message = err.error?.message || 'Ocurrió un error, por favor intentalo más tarde';

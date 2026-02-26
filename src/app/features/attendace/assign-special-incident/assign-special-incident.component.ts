@@ -34,8 +34,20 @@ export class AssignSpecialIncidentComponent {
             incidentCode: new FormControl('', {
                 validators: [Validators.required],
             }),
-            date: new FormControl(''),
-            customValue: new FormControl('')
+            date: new FormControl('', [Validators.required]),
+            customValue: new FormControl('', [Validators.min(1)])
+        });
+
+        this.formGroup.get('incidentCode')?.valueChanges.subscribe((value) => {
+            const find = this.data.incidentCodes.find((item) => item.code === value);
+
+            if (find?.withOperation) {
+                this.formGroup.get('customValue')?.setValidators([Validators.required, Validators.min(1)]);
+            } else {
+                this.formGroup.get('customValue')?.setValidators([Validators.min(1)]);
+            }
+
+            this.formGroup.get('customValue')?.updateValueAndValidity();
         });
     }
 
@@ -44,9 +56,6 @@ export class AssignSpecialIncidentComponent {
     }
 
     public submit(): void {
-        console.log({
-            values: this.formGroup.value,
-        });
         this.dialogRef.close(this.formGroup.value);   
     }
 

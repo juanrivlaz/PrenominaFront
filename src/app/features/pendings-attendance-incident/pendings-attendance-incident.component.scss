@@ -71,6 +71,11 @@ app-pendings-attendamce-incident {
                     text-align: center;
                     border-bottom: 1px solid #e4e8ef;
 
+                    &.mat-column-employee {
+                        max-width: fit-content !important;
+                        white-space: nowrap;
+                    }
+
                     &.name {
                         max-width: 110px;
 
@@ -110,6 +115,14 @@ app-pendings-attendamce-incident {
                             &:active {
                                 background-color: rgb(255, 207, 207);
                             }
+                        }
+                    }
+
+                    .btn-download {
+                        .mdc-button__label {
+                            display: flex;
+                            gap: 5px;
+                            align-items: center;
                         }
                     }
                 }

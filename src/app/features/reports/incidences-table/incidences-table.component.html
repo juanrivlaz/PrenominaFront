@@ -1,0 +1,47 @@
+<table mat-table #table [dataSource]="dataSource">
+  <ng-container matColumnDef="code">
+    <th mat-header-cell *matHeaderCellDef> Código </th>
+    <td mat-cell *matCellDef="let row"> {{row.code}} </td>
+  </ng-container>
+  <ng-container matColumnDef="name">
+    <th mat-header-cell *matHeaderCellDef> Nombre </th>
+    <td mat-cell *matCellDef="let row"> {{row.fullName}} </td>
+  </ng-container>
+  <ng-container matColumnDef="department">
+    <th mat-header-cell *matHeaderCellDef> Departamento </th>
+    <td mat-cell *matCellDef="let row"> {{row.department}} </td>
+  </ng-container>
+  <ng-container matColumnDef="jobPosition">
+    <th mat-header-cell *matHeaderCellDef> Puesto </th>
+    <td mat-cell *matCellDef="let row"> {{row.jobPosition}} </td>
+  </ng-container>
+  <ng-container matColumnDef="date">
+    <th mat-header-cell *matHeaderCellDef> Fecha </th>
+    <td mat-cell *matCellDef="let row"> {{row.date | date: 'dd/MM/yyyy'}} </td>
+  </ng-container>
+  <ng-container matColumnDef="incidenceCode">
+    <th mat-header-cell *matHeaderCellDef> Incidencia </th>
+    <td mat-cell *matCellDef="let row"> {{row.incidenceCode}} </td>
+  </ng-container>
+  <ng-container matColumnDef="description">
+    <th mat-header-cell *matHeaderCellDef> Descripción </th>
+    <td mat-cell *matCellDef="let row"> {{row.incidenceDescription}} </td>
+  </ng-container>
+  <ng-container matColumnDef="userFullName">
+    <th mat-header-cell *matHeaderCellDef> Usuario </th>
+    <td mat-cell *matCellDef="let row"> {{row.userFullName}} </td>
+  </ng-container>
+  <ng-container matColumnDef="createdAt">
+    <th mat-header-cell *matHeaderCellDef> Fecha de Creación </th>
+    <td mat-cell *matCellDef="let row"> {{row.createdAt | date: 'dd/MM/yyyy'}} </td>
+  </ng-container>
+  <tr mat-header-row *matHeaderRowDef="columns"></tr>
+  <tr mat-row *matRowDef="let row; columns: columns;"></tr>
+</table>
+
+<mat-paginator
+    [length]="totalRecords"
+    [pageSize]="pageSize"
+    [pageSizeOptions]="[5, 10, 25, 100]"
+    (page)="onPageChange($event)">
+</mat-paginator>

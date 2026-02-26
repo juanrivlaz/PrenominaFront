@@ -27,4 +27,11 @@ export class PeriodService {
 
         return this.httpService.post<Array<IPrenominaPeriod>>('/Period/by-file', formData);
     }
+
+    public changeActive(id: string, isActive: boolean): Observable<boolean> {
+        return this.httpService.patch<boolean>(`/Period/change-active`, {
+            periodId: id,
+            isActive,
+        });
+    }
 }

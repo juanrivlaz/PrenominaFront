@@ -1,4 +1,4 @@
-<h2 mat-dialog-title>Agregar Rol</h2>
+<h2 mat-dialog-title>{{ isEditMode ? 'Editar Rol' : 'Agregar Rol' }}</h2>
 <mat-dialog-content>
     <form [formGroup]="createForm" class="mt-12">
         <mat-form-field class="mb-12">
@@ -32,11 +32,21 @@
             }
         </mat-form-field>
 
-        <mat-checkbox *ngIf="hasTasistencia" formControlName="canClosePayrollPeriod">Cierre de Periodo</mat-checkbox>
+        @if (hasTasistencia) {
+          <mat-checkbox formControlName="canClosePayrollPeriod">Cierre de Periodo</mat-checkbox>
+          <mat-checkbox formControlName="canModifyCheckins">Modificar Checadas</mat-checkbox>
+        }
+
+        @if (hasPeriods) {
+          <mat-checkbox formControlName="canManagePeriods">Activar/Desactivar Periodos</mat-checkbox>
+        }
     </form>
 </mat-dialog-content>
 <mat-dialog-actions>
-  <mat-spinner diameter="25" *ngIf="loading()"></mat-spinner>
-  <button *ngIf="!loading()" mat-button mat-dialog-close>Cancelar</button>
-  <button *ngIf="!loading()" mat-button (click)="submit()" cdkFocusInitial>Confirmar</button>
+  @if (loading()) {
+    <mat-spinner diameter="25"></mat-spinner>
+  } @else {
+    <button mat-button mat-dialog-close>Cancelar</button>
+    <button mat-flat-button (click)="submit()" cdkFocusInitial>Confirmar</button>
+  }
 </mat-dialog-actions>

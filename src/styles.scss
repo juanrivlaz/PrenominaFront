@@ -1,1 +1,39 @@
 /* You can add global styles to this file, and also import other style files */
+
+// Angular Material Core
+@use '@angular/material' as mat;
+@use 'app/core/scss/core';
+
+// Include the common styles for Angular Material
+@include mat.core();
+
+// Define your theme using Material 3
+$my-theme: mat.define-theme((
+  color: (
+    theme-type: light,
+    primary: mat.$azure-palette,
+    tertiary: mat.$blue-palette,
+  ),
+  typography: (
+    brand-family: 'Inter, sans-serif',
+    plain-family: 'Inter, sans-serif',
+  ),
+  density: (
+    scale: 0,
+  )
+));
+
+// Include theme styles for core and each component
+@include mat.all-component-themes($my-theme);
+
+// Your custom styles
+
+html, body {
+  margin: 0;
+  height: 100%;
+  width: 100%;
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+}

@@ -1,0 +1,48 @@
+<h2 mat-dialog-title>Modificar Asistencia</h2>
+<mat-dialog-content>
+  <div class="ctn-employee">
+    <app-avatar [name]="data.employeeName" />
+    <div class="name">
+      <p>{{ data.employeeName }}</p>
+      <span>Código {{ data.employeeCode }} | {{ data.employeeActivity }}</span>
+    </div>
+  </div>
+  <span class="mb-12 mt-0 fs-16 date">{{ data.date | date:'fullDate' }}</span>
+  
+  <div class="ctn-form mt-24">
+    <form [formGroup]="formGroup">
+      <mat-form-field>
+        <mat-label>Entrada</mat-label>
+        <input matInput type="time" formControlName="checkEntry">
+        @if (formGroup.get('checkEntry')?.hasError('required')) {
+          <mat-error> La hora de entrada es requerida </mat-error>
+        }
+
+        <mat-icon matSuffix>schedule</mat-icon>
+      </mat-form-field>
+      <mat-icon class="arrow-icon">arrow_forward_ios</mat-icon>
+      <mat-form-field>
+        <mat-label>Salida</mat-label>
+        <input matInput type="time" formControlName="checkOut">
+        @if (formGroup.get('checkOut')?.hasError('required')) {
+          <mat-error> La hora de salida es requerida </mat-error>
+        }
+
+        @if (formGroup.get('checkOut')?.hasError('errorAttendance')) {
+          <mat-error> La hora de salida debe ser mayor a la hora de entrada </mat-error>
+        }
+
+        <mat-icon matSuffix>schedule</mat-icon>
+      </mat-form-field>
+
+    </form>
+  </div>
+</mat-dialog-content>
+<mat-dialog-actions>
+  @if (loading) {
+    <mat-spinner diameter="30"></mat-spinner>
+  } @else {
+    <button mat-button (click)="cancel()" cdkFocusInitial>Cancelar</button>
+    <button mat-flat-button (click)="confirm()" [disabled]="formGroup.invalid">Confirmar</button>
+  }
+</mat-dialog-actions>

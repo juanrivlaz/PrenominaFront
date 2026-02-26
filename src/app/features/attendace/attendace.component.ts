@@ -34,6 +34,9 @@ import { ConfirmClosePeriodComponent } from "./confirm-close-period/confirm-clos
 import { IConfirmClosePeriod } from "./confirm-close-period/confirm-close-period.interface";
 import { IPeriodStatus } from "@core/models/period-status.interface";
 import { AppConfigService } from "@core/services/app-config/app-config.service";
+import { ChangeAttendanceComponent } from "./change-attendance/change-attendance.component";
+import { IChangeAttendance } from "./change-attendance/change-attendance.interface";
+import { IChangeAttendanceResponse } from "./change-attendance/change-attendance-response.interface";
 
 @Component({
     selector: 'app-attendace',
@@ -97,6 +100,7 @@ export class AttendaceComponent implements OnInit {
     });
     public listDayOffs: Array<IDayOffs> = [];
     public canClosePayrollPeriod: boolean = false;
+    public canModifyCheckins: boolean = false;
 
     constructor(
         private readonly service: AttendaceService,
@@ -126,7 +130,11 @@ export class AttendaceComponent implements OnInit {
         }
 
         this.authService.sectionsForAccess.subscribe((sections) => {
-            this.canClosePayrollPeriod = this.authService.role === 'sudo' || sections.some((item) => item.sectionsCode.includes('tasistencia') && item.permissions["CanClosePayrollPeriod"] === true);
+            const role = this.authService.role;
+            const sectionTAsistencia = sections.find((item) => item.sectionsCode.includes('tasistencia'));
+
+            this.canClosePayrollPeriod = role === 'sudo' || (sectionTAsistencia !== undefined && sectionTAsistencia.permissions["CanClosePayrollPeriod"] === true);
+            this.canModifyCheckins = role === 'sudo' || (sectionTAsistencia !== undefined && sectionTAsistencia.permissions["CanModifyCheckins"] === true);
         });
     }
 
@@ -281,10 +289,10 @@ export class AttendaceComponent implements OnInit {
         });
     }
 
-    public setIncidencia(incidentCode: string, employeeCode: number, company: number, attendance: IAttendance) {
+    public setIncidencia(incidentCode: string, employeeCode: number, company: number, attendance: IAttendance, customValue?: number): void {
         const identifyIncident = `${employeeCode}${company}${attendance.date}`;
         this.listItemsLoading.update(items => [...items, identifyIncident]);
-        this.service.insertAttendaceIncident(incidentCode, attendance.date, employeeCode).pipe(finalize(() => {
+        this.service.insertAttendaceIncident(incidentCode, attendance.date, employeeCode, customValue).pipe(finalize(() => {
             this.listItemsLoading.update(items => items.filter((item) => item !== identifyIncident));
         })).subscribe({
             next: (response) => {
@@ -322,11 +330,6 @@ export class AttendaceComponent implements OnInit {
                         isAdditional: response.itemIncidentCode.isAdditional,
                     }];
                 }
-
-                console.log({
-                    response,
-                    assistanceIncidents: attendance.assistanceIncidents,
-                });
 
                 this._snackBar.open('Incidencia registrada', '✅', {
                   horizontalPosition: 'center',
@@ -439,7 +442,7 @@ export class AttendaceComponent implements OnInit {
                         ...employee.attendances![findAttendance].assistanceIncidents || [],
                     ];
 
-                    this.setIncidencia(result.incidentCode, employee.codigo, employee.company, employee.attendances![findAttendance]);
+                    this.setIncidencia(result.incidentCode, employee.codigo, employee.company, employee.attendances![findAttendance], result.customValue);
                 } else {
                     this._snackBar.open('Fecha no valida', undefined, {
                         horizontalPosition: 'center',
@@ -626,6 +629,47 @@ export class AttendaceComponent implements OnInit {
         setTimeout(() => {
             this.get();
         }, 200);
+    }
+
+    public handleChangeAttendance(employee: IEmployeeAttendance, attendance: IAttendance): void {
+        const dialogRef = this.dialog.open<ChangeAttendanceComponent, IChangeAttendance, IChangeAttendanceResponse>(ChangeAttendanceComponent, {
+            data: {
+                date: attendance.date,
+                day: attendance.day,
+                label: attendance.label,
+                employeeId: employee.codigo,
+                employeeName: `${employee.name} ${employee.lastName} ${employee.mLastName}`,
+                employeeCode: employee.codigo.toString(),
+                employeeActivity: employee.activity,
+                checkEntryId: attendance.checkEntryId,
+                checkEntry: attendance.checkEntry,
+                checkOutId: attendance.checkOutId,
+                checkOut: attendance.checkOut,
+                service: this.service,
+            }
+        });
+
+        dialogRef.afterClosed().subscribe(result => {
+            if (result?.confirm) {
+                this._snackBar.open('Asistencia actualizada', '✅', {
+                    horizontalPosition: 'center',
+                    verticalPosition: 'top',
+                    panelClass: 'alert-success',
+                    duration: 3000
+                });
+
+                setTimeout(() => {
+                    this.get();
+                }, 200);
+            } else if (result?.errorMessage) {
+                this._snackBar.open(result.errorMessage, '❌', {
+                    horizontalPosition: 'center',
+                    verticalPosition: 'top',
+                    panelClass: 'alert-error',
+                    duration: 3000
+                });
+            }
+        });
     }
 
     private generarFechas(startDate: string | Date, endDate: string | Date): Array<GeneratedDates> {

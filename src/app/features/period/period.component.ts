@@ -2,18 +2,20 @@ import { CommonModule } from "@angular/common";
 import { Component, inject, OnInit, signal, ViewEncapsulation, WritableSignal } from "@angular/core";
 import { MatMenuModule } from "@angular/material/menu";
 import { MatProgressBarModule } from "@angular/material/progress-bar";
-import { MaterialModule } from "@shared/modules/material/material.module";
 import { PeriodService } from "./period.service";
-import { IPayroll } from "@core/models/payroll.interface";
+import { IPayroll } from "../../core/models/payroll.interface";
 import { finalize } from "rxjs";
 import { MatSnackBar } from "@angular/material/snack-bar";
-import { IPrenominaPeriod } from "@core/models/prenomina-period.interface";
+import { IPrenominaPeriod } from "../../core/models/prenomina-period.interface";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
-import { AppConfigService } from "@core/services/app-config/app-config.service";
-import { SysKey } from "@core/models/enum/sys-key";
+import { AppConfigService } from "../../core/services/app-config/app-config.service";
+import { SysKey } from "../../core/models/enum/sys-key";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { MatDialog } from "@angular/material/dialog";
 import { ChangeStatusComponent } from "./change-status/change-status.component";
+import { MaterialModule } from "../../shared/modules/material/material.module";
+import { IChangeStatusOutput } from "./change-status/change-status-output.interface";
+import { IChangeStatus } from "./change-status/change-status.interface";
 
 @Component({
     selector: 'app-period',
@@ -76,12 +78,15 @@ export class PeriodComponent implements OnInit {
     }
 
     public changeStatusPeriod(period: IPrenominaPeriod): void {
-        const dialogRef = this.dialog.open<ChangeStatusComponent, IPrenominaPeriod>(ChangeStatusComponent, {
-            data: period
+        const dialogRef = this.dialog.open<ChangeStatusComponent, IChangeStatus>(ChangeStatusComponent, {
+            data: {
+                ...period,
+                service: this.service
+            }
         });
 
-        dialogRef.afterClosed().subscribe((result: boolean) => {
-            if (result) {
+        dialogRef.afterClosed().subscribe((result: IChangeStatusOutput) => {
+            if (result.confirm) {
                 this._snackBar.open('El periodo cambió de estatus correctamente', '✅', {
                     horizontalPosition: 'center',
                     verticalPosition: 'top',
@@ -90,6 +95,15 @@ export class PeriodComponent implements OnInit {
                 });
                 
                 this.getPeriods();
+            } else {
+                if (result.errorMessage) {
+                    this._snackBar.open(result.errorMessage, '❌', {
+                        horizontalPosition: 'center',
+                        verticalPosition: 'top',
+                        panelClass: 'alert-error',
+                        duration: 3000
+                    });
+                }
             }
         });
     }

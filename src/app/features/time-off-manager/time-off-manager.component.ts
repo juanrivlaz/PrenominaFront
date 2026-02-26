@@ -21,6 +21,7 @@ import { AppConfigService } from "@core/services/app-config/app-config.service";
 import { FormControl, ReactiveFormsModule } from "@angular/forms";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { SysKey } from "@core/models/enum/sys-key";
+import { IAssignTimeOffOutput } from "./assign-time-off/assign-time-off-output.interface";
 
 @Component({
     selector: 'app-time-off-manager',
@@ -102,9 +103,9 @@ export class TimeOffManagerComponent implements OnInit {
     }
 
     public getInit(): void {
-        this.loading.set(true);
+        this.configService.setLoading(true);
         this.serviceAttendace.getInit().pipe(finalize(() => {
-            this.loading.set(false);
+            this.configService.setLoading(false);
         })).subscribe({
             next: (response) => {
                 const now = dayjs();
@@ -193,7 +194,7 @@ export class TimeOffManagerComponent implements OnInit {
     }
 
     public assignTimeOff(assignTimeOff: IAssignTimeOff): void {
-        const dialogRef = this.dialog.open<AssignTimeOffComponent, IAssignTimeOff, { incidentCode: string }>(AssignTimeOffComponent, {
+        const dialogRef = this.dialog.open<AssignTimeOffComponent, IAssignTimeOff, IAssignTimeOffOutput>(AssignTimeOffComponent, {
             data: assignTimeOff,
         });
 
@@ -203,14 +204,16 @@ export class TimeOffManagerComponent implements OnInit {
             this.selectedEmployee = undefined;
 
             if (result !== undefined) {
-                this.loading.set(true);
+                this.configService.setLoading(true);
 
                 this.service.registerToUser({
                     dates: assignTimeOff.dates.map((item) => dayjs(item).format('YYYY-MM-DD')),
                     employeeCode: assignTimeOff.employeeCode,
-                    incidentCode: result.incidentCode
+                    incidentCode: result.incidentCode,
+                    notes: result.notes,
+                    requireAbsenceRequest: result.requireAbsenceRequest,
                 }).pipe(finalize(() => {
-                    this.loading.set(false);
+                    this.configService.setLoading(false);
                 })).subscribe({
                     next: (result) => {
                         const currentEmployees = this.listEmployees().map((item) => {
@@ -229,7 +232,13 @@ export class TimeOffManagerComponent implements OnInit {
                         });
                     },
                     error: (err) => {
-                        console.log(err);
+                        const message = err.error?.message || 'Ocurrió un error, por favor intentalo más tarde';
+                        this._snackBar.open(message, '❌', {
+                            horizontalPosition: 'center',
+                            verticalPosition: 'top',
+                            panelClass: 'alert-error',
+                            duration: 3000
+                        });
                     }
                 });
             }
@@ -253,7 +262,7 @@ export class TimeOffManagerComponent implements OnInit {
 
         if (!this.period) {
             if (!noAlert) {
-                this._snackBar.open('Selecciona un periodo', undefined, {
+                this._snackBar.open('Selecciona un periodo', '⚠️', {
                     horizontalPosition: 'center',
                     verticalPosition: 'top',
                     panelClass: 'alert-error',
@@ -288,7 +297,7 @@ export class TimeOffManagerComponent implements OnInit {
 
     public syncIncapacity(): void {
         if (!this.period) {
-            this._snackBar.open('Selecciona un periodo', undefined, {
+            this._snackBar.open('Selecciona un periodo', '⚠️', {
                 horizontalPosition: 'center',
                 verticalPosition: 'top',
                 panelClass: 'alert-error',

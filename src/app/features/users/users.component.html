@@ -3,7 +3,7 @@
         <div class="ctn-others">
             <div class="ctn-search">
                 <div class="input-search">
-                    <input type="search" name="search" id="search" placeholder="Buscar">
+                    <input type="search" name="search" id="search" placeholder="Buscar" (keyup)="handleChangeSearch($event)">
                     <mat-icon>search</mat-icon>
                 </div>
             </div>
@@ -22,7 +22,7 @@
             <th mat-header-cell *matHeaderCellDef> Nombre </th>
             <td mat-cell *matCellDef="let row" class="name">
                 <div class="ctn-name">
-                    <app-avatar name="Axel Daniel Rivera Maravillas" />
+                    <app-avatar [name]="row.name" />
                     <div class="labels">
                         <p>{{ row.name }}</p>
                         <span>Últ. Conex: 30m</span>

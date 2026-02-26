@@ -6,4 +6,5 @@ export interface ILoginResponse {
     username: string;
     userDetails: UserDetails;
     typeTenant: TypeTenant;
+    year: number;
 }

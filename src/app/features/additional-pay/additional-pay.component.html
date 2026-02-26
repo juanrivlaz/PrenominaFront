@@ -1,0 +1,153 @@
+<div class="container module-container">
+  <div class="ctn-filter">
+    <div class="ctn-period">
+      <button
+        class="btn-filter-tn"
+        mat-flat-button
+        [matMenuTriggerFor]="menuTypeNom"
+        matTooltip="Tipo De Nómina"
+      >
+        T. Nómina | {{ payroll?.typeNom }} - {{ payroll?.label }}
+      </button>
+      <mat-menu #menuTypeNom="matMenu">
+        <button
+          mat-menu-item
+          *ngFor="let item of listPayrolls()"
+          (click)="setPayroll(item.typeNom)"
+        >
+          @if (payroll?.typeNom === item.typeNom) {
+            <mat-icon>done</mat-icon>
+          }
+
+          {{ item.typeNom }} | {{ item.label || item.typeNom }}
+        </button>
+      </mat-menu>
+      <button
+        class="btn-filter-pc"
+        mat-flat-button
+        [matMenuTriggerFor]="menuPeriodo"
+        matTooltip="Periodo de Corte"
+      >
+        <mat-icon>calendar_month</mat-icon> P. Corte {{ period?.numPeriod }} |
+        {{ period?.startDate | date: "dd/MM/yyyy" }} -
+        {{ period?.closingDate | date: "dd/MM/yyyy" }}
+      </button>
+      <mat-menu #menuPeriodo="matMenu" class="list-period-menu">
+        <button
+          mat-menu-item
+          *ngFor="let item of listPeriods"
+          (click)="setPeriod(item.numPeriod)"
+        >
+          @if (period?.numPeriod === item.numPeriod) {
+            <mat-icon>done</mat-icon>
+          }
+
+          {{ item.numPeriod }} | {{ item.startDate | date: "dd/MM/yyyy" }} -
+          {{ item.closingDate | date: "dd/MM/yyyy" }}
+        </button>
+      </mat-menu>
+    </div>
+    <div class="ctn-others">
+      <div class="ctn-search">
+        <div class="input-search">
+          <input
+            type="search"
+            name="search"
+            id="search"
+            placeholder="Buscar"
+            (keyup)="handleChangeSearch($event)"
+          />
+          <mat-icon>search</mat-icon>
+        </div>
+      </div>
+
+      <div class="ctn-export">
+        <button
+          class="btn-filter-tn"
+          mat-flat-button
+          [matMenuTriggerFor]="downloadFile"
+          matTooltip="Exportar A PDF | EXCEL"
+        >
+          <mat-icon>download</mat-icon>
+          Exportar
+        </button>
+        <mat-menu #downloadFile="matMenu">
+          <button mat-menu-item (click)="downloadReport(0)">
+            <img
+              src="assets/icons/pdf.png"
+              alt="pdf"
+              class="mr-12"
+              width="25px"
+            />
+            PDF
+          </button>
+          <button mat-menu-item (click)="downloadReport(1)">
+            <img
+              src="assets/icons/xls.png"
+              alt="xlsx"
+              class="mr-12"
+              width="25px"
+            />
+            EXCEL
+          </button>
+        </mat-menu>
+      </div>
+    </div>
+  </div>
+
+  <table mat-table #table [dataSource]="dataSource">
+    <ng-container matColumnDef="employee">
+      <th mat-header-cell *matHeaderCellDef>Empleado</th>
+      <td mat-cell *matCellDef="let row" class="name">
+        <div class="ctn-name">
+          <app-avatar [name]="row.employeeName" />
+          <div class="labels">
+            <p>{{ row.employeeName }}</p>
+            <span
+              >Cod. {{ row.employeeCode }} | {{ row.employeeActivity }}</span
+            >
+          </div>
+        </div>
+      </td>
+    </ng-container>
+    <ng-container matColumnDef="date">
+      <th mat-header-cell *matHeaderCellDef>Fecha</th>
+      <td mat-cell *matCellDef="let row">{{ row.date | date }}</td>
+    </ng-container>
+    <ng-container matColumnDef="incidentCode">
+      <th mat-header-cell *matHeaderCellDef>Código de Incidente</th>
+      <td mat-cell *matCellDef="let row">{{ row.incidentCode }}</td>
+    </ng-container>
+    <ng-container matColumnDef="column">
+      <th mat-header-cell *matHeaderCellDef>Columna</th>
+      <td mat-cell *matCellDef="let row">{{ row.column }}</td>
+    </ng-container>
+    <ng-container matColumnDef="baseValue">
+      <th mat-header-cell *matHeaderCellDef>Valor Base</th>
+      <td mat-cell *matCellDef="let row">
+        {{
+          row.baseValue | currency: "MXN" : "symbol-narrow" : "1.2-2" : "en-US"
+        }}
+      </td>
+    </ng-container>
+    <ng-container matColumnDef="operator">
+      <th mat-header-cell *matHeaderCellDef>Operador</th>
+      <td mat-cell *matCellDef="let row">
+        <mat-icon>{{ row.operator }}</mat-icon>
+      </td>
+    </ng-container>
+    <ng-container matColumnDef="operationValue">
+      <th mat-header-cell *matHeaderCellDef>Valor Operador</th>
+      <td mat-cell *matCellDef="let row">{{ row.operationValue }}</td>
+    </ng-container>
+    <ng-container matColumnDef="total">
+      <th mat-header-cell *matHeaderCellDef>Total</th>
+      <td mat-cell *matCellDef="let row">
+        {{ row.total | currency: "MXN" : "symbol-narrow" : "1.2-2" : "en-US" }}
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="columns"></tr>
+    <tr mat-row *matRowDef="let row; columns: columns"></tr>
+  </table>
+</div>

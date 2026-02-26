@@ -31,11 +31,17 @@ export class AssignTimeOffComponent {
             incidentCode: new FormControl('', {
                 validators: [Validators.required],
             }),
+            requireAbsenceRequest: new FormControl(false),
+            notes: new FormControl(''),
         });
     }
 
     public get incidentCodeControl(): AbstractControl {
         return this.timeOffForm.get('incidentCode')!;
+    }
+
+    public get requireAbsenceRequest(): boolean {
+        return this.timeOffForm.get('requireAbsenceRequest')!.value;
     }
 
     public onCancel(): void {

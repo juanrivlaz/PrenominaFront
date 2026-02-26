@@ -76,6 +76,22 @@ export class ReportsService {
         });
     }
 
+    public getIncidences({ page = 1, pageSize = 30, payroll = 1, numPeriod = 1, search = '', filterDates }: IFilterReports): Observable<Array<any>> {
+        return this.httpService.get<Array<any>>('/Reports/incidences', {
+            params: {
+                'Paginator.Page': page,
+                'Paginator.PageSize': pageSize,
+                TypeNomina: payroll,
+                NumPeriod: numPeriod,
+                Search: search,
+                ...(filterDates && {
+                    'FilterDates.Start': filterDates.start.toISOString(),
+                    'FilterDates.End': filterDates.end.toISOString(),
+                }),
+            }
+        });
+    }
+
     public downloadExcelDelays({ page = 1, pageSize = 30, payroll = 1, numPeriod = 1, search = '', filterDates }: IFilterReports): Observable<HttpResponse<Blob>> {
         return this.httpService.get('/Reports/delays/download-excel', {
             observe: 'response',
@@ -132,6 +148,24 @@ export class ReportsService {
 
     public downloadExcelAttendance({ page = 1, pageSize = 30, payroll = 1, numPeriod = 1, search = '', filterDates }: IFilterReports): Observable<HttpResponse<Blob>> {
         return this.httpService.get('/Reports/attendance/download-excel', {
+            observe: 'response',
+            responseType: 'blob',
+            params: {
+                'Paginator.Page': page,
+                'Paginator.PageSize': pageSize,
+                TypeNomina: payroll,
+                NumPeriod: numPeriod,
+                Search: search,
+                ...(filterDates && {
+                    'FilterDates.Start': filterDates.start.toISOString(),
+                    'FilterDates.End': filterDates.end.toISOString(),
+                }),
+            }
+        });
+    }
+
+    public downloadExcelIncidences({ page = 1, pageSize = 30, payroll = 1, numPeriod = 1, search = '', filterDates }: IFilterReports): Observable<HttpResponse<Blob>> {
+        return this.httpService.get('/Reports/incidences/download-excel', {
             observe: 'response',
             responseType: 'blob',
             params: {

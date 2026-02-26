@@ -3,9 +3,10 @@
   <p>¿Estas seguro de {{ data.type }} la Incidencia?</p>
   <p class="center">{{ data.name }}</p>
   <p class="center">{{ data.incident }}</p>
-  <p class="center">{{ dateFormat }}</p>
+  <p class="center">{{ data.date }}</p>
+  <p class="center">Notas: {{ data.note }}</p>
 </mat-dialog-content>
 <mat-dialog-actions>
   <button mat-button mat-dialog-close>Cancelar</button>
-  <button mat-button [mat-dialog-close]="confirm()" cdkFocusInitial>Confirmar</button>
+  <button mat-flat-button (click)="confirm()" cdkFocusInitial>Confirmar</button>
 </mat-dialog-actions>

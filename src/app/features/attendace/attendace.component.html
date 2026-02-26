@@ -7,7 +7,10 @@
             </button>
             <mat-menu #menuTypeNom="matMenu">
                 <button mat-menu-item *ngFor="let item of listPayrolls()" (click)="setPayroll(item.typeNom)">
-                    <mat-icon *ngIf="payroll?.typeNom === item.typeNom">done</mat-icon>
+                    @if (payroll?.typeNom === item.typeNom) {
+                        <mat-icon>done</mat-icon>
+                    }
+                    
                     {{ item.typeNom }} | {{ item.label || item.typeNom }}
                 </button>
             </mat-menu>
@@ -16,7 +19,10 @@
             </button>
             <mat-menu #menuPeriodo="matMenu" class="list-period-menu">
                 <button mat-menu-item *ngFor="let item of listPeriods" (click)="setPeriod(item.numPeriod)">
-                    <mat-icon *ngIf="period?.numPeriod === item.numPeriod">done</mat-icon>
+                    @if (period?.numPeriod === item.numPeriod) {
+                        <mat-icon>done</mat-icon>
+                    }
+                    
                     {{ item.numPeriod }} | {{ item.startDate | date: 'dd/MM/yyyy' }} - {{ item.closingDate | date: 'dd/MM/yyyy' }}
                 </button>
             </mat-menu>
@@ -45,14 +51,22 @@
                 </mat-menu>
             </div>
             <div class="ctn-close-period">
-                <button *ngIf="canClosePayrollPeriod" (click)="confirmClosePeriod()" mat-icon-button color="warn" matTooltip="{{!closedPeriod ? 'Cerrar Periodo' : 'Abrir Periodo'}}">
-                    <mat-icon>{{ !closedPeriod ? 'lock' : 'lock_open' }}</mat-icon>
-                </button>
+                @if (canClosePayrollPeriod) {
+                    <button (click)="confirmClosePeriod()" mat-icon-button color="warn" matTooltip="{{!closedPeriod ? 'Cerrar Periodo' : 'Abrir Periodo'}}">
+                        <mat-icon>{{ !closedPeriod ? 'lock' : 'lock_open' }}</mat-icon>
+                    </button>
+                }
             </div>
         </div>
     </div>
-    <mat-progress-bar mode="indeterminate" class="mt-24" *ngIf="loading()"></mat-progress-bar>
-    <p *ngIf="closedPeriod" class="alert-closed-period">El periodo está cerrado</p>
+    @if (loading()) {
+        <mat-progress-bar mode="indeterminate" class="mt-24"></mat-progress-bar>
+    }
+    
+    @if (closedPeriod) {
+        <p class="alert-closed-period">El periodo está cerrado</p>
+    }
+    
     <div class="list-employees">
         <div class="ctn-employee" *ngFor="let employee of listEmployeeAttendance()">
             <span class="color-identify"></span>
@@ -69,34 +83,42 @@
                     <thead>
                         <tr class="head-days">
                             <th *ngFor="let attendance of employee.attendances" [ngClass]="{'isSunday': attendance.day === 'DOM.', 'isDayOff': attendance.isDayOff}">
-                                <ng-container *ngIf="attendance.assistanceIncidents?.length as assistanceIncidents; else noAttendanceIncidents">
+                                @if (attendance.assistanceIncidents?.length) {
                                     <div class="ctn-day active" matTooltip="Ver incidencias" matTooltipPosition="above" (click)="detailsDay(employee, attendance)">
                                         <span>{{ attendance.day }}</span>
                                         <span>{{ attendance.label }}</span>
                                     </div>
-                                </ng-container>
-                                <ng-template #noAttendanceIncidents>
+                                } @else {
                                     <div class="ctn-day">
                                         <span>{{ attendance.day }}</span>
                                         <span>{{ attendance.label }}</span>
                                     </div>
-                                </ng-template>
+                                }
                             </th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
                             <td *ngFor="let attendance of employee.attendances" [ngClass]="{'isSunday': attendance.day === 'DOM.', 'isDayOff': attendance.isDayOff}">
-                                <ng-container *ngIf="attendance.checkEntry !== null;">
+                                @if (attendance.checkEntry !== null) {
                                     <div class="ctn-registers" [ngClass]="{'isInconsistency': attendance.isInconsistency}">
-                                      <div (click)="asignDoubleShift(attendance, employee)" class="entry" matTooltip="Asignar doble turno" matTooltipPosition="above">{{ attendance.checkEntry }}</div>
-                                      <div class="output">{{ attendance.checkOut }}</div>
+                                        @if (!getIsLoading(employee.codigo, employee.company, attendance.date)) {
+                                            <div (click)="asignDoubleShift(attendance, employee)" class="entry" matTooltip="Asignar doble turno" matTooltipPosition="above">{{ attendance.checkEntry }}</div>
+                                            @if (canModifyCheckins) {
+                                                <div class="output" (click)="handleChangeAttendance(employee, attendance)" matTooltip="Modificar Asistencia">{{ attendance.checkOut }}</div>
+                                            } @else {
+                                                <div class="output">{{ attendance.checkOut }}</div>
+                                            }
+                                        } @else {
+                                            <mat-spinner diameter="30"></mat-spinner>
+                                        }
+                                      
                                     </div>
-                                </ng-container>
-                              
-                                <ng-container *ngIf="attendance.checkEntry === null;">
-                                  <div class="ctn-registers no-data" [ngClass]="{'saved': attendance.incidentCode !== 'N/A'}">
-                                    <ng-container *ngIf="!getIsLoading(employee.codigo, employee.company, attendance.date); else loadingIncident">
+                                }
+
+                                @if (attendance.checkEntry === null) {
+                                    <div class="ctn-registers no-data" [ngClass]="{'saved': attendance.incidentCode !== 'N/A'}">
+                                    @if (!getIsLoading(employee.codigo, employee.company, attendance.date)) {
                                         <div class="entry">
                                             <button [disabled]="closedPeriod" mat-button [matMenuTriggerFor]="menuIncidents">{{ attendance.incidentCode }}</button>
                                             <mat-menu #menuIncidents="matMenu">
@@ -108,15 +130,17 @@
                                                     {{ incident.code }} | {{ incident.label }}
                                                 </button>
                                             </mat-menu>
-                                          </div>
-                                        <div class="output"></div>
-                                    </ng-container>
-
-                                    <ng-template #loadingIncident>
+                                        </div>
+                                        @if (canModifyCheckins) {
+                                            <div class="output" (click)="handleChangeAttendance(employee, attendance)" matTooltip="Modificar Asistencia"></div>
+                                        } @else {
+                                            <div class="output"></div>
+                                        }
+                                    } @else {
                                         <mat-spinner diameter="30"></mat-spinner>
-                                    </ng-template>
+                                    }
                                   </div>
-                                </ng-container>
+                                }
                             </td>
                         </tr>
                     </tbody>

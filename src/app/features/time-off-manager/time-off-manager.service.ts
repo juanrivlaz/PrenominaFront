@@ -5,6 +5,7 @@ import { IPagedResult } from "@core/models/paged-result.interface";
 import { Observable } from "rxjs";
 import { IAssignTimeOff } from "./assign-time-off/assign-time-off.interface";
 import { ISyncIncapacityOutput } from "@core/models/sync-incapacity-output.interface";
+import { IAssignTimeOffOutput } from "./assign-time-off/assign-time-off-output.interface";
 
 @Injectable()
 export class TimeOffManagerService {
@@ -23,7 +24,7 @@ export class TimeOffManagerService {
         });
     }
 
-    public registerToUser(form: Pick<IAssignTimeOff, 'employeeCode'> & { incidentCode: string, dates: Array<string> }): Observable<IEmployessDayOff> {
+    public registerToUser(form: Pick<IAssignTimeOff, 'employeeCode'> & IAssignTimeOffOutput & { dates: Array<string> }): Observable<IEmployessDayOff> {
         return this.httpService.post<IEmployessDayOff>('/DayOffs/register-to-user', form);
     }
 

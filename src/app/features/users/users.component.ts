@@ -63,6 +63,11 @@ export class UsersComponent implements OnInit {
         this.getInit();
     }
 
+    public handleChangeSearch(event: Event): void {
+        const filterValue = (event.target as HTMLInputElement).value;
+        this.users.filter = filterValue.trim().toLowerCase();
+    }
+
     public addUser(): void {
         const dialogRef = this.dialog.open<CreateUserComponent, ICreateUser, { user: IUserWithDetails }>(CreateUserComponent, {
             data: {

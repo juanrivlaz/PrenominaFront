@@ -13,10 +13,20 @@ import { MatMenuModule } from "@angular/material/menu";
 import { IFormHoliday } from "./create-holiday/form-holiday.interface";
 import { IIncidentCode } from "@core/models/incident-code.interface";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
+import { MatTableDataSource, MatTableModule } from "@angular/material/table";
+import dayjs from "dayjs";
+import { DialogConfirmComponent } from "@shared/components/dialog-confirm/dialog-confirm.component";
+import { IDialogConfirm } from "@shared/components/dialog-confirm/dialog-confirm.interface";
 
 @Component({
     selector: 'app-holiday-days',
-    imports: [CommonModule, MaterialModule, MatMenuModule, MatProgressSpinnerModule],
+    imports: [
+        CommonModule,
+        MaterialModule,
+        MatMenuModule,
+        MatProgressSpinnerModule,
+        MatTableModule
+    ],
     providers: [HolidayDaysService],
     templateUrl: './holiday-days.component.html',
     styleUrl: './holiday-days.component.scss',
@@ -27,9 +37,17 @@ export class HolidayDaysComponent implements OnInit, OnDestroy {
     private readonly snackBar = inject(MatSnackBar);
     private restSub?: Subscription;
     public loading: WritableSignal<boolean> = signal(true);
-    public dayoffs: WritableSignal<Array<IDayOffs>> = signal([]);
+    public dayoffs: MatTableDataSource<IDayOffs> = new MatTableDataSource<IDayOffs>([]);
     public listIncidentCode: WritableSignal<Array<IIncidentCode>> = signal([]);
     public loadingItems: WritableSignal<Array<string>> = signal([]);
+    public columns: Array<string> = [
+        'date',
+        'description',
+        'domincal',
+        'sindicato',
+        'incidentCode',
+        'actions'
+    ];
 
     constructor(private readonly service: HolidayDaysService) {}
 
@@ -55,32 +73,63 @@ export class HolidayDaysComponent implements OnInit, OnDestroy {
         });
     }
 
-    public editHoliday(): void {
-        const item = new Holiday('0', new Date(2025, 0, 2), false, false, 'Año nuevo', '10');
+    public editHoliday(dayoff: IDayOffs): void {
         const dialogRef = this.dialog.open<CreateHolidayComponent, ICreateHoliday, IFormHoliday>(CreateHolidayComponent, {
             data: {
-                holiday: item,
+                holiday: {
+                    id: dayoff.id,
+                    date: dayoff.date,
+                    dominical: dayoff.isSunday,
+                    isUnion: dayoff.isUnion,
+                    description: dayoff.description,
+                    incidentCode: dayoff.incidentCode
+                },
                 incidentCodes: this.listIncidentCode()
             },
         });
 
         dialogRef.afterClosed().subscribe(result => {
-            console.log(result);
+            if (result) {
+                this.editHoliDay({
+                    date: result.date,
+                    description: result.description,
+                    isUnion: result.isUnion,
+                    incidentCode: result.incidentCode,
+                    id: dayoff.id
+                });
+            }
         });
     }
 
     public deleteDayOff(dayoff: IDayOffs): void {
+        const confirmRef = this.dialog.open<DialogConfirmComponent, IDialogConfirm, boolean>(DialogConfirmComponent, {
+            data: {
+                title: 'Eliminar día festivo',
+                message: `¿Estás seguro de que deseas eliminar el día festivo del ${dayjs(dayoff.date).format('D [de] MMMM')}?`,
+                confirmText: 'Eliminar',
+                cancelText: 'Cancelar'
+            }
+        });
+
+        confirmRef.afterClosed().subscribe(result => {
+            if (result) {
+                this.confirmDelete(dayoff);
+            }
+        });
+    }
+
+    public confirmDelete(dayoff: IDayOffs): void {
         this.loadingItems.update((values) => [...values, dayoff.id]);
         this.service.deleteItem(dayoff.id).pipe(finalize(() => {
             this.loadingItems.update((values) => values.filter((item) => item !== dayoff.id));
         })).subscribe({
             next: (response) => {
-                this.dayoffs.update((values) => values.filter((item) => item.id !== response.id));
+                this.dayoffs = new MatTableDataSource(this.dayoffs.data.filter((item) => item.id !== response.id));
             },
             error: (err) => {
                 const message = err.error?.message || 'Ocurrió un error, por favor intentalo más tarde';
 
-                this.snackBar.open(message, undefined, {
+                this.snackBar.open(message, '❌', {
                   horizontalPosition: 'center',
                   verticalPosition: 'top',
                   panelClass: 'alert-error',
@@ -104,13 +153,13 @@ export class HolidayDaysComponent implements OnInit, OnDestroy {
             this.loading.set(false);
         })).subscribe({
             next: (response) => {
-                this.dayoffs.set(response.dayoffs);
+                this.dayoffs = new MatTableDataSource(response.dayoffs.sort((a, b) => a.isSunday !== b.isSunday ? (a.isSunday ? -1 : 1) : dayjs(a.date).format('MMDD').localeCompare(dayjs(b.date).format('MMDD'))));
                 this.listIncidentCode.set(response.incidentCodes);
             },
             error: (err) => {
                 const message = err.error?.message || 'Ocurrió un error, por favor intentalo más tarde';
 
-                this.snackBar.open(message, undefined, {
+                this.snackBar.open(message, '❌', {
                   horizontalPosition: 'center',
                   verticalPosition: 'top',
                   panelClass: 'alert-error',
@@ -126,12 +175,33 @@ export class HolidayDaysComponent implements OnInit, OnDestroy {
             this.loading.set(false);
         })).subscribe({
             next: (response) => {
-                this.dayoffs.set([...this.dayoffs(), response]);
+                this.dayoffs = new MatTableDataSource([...this.dayoffs.data, response].sort((a, b) => a.isSunday !== b.isSunday ? (a.isSunday ? -1 : 1) : dayjs(a.date).format('MMDD').localeCompare(dayjs(b.date).format('MMDD'))));
             },
             error: (err) => {
                 const message = err.error?.message || 'Ocurrió un error, por favor intentalo más tarde';
 
-                this.snackBar.open(message, undefined, {
+                this.snackBar.open(message, '❌', {
+                  horizontalPosition: 'center',
+                  verticalPosition: 'top',
+                  panelClass: 'alert-error',
+                  duration: 3000
+                });
+            }
+        })
+    }
+
+    private editHoliDay(form: IFormHoliday & { id: string }): void {
+        this.loading.set(true);
+        this.service.submitEdit(form).pipe(finalize(() => {
+            this.loading.set(false);
+        })).subscribe({
+            next: (response) => {
+                this.dayoffs = new MatTableDataSource(this.dayoffs.data.map((item) => item.id === response.id ? response : item).sort((a, b) => a.isSunday !== b.isSunday ? (a.isSunday ? -1 : 1) : dayjs(a.date).format('MMDD').localeCompare(dayjs(b.date).format('MMDD'))));
+            },
+            error: (err) => {
+                const message = err.error?.message || 'Ocurrió un error, por favor intentalo más tarde';
+
+                this.snackBar.open(message, '❌', {
                   horizontalPosition: 'center',
                   verticalPosition: 'top',
                   panelClass: 'alert-error',

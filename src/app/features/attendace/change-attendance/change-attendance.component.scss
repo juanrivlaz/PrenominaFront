@@ -1,0 +1,42 @@
+app-change-attendance {
+  .ctn-employee {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-top: 12px;
+
+    >.name {
+      margin-left: 12px;
+      display: flex;
+      flex-direction: column;
+
+      p {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 600;
+      }
+
+      span {
+        font-size: 11px;
+      }
+    }
+  }
+
+  .date {
+    text-align: center;
+    display: block;
+  }
+
+  .ctn-form {
+    form {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      .arrow-icon {
+        margin-top: -21px;
+      }
+    }
+  }
+}

@@ -1,6 +1,13 @@
 <div class="container module-container">
     <div class="ctn-filter">
         <div class="ctn-others">
+            <div class="ctn-search">
+                <div class="input-search">
+                    <input type="search" name="search" id="search" placeholder="Buscar" (keyup)="handleChangeSearch($event)">
+                    <mat-icon>search</mat-icon>
+                </div>
+            </div>
+
             <div class="ctn-add">
                 <button mat-flat-button (click)="addRole()">
                     <mat-icon>add</mat-icon>
@@ -9,28 +16,37 @@
             </div>
         </div>
     </div>
-    <mat-progress-bar mode="indeterminate" class="mt-24" *ngIf="loading()"></mat-progress-bar>
-    <table>
-        <thead>
-            <tr>
-                <th>Código</th>
-                <th>Etiqueta</th>
-                <th>Secciones</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr *ngFor="let item of listRoles">
-                <td>{{ item.code }}</td>
-                <td>{{ item.label }}</td>
-                <td><button mat-button>Ver</button></td>
-                <td>
-                    <div class="actions">
-                        <button mat-icon-button><mat-icon>edit</mat-icon></button>
-                        <button mat-icon-button><mat-icon>delete</mat-icon></button>
-                    </div>
-                </td>
-            </tr>
-        </tbody>
+
+    <table mat-table #table [dataSource]="roles">
+        <ng-container matColumnDef="code">
+            <th mat-header-cell *matHeaderCellDef> Código </th>
+            <td mat-cell *matCellDef="let row"> {{row.code}} </td>
+        </ng-container>
+        <ng-container matColumnDef="label">
+            <th mat-header-cell *matHeaderCellDef> Etiqueta </th>
+            <td mat-cell *matCellDef="let row"> {{row.label}} </td>
+        </ng-container>
+        <ng-container matColumnDef="sections">
+            <th mat-header-cell *matHeaderCellDef> Secciones </th>
+            <td mat-cell *matCellDef="let row">
+                <button mat-button>Ver</button>
+            </td>
+        </ng-container>
+        <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef> </th>
+            <td mat-cell *matCellDef="let row">
+                <button mat-icon-button [matMenuTriggerFor]="actions"><mat-icon>more_vert</mat-icon></button>
+                <mat-menu #actions="matMenu">
+                    <button mat-menu-item (click)="addRole(row)">
+                        <mat-icon>edit</mat-icon>
+                        <span>Editar</span>
+                    </button>
+                </mat-menu>
+            </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="columns"></tr>
+        <tr mat-row *matRowDef="let row; columns: columns;"></tr>
+        
     </table>
 </div>

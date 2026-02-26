@@ -8,4 +8,5 @@ export interface MenuIntemInterface {
     url?: string;
     function?: any;
     exactMatch?: boolean;
+    isItemConfig?: boolean;
 }

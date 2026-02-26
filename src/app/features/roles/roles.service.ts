@@ -12,6 +12,10 @@ export class RolesService {
         return this.httpService.post<Role>('/Roles', form);
     }
 
+    public update(id: string, form: CreateRol): Observable<Role> {
+        return this.httpService.put<Role>(`/Roles/${id}`, form);
+    }
+
     public get(): Observable<Array<Role>> {
         return this.httpService.get<Array<Role>>('/Roles');
     }

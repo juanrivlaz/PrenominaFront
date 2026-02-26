@@ -4,8 +4,7 @@ app-navbar {
     width: 64px;
     /*min-width: 256px;
     max-width: 256px;*/
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: hidden;
     transition: all .2s ease-in-out;
 
     &:hover {
@@ -37,6 +36,8 @@ app-navbar {
 
     .navbar-content {
         padding: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
 
         .title {
             position: relative;

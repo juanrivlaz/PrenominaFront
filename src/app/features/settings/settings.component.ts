@@ -17,6 +17,7 @@ import { SettingsService } from "./settings.service";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { TypeDayOffReport } from "@core/models/config-day-off-report.interface";
 import { finalize } from "rxjs";
+import { TypeAttendance } from "@core/models/reports/type-attendance.enum";
 
 @Component({
     selector: 'app-settings',
@@ -48,10 +49,14 @@ export class SettingsComponent implements OnInit {
     public typeTenant = model<number>(TypeTenant.Department);
     public timeZone = model<string>(TimeZone.Bahia_Banderas);
     public typeDayOffReport = model<number>(0);
+    public typePrenominaPdfReport = model<number>(0);
     public clockInterval: FormControl;
+    public year: FormControl;
     public loadingClockInterval = model<boolean>(false);
     public loadingTypeTenant = model<boolean>(false);
     public loadingTypeDayOffReport = model<boolean>(false);
+    public loadingTypePrenominaPdfReport = model<boolean>(false);
+    public loadingYear = model<boolean>(false);
     public typeTenantsOptions: Array<{ id: number, label: string }>;
     public timeZoneOptions: Array<{ id: string, label: string }>;
     public initConfigEditor = {
@@ -99,6 +104,10 @@ export class SettingsComponent implements OnInit {
         { id: TypeDayOffReport.Default, label: 'Formato Anterior' },
         { id: TypeDayOffReport.New, label: 'Formato Nuevo' },
     );
+    public typePrenominaPdfReportOptions = Array<{ id: number, label: string }>(
+        { id: TypeAttendance.Standard, label: 'Formato Completo' },
+        { id: TypeAttendance.Compact, label: 'Formato Compacto' },
+    );
     public minToOvertimeReport: FormControl;
     public loadingMinToOvertimeReport = model<boolean>(false);
 
@@ -134,7 +143,12 @@ export class SettingsComponent implements OnInit {
         });
 
         this.clockInterval = new FormControl(10, [Validators.required, Validators.min(10)]);
+        this.year = new FormControl<number>(this.authService.year.value, [Validators.required, Validators.min(2000)]);
         this.minToOvertimeReport = new FormControl(30, [Validators.required, Validators.min(1)]);
+
+        this.year.valueChanges.subscribe((value) => {
+            this.authService.setYear(value);
+        });
     }
 
     ngOnInit(): void {
@@ -149,6 +163,7 @@ export class SettingsComponent implements OnInit {
             next: (config) => {
                 this.typeDayOffReport.set(config.configDayOffReport.typeDayOffReport);
                 this.minToOvertimeReport.setValue(config.configOvertimeReport.mins);
+                this.typePrenominaPdfReport.set(config.configAttendanceReport?.typeAttendanceReportPdf || 0);
             },
             error: (err) => {
                 const message = err.error?.message || 'Ocurrió un error, por favor intentalo más tarde';
@@ -204,6 +219,24 @@ export class SettingsComponent implements OnInit {
         });
     }
 
+    public handleSaveYear(): void {
+        if (this.year.invalid) {
+            return;
+        }
+        this.loadingYear.set(true);
+        this.service.updateYear(this.year.value).pipe(finalize(() => {
+            this.loadingYear.set(false);
+        })).subscribe({
+            next: () => {
+                this.showMessage('Los cambios fueron guardados', false, 1500);
+            },
+            error: (err) => {
+                const message = err.error?.message || 'Ocurrió un error, por favor intentalo más tarde';
+                this.showMessage(message, true, 3000);
+            }
+        });
+    }
+
     public handleSaveMinToOvertimeReport(): void {
         if (this.minToOvertimeReport.invalid) {
             return;
@@ -245,6 +278,23 @@ export class SettingsComponent implements OnInit {
 
         this.service.updateTypeDayOffReport(this.typeDayOffReport()).pipe(finalize(() => {
             this.loadingTypeDayOffReport.set(false);
+        })).subscribe({
+            next: () => {
+                this.showMessage('Los cambios fueron guardados', false, 1500);
+            },
+            error: (err) => {
+                const message = err.error?.message || 'Ocurrió un error, por favor intentalo más tarde';
+                this.showMessage(message, true, 3000);
+            }
+        });
+    }
+
+    public handleSaveTypePrenominaPdfReport(event: Event): void {
+        event.stopPropagation();
+        this.loadingTypePrenominaPdfReport.set(true);
+
+        this.service.updateTypePrenominaPdfReport(this.typePrenominaPdfReport()).pipe(finalize(() => {
+            this.loadingTypePrenominaPdfReport.set(false);
         })).subscribe({
             next: () => {
                 this.showMessage('Los cambios fueron guardados', false, 1500);

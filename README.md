@@ -57,3 +57,11 @@ Angular CLI does not come with an end-to-end testing framework by default. You c
 ## Additional Resources
 
 For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+
+api
+
+compilar utilizando nssm
+dotnet publish -c Release -f net8.0 -r win-x64 --self-contained -o C:\app
+
+compilar utilizando iis
+dotnet publish -c Release -f net8.0 -o C:\app

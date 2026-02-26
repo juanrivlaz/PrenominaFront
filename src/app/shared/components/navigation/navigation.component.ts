@@ -21,11 +21,36 @@ export class AppNavigation {
     public itemNavigation: Array<MenuIntemInterface | MenuCollapseInterface | MenuGroupInterface> = [];
 
     constructor(private readonly authService: AuthService) {
+        const itemsConfigs = ItemsNavigations.filter(item => 'isItemConfig' in item && item.isItemConfig === true);
+        const itemsNonConfigs = ItemsNavigations.filter(item => !('isItemConfig' in item && item.isItemConfig === true));
+
         this.authService.sectionsForAccess.subscribe((item) => {
             if (this.authService.role === RoleCode.Sudo) {
-                this.itemNavigation = ItemsNavigations;
+                this.itemNavigation = itemsNonConfigs.concat([
+                    {
+                        id: 'allconfigs',
+                        title: 'Configuración',
+                        type: 'collapse',
+                        icon: 'settings',
+                        children: [
+                            ...itemsConfigs
+                        ],
+                    }
+                ]);
             } else {
-                this.itemNavigation = ItemsNavigations.filter((menu) => item.some((section) => section.sectionsCode.includes(menu.id)));
+                this.itemNavigation = itemsNonConfigs.filter((menu) => item.some((section) => section.sectionsCode.includes(menu.id)));
+                const configItemsForAccess = itemsConfigs.filter((menu) => item.some((section) => section.sectionsCode.includes(menu.id)));
+                if (configItemsForAccess.length > 0) {
+                    this.itemNavigation.push({
+                        id: 'allconfigs',
+                        title: 'Configuración',
+                        type: 'collapse',
+                        icon: 'settings',
+                        children: [
+                            ...configItemsForAccess
+                        ],
+                    });
+                }
             }
         });
     }

@@ -17,6 +17,6 @@
     </form>
 </mat-dialog-content>
 <mat-dialog-actions>
-    <button mat-button (click)="confirm()" [disabled]="formGroup.invalid">Confirmar</button>
     <button mat-button (click)="onNoClick()" cdkFocusInitial>Cancelar</button>
+    <button mat-button (click)="confirm()" [disabled]="formGroup.invalid">Confirmar</button>
 </mat-dialog-actions>

@@ -13,6 +13,7 @@ import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatMenuModule } from "@angular/material/menu";
 import { DialogConfirmComponent } from "@shared/components/dialog-confirm/dialog-confirm.component";
 import { IDialogConfirm } from "@shared/components/dialog-confirm/dialog-confirm.interface";
+import { Role } from "@core/models/role";
 
 @Component({
     selector: 'app-incident-codes-manager',
@@ -34,6 +35,7 @@ export class IncidentCodesManagerComponent implements OnInit {
     public readonly dialog = inject(MatDialog);
     public loading: WritableSignal<boolean> = signal(false);
     public users: WritableSignal<Array<IUser>> = signal([]);
+    public roles: WritableSignal<Array<Role>> = signal([]);
     public listIncidentCode: MatTableDataSource<IIncidentCode> = new MatTableDataSource<IIncidentCode>([]);
     public columnTable: Array<string> = [
         'code',
@@ -56,8 +58,9 @@ export class IncidentCodesManagerComponent implements OnInit {
             this.loading.set(false);
         }))).subscribe({
             next: (response) => {
-                this.users.set(response[0]);
-                this.listIncidentCode = new MatTableDataSource<IIncidentCode>(response[1]);
+                this.users.set(response[0].users);
+                this.roles.set(response[0].roles);
+                this.listIncidentCode = new MatTableDataSource<IIncidentCode>(response[1].sort((a, b) => a.code.localeCompare(b.code)));
             },
             error: (err) => {
                 console.log(err);
@@ -71,6 +74,7 @@ export class IncidentCodesManagerComponent implements OnInit {
                 name: this.name(),
                 incidentCode: this.incidentCode(),
                 listUsers: this.users(),
+                listRoles: this.roles(),
             }
         });
 
@@ -88,6 +92,7 @@ export class IncidentCodesManagerComponent implements OnInit {
                 name: this.name(),
                 incidentCode: this.incidentCode(),
                 listUsers: this.users(),
+                listRoles: this.roles(),
                 item: item
             }
         });

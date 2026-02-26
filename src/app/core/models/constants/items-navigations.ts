@@ -12,12 +12,21 @@ export const ItemsNavigations: Array<MenuIntemInterface | MenuCollapseInterface 
         url: '/attendace'
     },
     {
+        id: 'reports',
+        title: 'Reportes',
+        type: 'item',
+        exactMatch: true,
+        icon: 'assessment',
+        url: '/reports'
+    },
+    {
         id: 'employeeadjustments',
         title: 'Ajuste Empleados',
         type: 'item',
         exactMatch: true,
         icon: 'manage_accounts',
-        url: '/employee-adjustments'
+        url: '/employee-adjustments',
+        isItemConfig: true,
     },
     {
         id: 'cargarchecadas',
@@ -49,7 +58,8 @@ export const ItemsNavigations: Array<MenuIntemInterface | MenuCollapseInterface 
         type: 'item',
         exactMatch: true,
         icon: 'free_cancellation',
-        url: '/holiday-days'
+        url: '/holiday-days',
+        isItemConfig: true,
     },
     {
         id: 'pdom',
@@ -89,7 +99,8 @@ export const ItemsNavigations: Array<MenuIntemInterface | MenuCollapseInterface 
         type: 'item',
         exactMatch: true,
         icon: 'account_box',
-        url: '/roles'
+        url: '/roles',
+        isItemConfig: true,
     },
     {
         id: 'pendingsattendanceincident',
@@ -105,7 +116,8 @@ export const ItemsNavigations: Array<MenuIntemInterface | MenuCollapseInterface 
         type: 'item',
         exactMatch: true,
         icon: 'people',
-        url: '/users'
+        url: '/users',
+        isItemConfig: true,
     },
     {
         id: 'period',
@@ -113,7 +125,8 @@ export const ItemsNavigations: Array<MenuIntemInterface | MenuCollapseInterface 
         type: 'item',
         exactMatch: true,
         icon: 'event_note',
-        url: '/period'
+        url: '/period',
+        isItemConfig: true,
     },
     {
         id: 'incidentcodesmanager',
@@ -121,7 +134,8 @@ export const ItemsNavigations: Array<MenuIntemInterface | MenuCollapseInterface 
         type: 'item',
         exactMatch: true,
         icon: 'code',
-        url: '/incident-codes-manager'
+        url: '/incident-codes-manager',
+        isItemConfig: true,
     },
     {
         id: 'clocks',
@@ -140,13 +154,13 @@ export const ItemsNavigations: Array<MenuIntemInterface | MenuCollapseInterface 
         url: '/documents'
     },
     {
-        id: 'reports',
-        title: 'Reportes',
+        id: 'additionalpay',
+        title: 'Pago Adicional',
         type: 'item',
         exactMatch: true,
-        icon: 'assessment',
-        url: '/reports'
-    }
+        icon: 'attach_money',
+        url: '/additional-pay'
+    },
     /*{
         id: 'settings2',
         title: 'Settings2',

@@ -1,6 +1,7 @@
 import { HttpClient } from "@angular/common/http";
 import { Injectable } from "@angular/core";
 import { IAssistanceIncident } from "@core/models/assistance-incident.interface";
+import { IChangeAttendance } from "@core/models/attendance/change-attendance.interface";
 import { IChangePeriodStatus } from "@core/models/change-period-status.interface";
 import { IDayOffs } from "@core/models/day-offs.interface";
 import { IEmployeeAttendance } from "@core/models/employee-attendances.interface";
@@ -16,11 +17,12 @@ import { Observable } from "rxjs";
 export class AttendaceService {
     constructor(private readonly httpService: HttpClient) {}
 
-    public insertAttendaceIncident(incidentCode: string, date: string, employeeCode: number): Observable<IAssistanceIncident> {
+    public insertAttendaceIncident(incidentCode: string, date: string, employeeCode: number, customValue?: number): Observable<IAssistanceIncident> {
         return this.httpService.patch<IAssistanceIncident>('/Attendance/apply-incident', {
             incidentCode,
             date,
-            employeeCode
+            employeeCode,
+            amount: customValue
         });
     }
 
@@ -74,5 +76,9 @@ export class AttendaceService {
 
     public changePeridStatus(form: IChangePeriodStatus): Observable<Array<IPeriodStatus>> {
         return this.httpService.post<Array<IPeriodStatus>>('/Period/change-status', form);
+    }
+
+    public changeAttendance(form: IChangeAttendance): Observable<boolean> {
+        return this.httpService.patch<boolean>('/Attendance/change', form);
     }
 }

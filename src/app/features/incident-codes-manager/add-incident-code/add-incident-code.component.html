@@ -84,46 +84,48 @@
               <mat-label>Seleccione una columna</mat-label>
               <mat-icon matPrefix>storage</mat-icon>
               <mat-select formControlName="columnForOperation">
-                <mat-option [value]="1">
+                <mat-option [value]="0">
                   Empleado:Sueldo
                 </mat-option>
-                <mat-option [value]="2">
+                <mat-option [value]="1">
                   Custom
                 </mat-option>
               </mat-select>
             </mat-form-field>
 
-            <mat-form-field class="mb-12" *ngIf="showMetadataAmount()">
-              <mat-label>Ingrese un monto</mat-label>
-              <mat-icon matPrefix>123</mat-icon>
-              <input type="number" matInput formControlName="amount">
-              @if (getMetadataField('amount')?.hasError('min')) {
-                <mat-error>
-                  El valor minimo es 1
-                </mat-error>
-              }
+            @if (showMetadataAmount()) {
+              <mat-form-field class="mb-12">
+                <mat-label>Ingrese un monto</mat-label>
+                <mat-icon matPrefix>123</mat-icon>
+                <input type="number" matInput formControlName="amount">
+                @if (getMetadataField('amount')?.hasError('min')) {
+                  <mat-error>
+                    El valor minimo es 1
+                  </mat-error>
+                }
 
-              @if (getMetadataField('amount')?.hasError('required')) {
-                <mat-error>
-                  El monto es requerido
-                </mat-error>
-              }
-            </mat-form-field>
+                @if (getMetadataField('amount')?.hasError('required')) {
+                  <mat-error>
+                    El monto es requerido
+                  </mat-error>
+                }
+              </mat-form-field>
+            }
 
             <mat-form-field class="mb-12">
               <mat-label>Seleccione una operación</mat-label>
               <mat-icon matPrefix>calculate</mat-icon>
               <mat-select formControlName="mathOperation">
-                <mat-option [value]="1">
+                <mat-option [value]="0">
                   Suma
                 </mat-option>
-                <mat-option [value]="2">
+                <mat-option [value]="1">
                   Resta
                 </mat-option>
-                <mat-option [value]="3">
+                <mat-option [value]="2">
                   Multiplicación
                 </mat-option>
-                <mat-option [value]="4">
+                <mat-option [value]="3">
                   Divición
                 </mat-option>
               </mat-select>
@@ -139,7 +141,7 @@
         >
           <mat-expansion-panel-header>
             <mat-panel-title>
-              Aprovación Requerida
+              Aprobación Requerida
             </mat-panel-title>
             <mat-panel-description>
               <mat-checkbox formControlName="requiredApproval"></mat-checkbox>
@@ -147,14 +149,47 @@
           </mat-expansion-panel-header>
 
           <div class="config">
-            <label class="mb-12 mt-12">Seleccione usuarios aprovadores</label>
+            <label class="mb-12 mt-12">Seleccione usuarios aprobadores</label>
             <mat-form-field class="mb-12">
               <mat-label>Seleccionar usuarios</mat-label>
               <mat-icon matPrefix>group</mat-icon>
               <mat-select formControlName="incidentApprovers" multiple>
-                <mat-option *ngFor="let user of data.listUsers" [value]="user.id">
-                  {{ user.name }}
-                </mat-option>
+                @for (user of data.listUsers; track $index) {
+                  <mat-option [value]="user.id">
+                    {{ user.name }}
+                  </mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          </div>
+        </mat-expansion-panel>
+
+        <mat-expansion-panel
+          [expanded]="valueRestricted"
+          (opened)="setValueRestricted(true)" 
+          (closed)="setValueRestricted(false)"
+          hideToggle
+        >
+          <mat-expansion-panel-header>
+            <mat-panel-title>
+              Restricción por Rol
+            </mat-panel-title>
+            <mat-panel-description>
+              <mat-checkbox formControlName="restrictedWithRoles"></mat-checkbox>
+            </mat-panel-description>
+          </mat-expansion-panel-header>
+
+          <div class="config">
+            <label class="mb-12 mt-12">Seleccione roles permitidos</label>
+            <mat-form-field class="mb-12">
+              <mat-label>Seleccionar roles</mat-label>
+              <mat-icon matPrefix>admin_panel_settings</mat-icon>
+              <mat-select formControlName="allowedRoles" multiple>
+                @for (role of data.listRoles; track $index) {
+                  <mat-option [value]="role.id">
+                    {{ role.label }}
+                  </mat-option>
+                }
               </mat-select>
             </mat-form-field>
           </div>
@@ -163,6 +198,10 @@
   </form>
 </mat-dialog-content>
 <mat-dialog-actions>
-  <button mat-button (click)="onCancel()">Cancelar</button>
-  <button mat-button (click)="submit()" cdkFocusInitial>{{ isEditMode ? 'Guardar' : 'Agregar' }}</button>
+  @if (loading) {
+    <mat-spinner diameter="30"></mat-spinner>
+  } @else {
+    <button mat-button (click)="onCancel()">Cancelar</button>
+    <button mat-flat-button (click)="submit()">{{ isEditMode ? 'Guardar' : 'Agregar' }}</button>
+  }
 </mat-dialog-actions>
