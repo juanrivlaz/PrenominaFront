@@ -1,0 +1,64 @@
+.history-table {
+    width: 100%;
+}
+
+.positive {
+    color: #4caf50;
+    font-weight: 500;
+}
+
+.negative {
+    color: #f44336;
+    font-weight: 500;
+}
+
+.notes-cell {
+    max-width: 150px;
+    display: inline-block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cancelled-row {
+    opacity: 0.6;
+    background: #ffebee;
+}
+
+.type-accumulation {
+    background-color: #e3f2fd !important;
+    color: #1976d2 !important;
+}
+
+.type-payment {
+    background-color: #f3e5f5 !important;
+    color: #7b1fa2 !important;
+}
+
+.type-rest-day {
+    background-color: #e8f5e9 !important;
+    color: #388e3c !important;
+}
+
+.type-adjustment {
+    background-color: #fff3e0 !important;
+    color: #f57c00 !important;
+}
+
+.type-cancellation {
+    background-color: #ffebee !important;
+    color: #d32f2f !important;
+}
+
+.empty-state,
+.loading-state {
+    text-align: center;
+    padding: 32px;
+    color: #666;
+
+    mat-icon {
+        font-size: 48px;
+        width: 48px;
+        height: 48px;
+    }
+}

@@ -1,4 +1,4 @@
-import { Component, HostBinding, Input } from "@angular/core";
+import { Component, HostBinding, input } from "@angular/core";
 import { MenuIntemInterface } from "../../../interfaces/menu-item.interface";
 import { CommonModule } from "@angular/common";
 import { RouterLink, RouterLinkActive } from "@angular/router";
@@ -12,5 +12,7 @@ import { MaterialModule } from "../../../modules/material/material.module";
 })
 export class AppNavItem {
     @HostBinding('class') classes = 'nav-item';
-    @Input() item?: MenuIntemInterface;
+
+    // Input usando signal-based API
+    public readonly item = input<MenuIntemInterface | undefined>(undefined);
 }

@@ -2,6 +2,20 @@ import { HttpClient, HttpResponse } from "@angular/common/http";
 import { Injectable } from "@angular/core";
 import { IInitAttendanceRecords } from "@core/models/init-attendance-records.interface";
 import { IFilterReports } from "@core/models/reports/filter.interface";
+import {
+    IOvertimeSummary,
+    IOvertimeAccumulation,
+    IOvertimeMovementsPaged,
+    IOvertimeOperationResult,
+    IAccumulateOvertimeInput,
+    IPayOvertimeDirectInput,
+    IUseOvertimeForRestDayInput,
+    IProcessOvertimesBatchInput,
+    ICancelOvertimeMovementInput,
+    ISendToHourBankInput,
+    IManualOvertimeEntryInput,
+    OvertimeMovementType
+} from "@core/models/reports/overtime-accumulation.interface";
 import { Observable } from "rxjs";
 
 @Injectable()
@@ -193,5 +207,106 @@ export class ReportsService {
         }
 
         return defaultName;
+    }
+
+    // ==================== OVERTIME ACCUMULATION ====================
+
+    /**
+     * Verifica si hay horas extras pendientes en un periodo
+     */
+    public checkPendingOvertimes(typeNomina: number, numPeriod: number): Observable<{ hasPending: boolean; count: number }> {
+        return this.httpService.get<{ hasPending: boolean; count: number }>('/OvertimeAccumulation/has-pending', {
+            params: { typeNomina, numPeriod }
+        });
+    }
+
+    /**
+     * Obtiene el resumen de horas extras con opciones de acumulación
+     */
+    public getOvertimeSummary(typeNomina: number, numPeriod: number, search: string = ''): Observable<IOvertimeSummary[]> {
+        return this.httpService.get<IOvertimeSummary[]>('/OvertimeAccumulation/summary', {
+            params: {
+                typeNomina,
+                numPeriod,
+                search
+            }
+        });
+    }
+
+    /**
+     * Obtiene el balance de acumulación de un empleado
+     */
+    public getEmployeeBalance(employeeCode: number): Observable<IOvertimeAccumulation> {
+        return this.httpService.get<IOvertimeAccumulation>(`/OvertimeAccumulation/balance/${employeeCode}`);
+    }
+
+    /**
+     * Acumula horas extras
+     */
+    public accumulateOvertime(input: IAccumulateOvertimeInput): Observable<IOvertimeOperationResult> {
+        return this.httpService.post<IOvertimeOperationResult>('/OvertimeAccumulation/accumulate', input);
+    }
+
+    /**
+     * Registra pago directo de horas extras
+     */
+    public payOvertimeDirect(input: IPayOvertimeDirectInput): Observable<IOvertimeOperationResult> {
+        return this.httpService.post<IOvertimeOperationResult>('/OvertimeAccumulation/pay-direct', input);
+    }
+
+    /**
+     * Usa horas acumuladas para día de descanso
+     */
+    public useOvertimeForRestDay(input: IUseOvertimeForRestDayInput): Observable<IOvertimeOperationResult> {
+        return this.httpService.post<IOvertimeOperationResult>('/OvertimeAccumulation/use-for-rest-day', input);
+    }
+
+    /**
+     * Cancela un movimiento previo
+     */
+    public cancelOvertimeMovement(input: ICancelOvertimeMovementInput): Observable<IOvertimeOperationResult> {
+        return this.httpService.post<IOvertimeOperationResult>('/OvertimeAccumulation/cancel', input);
+    }
+
+    /**
+     * Obtiene el historial de movimientos
+     */
+    public getOvertimeMovements(params: {
+        employeeCode?: number;
+        startDate?: string;
+        endDate?: string;
+        movementType?: OvertimeMovementType;
+        page?: number;
+        pageSize?: number;
+    }): Observable<IOvertimeMovementsPaged> {
+        return this.httpService.get<IOvertimeMovementsPaged>('/OvertimeAccumulation/movements', {
+            params: params as any
+        });
+    }
+
+    /**
+     * Envia horas extras a banco de horas
+     */
+    public sendToHourBank(input: ISendToHourBankInput): Observable<IOvertimeOperationResult> {
+        return this.httpService.post<IOvertimeOperationResult>('/OvertimeAccumulation/hour-bank', input);
+    }
+
+    /**
+     * Agrega registro manual de horas extras (sistema externo)
+     */
+    public addManualOvertimeEntry(input: IManualOvertimeEntryInput): Observable<IOvertimeOperationResult> {
+        return this.httpService.post<IOvertimeOperationResult>('/OvertimeAccumulation/manual-entry', input);
+    }
+
+    /**
+     * Procesa horas extras en lote
+     */
+    public processOvertimesBatch(input: IProcessOvertimesBatchInput): Observable<{
+        totalProcessed: number;
+        successCount: number;
+        failCount: number;
+        details: IOvertimeOperationResult[];
+    }> {
+        return this.httpService.post<any>('/OvertimeAccumulation/process-batch', input);
     }
 }

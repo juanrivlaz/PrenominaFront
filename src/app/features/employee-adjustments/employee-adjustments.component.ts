@@ -42,7 +42,8 @@ export class EmployeeAdjustmentsComponent implements OnInit {
     public columnTableActivities: Array<string> = [
         'id',
         'label',
-        'actions'
+        'actions',
+        'exclude-overtime-activity'
     ];
     public columnTableEmployees: Array<string> = [
         'code',
@@ -50,7 +51,8 @@ export class EmployeeAdjustmentsComponent implements OnInit {
         'activity',
         'tenant',
         'actions',
-        'block-clock'
+        'block-clock',
+        'exclude-overtime'
     ];
 
     constructor(
@@ -76,6 +78,64 @@ export class EmployeeAdjustmentsComponent implements OnInit {
 
     public openIncidentsEmployee(item: IEmployee): void {
         this.addIgnoreIncident(item.codigo.toString(), `${item.name} ${item.lastName} ${item.mLastName}`, TypeApplyIgnoreIncident.Employee);
+    }
+
+    public toggleExcludeOvertime(employee: IEmployee, event: any): void {
+        const excludeOvertime = event.checked;
+        this.service.updateExcludeOvertime(employee.codigo, excludeOvertime).subscribe({
+            next: () => {
+                (employee as any).excludeOvertime = excludeOvertime;
+                this._snackBar.open(
+                    excludeOvertime ? 'Empleado excluido de horas extras' : 'Empleado incluido en horas extras',
+                    undefined,
+                    {
+                        horizontalPosition: 'center',
+                        verticalPosition: 'top',
+                        panelClass: 'alert-success',
+                        duration: 3000
+                    }
+                );
+            },
+            error: (err) => {
+                event.source.checked = !excludeOvertime;
+                const message = err.error?.message || 'Error al actualizar configuración';
+                this._snackBar.open(message, undefined, {
+                    horizontalPosition: 'center',
+                    verticalPosition: 'top',
+                    panelClass: 'alert-error',
+                    duration: 3000
+                });
+            }
+        });
+    }
+
+    public toggleExcludeOvertimeActivity(activity: ITabulator, event: any): void {
+        const excludeOvertime = event.checked;
+        this.service.updateExcludeOvertimeActivity(activity.ocupation, excludeOvertime).subscribe({
+            next: () => {
+                (activity as any).excludeOvertime = excludeOvertime;
+                this._snackBar.open(
+                    excludeOvertime ? 'Actividad excluida de horas extras' : 'Actividad incluida en horas extras',
+                    undefined,
+                    {
+                        horizontalPosition: 'center',
+                        verticalPosition: 'top',
+                        panelClass: 'alert-success',
+                        duration: 3000
+                    }
+                );
+            },
+            error: (err) => {
+                event.source.checked = !excludeOvertime;
+                const message = err.error?.message || 'Error al actualizar configuración';
+                this._snackBar.open(message, undefined, {
+                    horizontalPosition: 'center',
+                    verticalPosition: 'top',
+                    panelClass: 'alert-error',
+                    duration: 3000
+                });
+            }
+        });
     }
 
     public handleChangeSearch(event: Event): void {
@@ -148,12 +208,15 @@ export class EmployeeAdjustmentsComponent implements OnInit {
             this.service.getTenants(),
             this.service.getIncidentCodes(),
             this.service.getActivities(),
+            this.service.getExcludedActivities(),
         ]).pipe(finalize(() => {
             this.configService.setLoading(false);
         })).subscribe({
             next: (response) => {
                 this.typeTenant.set(response[0].typeTenant);
                 this.incidentCodes.set(response[1]);
+
+                const excludedActivityIds = new Set(response[3]);
 
                 let itemsActivities = [];
                 if (response[0].typeTenant === TypeTenant.Department) {
@@ -169,7 +232,12 @@ export class EmployeeAdjustmentsComponent implements OnInit {
                 }
 
                 this.tenants = new MatTableDataSource<{id: number | string; label: string;}>(itemsActivities);
-                this.activities = new MatTableDataSource<ITabulator>(response[2]);
+
+                const activitiesWithConfig = response[2].map((a: ITabulator) => ({
+                    ...a,
+                    excludeOvertime: excludedActivityIds.has(a.ocupation)
+                }));
+                this.activities = new MatTableDataSource<ITabulator>(activitiesWithConfig);
 
                 this.subscriptionEmployees();
             },
@@ -188,10 +256,17 @@ export class EmployeeAdjustmentsComponent implements OnInit {
 
     private getEmployees(): void {
         this.configService.setLoading(true);
-        this.service.getEmployee().pipe(finalize(() => {
+        combineLatest([
+            this.service.getEmployee(),
+            this.service.getExcludedEmployees(),
+        ]).pipe(finalize(() => {
             this.configService.setLoading(false);
         })).subscribe({
-            next: (response) => {
+            next: ([response, excludedCodes]) => {
+                const excludedSet = new Set(excludedCodes);
+                response.items.forEach((e: any) => {
+                    e.excludeOvertime = excludedSet.has(e.codigo);
+                });
                 this.employees = new MatTableDataSource(response.items);
             },
             error: (err) => {

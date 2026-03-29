@@ -65,3 +65,8 @@ dotnet publish -c Release -f net8.0 -r win-x64 --self-contained -o C:\app
 
 compilar utilizando iis
 dotnet publish -c Release -f net8.0 -o C:\app
+
+
+#Instruccion para iniciar claude con el contexto 
+Ejecuta esto en tu próxima sesión:
+/memory

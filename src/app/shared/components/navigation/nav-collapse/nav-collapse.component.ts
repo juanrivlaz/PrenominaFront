@@ -1,4 +1,4 @@
-import { Component, HostBinding, Input } from "@angular/core";
+import { Component, HostBinding, input, signal } from "@angular/core";
 import { appAnimations } from "../../../../core/animations";
 import { MenuCollapseInterface } from "../../../interfaces/menu-collapse.interface";
 import { AppNavItem } from "../nav-item/nav-item.component";
@@ -14,16 +14,21 @@ import { CommonModule } from "@angular/common";
     imports: [AppNavItem, AppNavGroup, MaterialModule, CommonModule]
 })
 export class AppNavCollapse {
-    @Input() item: MenuCollapseInterface | undefined;
+    // Input usando signal-based API
+    public readonly item = input<MenuCollapseInterface | undefined>(undefined);
+
+    // Estado interno usando signal
+    public readonly isOpen = signal(false);
+
     @HostBinding('class') classes = 'nav-collapse nav-item';
-    @HostBinding('class.open') isOpen = false;
 
-    constructor() {}
+    @HostBinding('class.open')
+    public get openClass(): boolean {
+        return this.isOpen();
+    }
 
-    public toggleOpen(ev: Event): void
-    {
+    public toggleOpen(ev: Event): void {
         ev.preventDefault();
-
-        this.isOpen = !this.isOpen;
+        this.isOpen.update(value => !value);
     }
 }

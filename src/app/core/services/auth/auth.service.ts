@@ -10,6 +10,7 @@ import { TypeTenant } from "@core/models/enum/type-tenant";
 import { ILoginResponse } from "@core/models/login-response.interface";
 import { ISectionRol } from "@core/models/section-rol.interface";
 import { Supervisor } from "@core/models/supervisor";
+import { SecureStorageService } from "@core/services/storage/secure-storage.service";
 import { BehaviorSubject } from "rxjs";
 
 @Injectable({
@@ -17,8 +18,11 @@ import { BehaviorSubject } from "rxjs";
 })
 export class AuthService {
     private jwtHelper: JwtHelperService;
-    private sessionKey = 'auth-token';
-    public token?: string;
+    private readonly tokenKey = 'auth-token';
+
+    // Token almacenado SOLO en memoria (nunca en storage)
+    private _token?: string;
+
     public typeTenant: BehaviorSubject<number> = new BehaviorSubject(TypeTenant.Department);
     public year: BehaviorSubject<number> = new BehaviorSubject(0);
     public timeZone: BehaviorSubject<string> = new BehaviorSubject(TimeZone.Bahia_Banderas.toString());
@@ -31,18 +35,33 @@ export class AuthService {
     public supervisors: BehaviorSubject<Array<Supervisor>> = new BehaviorSubject<Array<Supervisor>>([]);
     public sectionsForAccess: BehaviorSubject<Array<ISectionRol>> = new BehaviorSubject<Array<ISectionRol>>([]);
 
-    constructor(private readonly httpService: HttpClient) {
-        this.token = window.sessionStorage.getItem(this.sessionKey) || undefined;
+    constructor(
+        private readonly httpService: HttpClient,
+        private readonly secureStorage: SecureStorageService
+    ) {
         this.jwtHelper = new JwtHelperService();
+        // Intentar recuperar token de memoria (en caso de que el servicio persista)
+        this._token = this.secureStorage.getToken(this.tokenKey) ?? undefined;
         this.setInitDataSystem();
     }
 
+    /**
+     * Getter seguro para el token
+     */
+    public get token(): string | undefined {
+        return this._token;
+    }
+
     public get isLoggedIn(): boolean {
-        if (!this.token) {
+        if (!this._token) {
             return false;
         }
 
-        return !this.jwtHelper.isTokenExpired(this.token);
+        try {
+            return !this.jwtHelper.isTokenExpired(this._token);
+        } catch {
+            return false;
+        }
     }
 
     public hasRole(roles: Array<string>): boolean {
@@ -54,30 +73,39 @@ export class AuthService {
     }
 
     public get role(): string {
-        if (!this.token) {
+        if (!this._token) {
             return '';
         }
 
-        const decode = this.jwtHelper.decodeToken(this.token);
+        try {
+            const decode = this.jwtHelper.decodeToken(this._token);
 
-        return decode?.RoleCode || ''
+            return decode?.RoleCode || '';
+        } catch {
+            return '';
+        }
     }
 
     public get userName(): string {
-        if (!this.token) {
+        if (!this._token) {
             return '';
         }
 
-        const decode = this.jwtHelper.decodeToken(this.token);
-
-        return decode?.given_name || ''
+        try {
+            const decode = this.jwtHelper.decodeToken(this._token);
+            return decode?.given_name || '';
+        } catch {
+            return '';
+        }
     }
 
     public login(loginResponse: ILoginResponse, update: boolean = false): void {
-        const activeCompanyValue = window.sessionStorage.getItem(SysKey.ActiveCompany);
-        const activeTenantValue = window.sessionStorage.getItem(SysKey.ActiveTenant);
-        window.sessionStorage.setItem(this.sessionKey, loginResponse.token);
-        this.token = loginResponse.token;
+        const activeCompanyValue = this.secureStorage.getSession(SysKey.ActiveCompany);
+        const activeTenantValue = this.secureStorage.getSession(SysKey.ActiveTenant);
+
+        // Almacenar token SOLO en memoria (más seguro contra XSS)
+        this._token = loginResponse.token;
+        this.secureStorage.setToken(this.tokenKey, loginResponse.token);
 
         this.companies.next(loginResponse.userDetails?.companies || []);
         this.centers.next(loginResponse.userDetails?.centers || []);
@@ -91,7 +119,7 @@ export class AuthService {
                 const existCompany = loginResponse.userDetails.companies.find(item => item.id === parseInt(activeCompanyValue || '-1', 10));
                 this.setActiveCompany(existCompany?.id || loginResponse.userDetails.companies[0].id);
             }
-    
+
             if (loginResponse.typeTenant === TypeTenant.Department && loginResponse.userDetails.centers?.length) {
                 const existTenant = loginResponse.userDetails.centers.find(item => item.id.trim() === activeTenantValue?.trim());
                 const firstCenter = existTenant || loginResponse.userDetails.centers[0];
@@ -119,12 +147,17 @@ export class AuthService {
     }
 
     public logAuth(): void {
-        window.sessionStorage.clear();
+        // Limpiar token de memoria
+        this._token = undefined;
+        this.secureStorage.removeToken(this.tokenKey);
+        // Limpiar session storage
+        this.secureStorage.clearSession();
     }
 
     public setTypeTenant(typeTenant: number): void {
-        const activeTenantValue = window.sessionStorage.getItem(SysKey.ActiveTenant);
-        window.localStorage.setItem(SysKey.TypeTenant, typeTenant.toString());
+        const activeTenantValue = this.secureStorage.getSession(SysKey.ActiveTenant);
+        // TypeTenant no es sensible, usar storage normal
+        this.secureStorage.setLocal(SysKey.TypeTenant, typeTenant.toString());
         let findFirst: string;
         if (typeTenant === TypeTenant.Department) {
             const existTenant = this.centers.value.find(item => item.id.trim() === activeTenantValue?.trim());
@@ -141,41 +174,41 @@ export class AuthService {
         if (findFirst) {
             this.setActiveTenant(findFirst);
         }
-    
+
         this.typeTenant.next(typeTenant);
     }
 
     public setActiveCompany(company: number): void {
-        window.sessionStorage.setItem(SysKey.ActiveCompany, company.toString());
+        this.secureStorage.setSession(SysKey.ActiveCompany, company.toString());
         if (this.activeCompany.value !== company) {
             this.activeCompany.next(company);
         }
     }
 
     public setActiveTenant(tenant: string): void {
-        window.sessionStorage.setItem(SysKey.ActiveTenant, tenant.toString());
+        this.secureStorage.setSession(SysKey.ActiveTenant, tenant.toString());
         if (this.activeTenant.value !== tenant) {
             this.activeTenant.next(tenant);
         }
     }
 
     public setPayrollPeriod(period: number): void {
-        window.sessionStorage.setItem(SysKey.PayrollPeriod, period.toString());
+        this.secureStorage.setSession(SysKey.PayrollPeriod, period.toString());
         this.payrollPeriod.next(period);
     }
 
     public setPayrollType(type: number): void {
-        window.sessionStorage.setItem(SysKey.PayrollType, type.toString());
+        this.secureStorage.setSession(SysKey.PayrollType, type.toString());
         this.payrollType.next(type);
     }
 
     public setTimeZone(timeZone: TimeZone): void {
-        window.localStorage.setItem(SysKey.TimeZone, timeZone);
+        this.secureStorage.setLocal(SysKey.TimeZone, timeZone);
         this.timeZone.next(timeZone);
     }
 
     public setYear(year: number): void {
-        window.localStorage.setItem(SysKey.Year, year.toString());
+        this.secureStorage.setLocal(SysKey.Year, year.toString());
         this.year.next(year);
     }
 
@@ -184,34 +217,36 @@ export class AuthService {
             next: (response) => {
                 this.login({
                     ...response,
-                    token: this.token || '',
+                    token: this._token || '',
                 }, false);
             },
-            error: (err) => {
-                console.log({
-                    err
-                });
+            error: () => {
+                // Error silencioso - no exponer información en consola
             }
         });
     }
 
     private setInitDataSystem(): void {
-        const typeTenantValue = window.localStorage.getItem(SysKey.TypeTenant);
-        const timeZoneValue = window.localStorage.getItem(SysKey.TimeZone);
-        const activeCompanyValue = window.sessionStorage.getItem(SysKey.ActiveCompany);
-        const activeTenantValue = window.sessionStorage.getItem(SysKey.ActiveTenant);
-        const payrollPeriodValue = window.sessionStorage.getItem(SysKey.PayrollPeriod);
-        const payrollTypeValue = window.sessionStorage.getItem(SysKey.PayrollType);
-        const yearValue = window.localStorage.getItem(SysKey.Year);
+        const typeTenantValue = this.secureStorage.getLocal(SysKey.TypeTenant);
+        const timeZoneValue = this.secureStorage.getLocal(SysKey.TimeZone);
+        const activeCompanyValue = this.secureStorage.getSession(SysKey.ActiveCompany);
+        const activeTenantValue = this.secureStorage.getSession(SysKey.ActiveTenant);
+        const payrollPeriodValue = this.secureStorage.getSession(SysKey.PayrollPeriod);
+        const payrollTypeValue = this.secureStorage.getSession(SysKey.PayrollType);
+        const yearValue = this.secureStorage.getLocal(SysKey.Year);
 
         if (yearValue) {
             const parseYear = parseInt(yearValue, 10);
-            this.year.next(parseYear);
+            if (!isNaN(parseYear)) {
+                this.year.next(parseYear);
+            }
         }
 
         if (typeTenantValue) {
             const parseTypeTenant = parseInt(typeTenantValue, 10);
-            this.typeTenant.next(parseTypeTenant);
+            if (!isNaN(parseTypeTenant)) {
+                this.typeTenant.next(parseTypeTenant);
+            }
         }
 
         if (timeZoneValue) {
@@ -220,7 +255,9 @@ export class AuthService {
 
         if (activeCompanyValue) {
             const parseActiveCompany = parseInt(activeCompanyValue, 10);
-            this.activeCompany.next(parseActiveCompany);
+            if (!isNaN(parseActiveCompany)) {
+                this.activeCompany.next(parseActiveCompany);
+            }
         }
 
         if (activeTenantValue) {
@@ -229,12 +266,16 @@ export class AuthService {
 
         if (payrollPeriodValue) {
             const parsePayrollPeriod = parseInt(payrollPeriodValue, 10);
-            this.payrollPeriod.next(parsePayrollPeriod);
+            if (!isNaN(parsePayrollPeriod)) {
+                this.payrollPeriod.next(parsePayrollPeriod);
+            }
         }
 
         if (payrollTypeValue) {
             const parsePayrollTypeValue = parseInt(payrollTypeValue, 10);
-            this.payrollType.next(parsePayrollTypeValue);
+            if (!isNaN(parsePayrollTypeValue)) {
+                this.payrollType.next(parsePayrollTypeValue);
+            }
         }
     }
 }

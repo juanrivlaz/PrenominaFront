@@ -78,4 +78,24 @@ export class EmployeeAdjustmentsService {
             incidentCodes
         });
     }
+
+    public updateExcludeOvertime(employeeCode: number, excludeOvertime: boolean): Observable<boolean> {
+        return this.httpService.put<boolean>(`/Employees/${employeeCode}/exclude-overtime`, {
+            excludeOvertime
+        });
+    }
+
+    public getExcludedEmployees(): Observable<number[]> {
+        return this.httpService.get<number[]>('/Employees/overtime-configs');
+    }
+
+    public getExcludedActivities(): Observable<number[]> {
+        return this.httpService.get<number[]>('/Activities/overtime-configs');
+    }
+
+    public updateExcludeOvertimeActivity(activityId: number, excludeOvertime: boolean): Observable<boolean> {
+        return this.httpService.put<boolean>(`/Activities/${activityId}/exclude-overtime`, {
+            excludeOvertime
+        });
+    }
 }

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, model, OnInit, signal, ViewEncapsulation, WritableSignal } from "@angular/core";
+import { ChangeDetectionStrategy, Component, inject, model, OnInit, OnDestroy, signal, ViewEncapsulation, WritableSignal } from "@angular/core";
 import { MaterialModule } from "../../shared/modules/material/material.module";
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -13,7 +13,7 @@ import { IAssignWorkedDayOff } from "./assign-worked-day-off/assign-worked-day-o
 import { AssignSpecialIncidentComponent } from "./assign-special-incident/assign-special-incident.component";
 import { DetailDayComponent } from "./details-day/details-day.component";
 import { AttendaceService } from "./attendace.service";
-import { combineLatest, debounceTime, finalize, forkJoin } from "rxjs";
+import { combineLatest, debounceTime, finalize, forkJoin, Subject, switchMap, takeUntil, timer, of } from "rxjs";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { MatProgressBarModule } from "@angular/material/progress-bar";
 import { AuthService } from "@core/services/auth/auth.service";
@@ -58,10 +58,21 @@ import { IChangeAttendanceResponse } from "./change-attendance/change-attendance
     changeDetection: ChangeDetectionStrategy.OnPush,
     encapsulation: ViewEncapsulation.None,
 })
-export class AttendaceComponent implements OnInit {
+export class AttendaceComponent implements OnInit, OnDestroy {
     private readonly _snackBar = inject(MatSnackBar);
     private readonly dialog = inject(MatDialog);
-    private _listPeriods: WritableSignal<Array<IPrenominaPeriod>> = signal([]);
+
+    // Subject para cleanup de subscripciones - PREVIENE MEMORY LEAKS
+    private readonly destroy$ = new Subject<void>();
+
+    // Subject para cancelar requests anteriores - PREVIENE RACE CONDITIONS
+    private readonly searchTrigger$ = new Subject<string>();
+
+    private readonly _listPeriods: WritableSignal<Array<IPrenominaPeriod>> = signal([]);
+
+    // Cache para evitar recálculos
+    private dayOffsCache: Map<string, boolean> = new Map();
+
     public doubleShift = model<IAssignDoubleShift>({
         employeCode: '31',
         employeName: 'Duran Miranda Miguel Angel',
@@ -83,7 +94,7 @@ export class AttendaceComponent implements OnInit {
     public listEmployeeAttendance: WritableSignal<Array<IEmployeeAttendance>> = signal([]);
     public listIncidentCodes: WritableSignal<Array<IIncidentCode>> = signal([]);
     public listIncidentCodesAditional: WritableSignal<Array<IIncidentCode>> = signal([]);
-    public listItemsLoading: WritableSignal<Array<string>> = signal([]);
+    public listItemsLoading: WritableSignal<Set<string>> = signal(new Set()); // Usar Set para O(1) lookup
     public listDates: WritableSignal<Array<{
         day: string,
         date: string,
@@ -109,13 +120,65 @@ export class AttendaceComponent implements OnInit {
     ) {}
 
     ngOnInit(): void {
-        combineLatest([this.authService.activeCompany, this.authService.activeTenant]).subscribe(() => {
-            this.getInit();
-        });
+        // Usar takeUntil para limpieza automática
+        combineLatest([this.authService.activeCompany, this.authService.activeTenant])
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(() => {
+                this.getInit();
+            });
 
-        this.searchControl.valueChanges.pipe(debounceTime(1200)).subscribe((value) => {
-            this.get(value);
-        });
+        // Usar switchMap para cancelar requests anteriores (previene race conditions)
+        this.searchTrigger$
+            .pipe(
+                debounceTime(800),
+                switchMap((search) => {
+                    if (!this.payroll || !this.period) {
+                        return of(null);
+                    }
+                    this.configService.setLoading(true);
+                    return this.service.get(
+                        this.paginatorDetails().page,
+                        30,
+                        this.payroll.typeNom,
+                        this.period.numPeriod,
+                        search || ''
+                    ).pipe(
+                        finalize(() => this.configService.setLoading(false))
+                    );
+                }),
+                takeUntil(this.destroy$)
+            )
+            .subscribe({
+                next: (response) => {
+                    if (response) {
+                        this.listEmployeeAttendance.set(
+                            response.items.map((item) => ({
+                                ...item,
+                                attendances: this.getAttendance(item)
+                            }))
+                        );
+                        this.paginatorDetails.set({
+                            pageSize: 30,
+                            totalRecord: response.totalRecords,
+                            page: this.paginatorDetails().page,
+                        });
+                    }
+                },
+                error: (err) => {
+                    const message = err.error?.message || 'Ocurrió un error, por favor intentalo más tarde';
+                    this.showError(message);
+                }
+            });
+
+        // Conectar searchControl al searchTrigger
+        this.searchControl.valueChanges
+            .pipe(
+                debounceTime(400),
+                takeUntil(this.destroy$)
+            )
+            .subscribe((value) => {
+                this.searchTrigger$.next(value || '');
+            });
 
         const storageTypeNom = window.sessionStorage.getItem(SysKey.ActiveTypeNom);
         if (storageTypeNom) {
@@ -124,44 +187,75 @@ export class AttendaceComponent implements OnInit {
 
         const storageNumPeriod = window.sessionStorage.getItem(SysKey.ActiveNumPeriod);
         if (storageNumPeriod) {
-            setTimeout(() => {
-                this.setPeriod(parseInt(storageNumPeriod, 10));
-            }, 800);
+            // Usar timer de RxJS en lugar de setTimeout para cleanup automático
+            timer(800)
+                .pipe(takeUntil(this.destroy$))
+                .subscribe(() => {
+                    this.setPeriod(parseInt(storageNumPeriod, 10));
+                });
         }
 
-        this.authService.sectionsForAccess.subscribe((sections) => {
-            const role = this.authService.role;
-            const sectionTAsistencia = sections.find((item) => item.sectionsCode.includes('tasistencia'));
+        this.authService.sectionsForAccess
+            .pipe(takeUntil(this.destroy$))
+            .subscribe((sections) => {
+                const role = this.authService.role;
+                const sectionTAsistencia = sections.find((item) => item.sectionsCode.includes('tasistencia'));
 
-            this.canClosePayrollPeriod = role === 'sudo' || (sectionTAsistencia !== undefined && sectionTAsistencia.permissions["CanClosePayrollPeriod"] === true);
-            this.canModifyCheckins = role === 'sudo' || (sectionTAsistencia !== undefined && sectionTAsistencia.permissions["CanModifyCheckins"] === true);
-        });
+                this.canClosePayrollPeriod = role === 'sudo' || (sectionTAsistencia !== undefined && sectionTAsistencia.permissions["CanClosePayrollPeriod"] === true);
+                this.canModifyCheckins = role === 'sudo' || (sectionTAsistencia !== undefined && sectionTAsistencia.permissions["CanModifyCheckins"] === true);
+            });
+    }
+
+    ngOnDestroy(): void {
+        // Limpiar todas las subscripciones
+        this.destroy$.next();
+        this.destroy$.complete();
+        // Limpiar cache
+        this.dayOffsCache.clear();
     }
 
     public getInit(): void {
         this.loading.set(true);
-        forkJoin([this.service.getDayOffs(), this.service.getInit()]).pipe(finalize(() => {
-            this.loading.set(false);
-        })).subscribe({
-            next: (response) => {
-                this.listPayrolls.set(response[1].payrolls);
-                this._listPeriods.set(response[1].periods);
-                this.listPeriodStatus.set(response[1].periodStatus);
-                this.listIncidentCodes.set(response[1].incidentCodes.filter((item) => !item.isAdditional));
-                this.listIncidentCodesAditional.set(response[1].incidentCodes.filter((item) => item.isAdditional));
-                this.listDayOffs = response[0];
-            },
-            error: (err) => {
-                const message = err.error?.message || 'Ocurrió un error, por favor intentalo más tarde';
+        forkJoin([this.service.getDayOffs(), this.service.getInit()])
+            .pipe(
+                finalize(() => this.loading.set(false)),
+                takeUntil(this.destroy$)
+            )
+            .subscribe({
+                next: (response) => {
+                    this.listPayrolls.set(response[1].payrolls);
+                    this._listPeriods.set(response[1].periods);
+                    this.listPeriodStatus.set(response[1].periodStatus);
+                    this.listIncidentCodes.set(response[1].incidentCodes.filter((item) => !item.isAdditional));
+                    this.listIncidentCodesAditional.set(response[1].incidentCodes.filter((item) => item.isAdditional));
+                    this.listDayOffs = response[0];
+                    // Precalcular cache de días festivos
+                    this.buildDayOffsCache();
+                },
+                error: (err) => {
+                    const message = err.error?.message || 'Ocurrió un error, por favor intentalo más tarde';
+                    this.showError(message);
+                }
+            });
+    }
 
-                this._snackBar.open(message, '❌', {
-                  horizontalPosition: 'center',
-                  verticalPosition: 'top',
-                  panelClass: 'alert-error',
-                  duration: 3000
-                });
-            }
-        });
+    /**
+     * Construye cache de días festivos para búsqueda O(1)
+     */
+    private buildDayOffsCache(): void {
+        this.dayOffsCache.clear();
+        for (const dayOff of this.listDayOffs) {
+            const dateKey = dayjs(dayOff.date).format('MM-DD');
+            this.dayOffsCache.set(dateKey, true);
+        }
+    }
+
+    /**
+     * Verifica si una fecha es día festivo usando cache O(1)
+     */
+    private isDayOff(date: string): boolean {
+        const dateKey = dayjs(date).format('MM-DD');
+        return this.dayOffsCache.has(dateKey);
     }
 
     public get closedPeriod(): boolean {
@@ -169,67 +263,33 @@ export class AttendaceComponent implements OnInit {
             return false;
         }
 
+        const activeTenant = this.authService.activeTenant.value.trim().replace(/\s+/g, '');
+        const activeCompany = this.authService.activeCompany.value;
+
         return this.listPeriodStatus().some(
-            (item) => item.typePayroll === this.payroll?.typeNom && 
-                item.numPeriod === this.period?.numPeriod && 
-                (item.tenantId === '-999' || item.tenantId === this.authService.activeTenant.value.trim().replace('/\s+/g', '')) &&
-                item.companyId === this.authService.activeCompany.value
+            (item) => item.typePayroll === this.payroll?.typeNom &&
+                item.numPeriod === this.period?.numPeriod &&
+                (item.tenantId === '-999' || item.tenantId === activeTenant) &&
+                item.companyId === activeCompany
         );
     }
 
     public get(search: string = ''): void {
         if (!this.payroll) {
-            this._snackBar.open('Selecciona un tipo de nómina', undefined, {
-                horizontalPosition: 'center',
-                verticalPosition: 'top',
-                panelClass: 'alert-error',
-                duration: 3000
-            });
-
+            this.showError('Selecciona un tipo de nómina');
             return;
         }
 
         if (!this.period) {
-            this._snackBar.open('Selecciona un periodo', undefined, {
-                horizontalPosition: 'center',
-                verticalPosition: 'top',
-                panelClass: 'alert-error',
-                duration: 3000
-            });
-
+            this.showError('Selecciona un periodo');
             return;
         }
+
         const listDates = this.generarFechas(this.period.startDate, this.period.closingDate);
         this.listDates.set(listDates);
-        this.configService.setLoading(true);
-        this.service.get(this.paginatorDetails().page, 30, this.payroll.typeNom, this.period.numPeriod, search || this.searchControl.value || '').pipe(finalize(() => {
-            this.configService.setLoading(false);
-        })).subscribe({
-            next: (response) => {
-                this.listEmployeeAttendance.set(
-                    response.items.map((item) => ({
-                        ...item,
-                        attendances: this.getAttendance(item)
-                    }))
-                );
 
-                this.paginatorDetails.set({
-                    pageSize: 30,
-                    totalRecord: response.totalRecords,
-                    page: this.paginatorDetails().page,
-                });
-            },
-            error: (err) => {
-                const message = err.error?.message || 'Ocurrió un error, por favor intentalo más tarde';
-
-                this._snackBar.open(message, undefined, {
-                  horizontalPosition: 'center',
-                  verticalPosition: 'top',
-                  panelClass: 'alert-error',
-                  duration: 3000
-                });
-            }
-        })
+        // Usar el subject para triggear la búsqueda (con cancelación automática)
+        this.searchTrigger$.next(search || this.searchControl.value || '');
     }
 
     public handleClickOpen() {
@@ -260,95 +320,104 @@ export class AttendaceComponent implements OnInit {
     }
 
     public getAttendance(employee: IEmployeeAttendance): Array<IAttendance> {
-        return this.listDates().map((date) => {
-            const attendance = employee.attendances?.find((item) => item.date === date.date);
-            const findInDayOff = this.listDayOffs.findIndex((item) => {
-                const dateoff = dayjs(item.date);
-                const dt = dayjs(date.date);
+        const dates = this.listDates();
+        const attendanceMap = new Map<string, IAttendance>();
 
-                return dt.month() === dateoff.month() && dt.date() === dateoff.date();
-            });
+        // Indexar asistencias existentes por fecha para O(1) lookup
+        if (employee.attendances) {
+            for (const att of employee.attendances) {
+                attendanceMap.set(att.date, att);
+            }
+        }
 
-            return {
-                ...(attendance ? {
+        return dates.map((date) => {
+            const attendance = attendanceMap.get(date.date);
+            const isDayOff = this.isDayOff(date.date);
+
+            if (attendance) {
+                return {
                     ...attendance,
                     label: date.label,
                     day: date.day,
                     isInconsistency: this.isInconsistencyChecks(attendance),
-                    isDayOff: findInDayOff >= 0
-                } : {
-                    date: date.date,
-                    label: date.label,
-                    day: date.day,
-                    checkEntry: null,
-                    checkOut: null,
-                    incidentCode: 'N/A',
-                    isDayOff: findInDayOff >= 0
-                }),
+                    isDayOff
+                };
             }
+
+            return {
+                date: date.date,
+                label: date.label,
+                day: date.day,
+                checkEntry: null,
+                checkOut: null,
+                incidentCode: 'N/A',
+                isDayOff
+            };
         });
     }
 
     public setIncidencia(incidentCode: string, employeeCode: number, company: number, attendance: IAttendance, customValue?: number): void {
         const identifyIncident = `${employeeCode}${company}${attendance.date}`;
-        this.listItemsLoading.update(items => [...items, identifyIncident]);
-        this.service.insertAttendaceIncident(incidentCode, attendance.date, employeeCode, customValue).pipe(finalize(() => {
-            this.listItemsLoading.update(items => items.filter((item) => item !== identifyIncident));
-        })).subscribe({
-            next: (response) => {
-                const { assistanceIncidents } = attendance;
 
-                if (!response.itemIncidentCode.isAdditional) {
-                    attendance.incidentCode = incidentCode;
-                }
-                
-                if (!response.itemIncidentCode.isAdditional) {
-                    attendance.assistanceIncidents = assistanceIncidents ? assistanceIncidents.map((item) => {
-                        if (!item.isAdditional) {
-                            return {
-                                ...item,
-                                incidentCode: response.incidentCode,
+        // Usar Set para mejor rendimiento
+        this.listItemsLoading.update(items => {
+            const newSet = new Set(items);
+            newSet.add(identifyIncident);
+            return newSet;
+        });
+
+        this.service.insertAttendaceIncident(incidentCode, attendance.date, employeeCode, customValue)
+            .pipe(
+                finalize(() => {
+                    this.listItemsLoading.update(items => {
+                        const newSet = new Set(items);
+                        newSet.delete(identifyIncident);
+                        return newSet;
+                    });
+                }),
+                takeUntil(this.destroy$)
+            )
+            .subscribe({
+                next: (response) => {
+                    const { assistanceIncidents } = attendance;
+
+                    if (!response.itemIncidentCode.isAdditional) {
+                        attendance.incidentCode = incidentCode;
+                        attendance.assistanceIncidents = assistanceIncidents
+                            ? assistanceIncidents.map((item) => {
+                                if (!item.isAdditional) {
+                                    return {
+                                        ...item,
+                                        incidentCode: response.incidentCode,
+                                        label: response.itemIncidentCode.label,
+                                        isAdditional: response.itemIncidentCode.isAdditional,
+                                    };
+                                }
+                                return item;
+                            })
+                            : [{
+                                ...response,
                                 label: response.itemIncidentCode.label,
                                 isAdditional: response.itemIncidentCode.isAdditional,
-                            };
-                        }
+                            }];
+                    } else {
+                        attendance.assistanceIncidents = [
+                            ...(assistanceIncidents || []),
+                            {
+                                ...response,
+                                label: response.itemIncidentCode.label,
+                                isAdditional: response.itemIncidentCode.isAdditional,
+                            }
+                        ];
+                    }
 
-                        return item;
-                    }) : [{
-                        ...response,
-                        label: response.itemIncidentCode.label,
-                        isAdditional: response.itemIncidentCode.isAdditional,
-                    }];
-                } else {
-                    attendance.assistanceIncidents = assistanceIncidents ? [...assistanceIncidents, {
-                        ...response,
-                        label: response.itemIncidentCode.label,
-                        isAdditional: response.itemIncidentCode.isAdditional,
-                    }] : [{
-                        ...response,
-                        label: response.itemIncidentCode.label,
-                        isAdditional: response.itemIncidentCode.isAdditional,
-                    }];
+                    this.showSuccess('Incidencia registrada');
+                },
+                error: (err) => {
+                    const message = err.error?.message || 'Ocurrió un error, por favor intentalo más tarde';
+                    this.showError(message);
                 }
-
-                this._snackBar.open('Incidencia registrada', '✅', {
-                  horizontalPosition: 'center',
-                  verticalPosition: 'top',
-                  panelClass: 'alert-success',
-                  duration: 3000
-                });
-            },
-            error: (err) => {
-                const message = err.error?.message || 'Ocurrió un error, por favor intentalo más tarde';
-
-                this._snackBar.open(message, undefined, {
-                  horizontalPosition: 'center',
-                  verticalPosition: 'top',
-                  panelClass: 'alert-error',
-                  duration: 3000
-                });
-            }
-        });
+            });
     }
 
     public asignDoubleShift(attendance: IAttendance, employee: IEmployeeAttendance): void {
@@ -364,44 +433,47 @@ export class AttendaceComponent implements OnInit {
             },
         });
 
-        dialogRef.afterClosed().subscribe(result => {
-            if (result?.confirm) {
-                const identifyIncident = `${employee.codigo}${employee.company}${attendance.date}`;
-                this.listItemsLoading.update(items => [...items, identifyIncident]);
+        dialogRef.afterClosed()
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(result => {
+                if (result?.confirm) {
+                    const identifyIncident = `${employee.codigo}${employee.company}${attendance.date}`;
+                    this.listItemsLoading.update(items => {
+                        const newSet = new Set(items);
+                        newSet.add(identifyIncident);
+                        return newSet;
+                    });
 
-                this.service.assignDoubleShift(attendance.date, employee.codigo).pipe(finalize(() => {
-                    this.listItemsLoading.update(items => items.filter((item) => item !== identifyIncident));
-                })).subscribe({
-                    next: (response) => {
-                        const dateFormat = dayjs(attendance.date);
-                        var findAttendance = employee.attendances?.findIndex((item) => item.date === dateFormat.format("YYYY-MM-DD"));
-                        if (findAttendance && findAttendance >= 0) {
-                            employee.attendances![findAttendance].assistanceIncidents = [
-                                ...employee.attendances![findAttendance].assistanceIncidents || [],
-                                response,
-                            ];
-                        }
-
-                        this._snackBar.open('Asignación complete', '✅', {
-                            horizontalPosition: 'center',
-                            verticalPosition: 'top',
-                            panelClass: 'alert-success',
-                            duration: 3000
+                    this.service.assignDoubleShift(attendance.date, employee.codigo)
+                        .pipe(
+                            finalize(() => {
+                                this.listItemsLoading.update(items => {
+                                    const newSet = new Set(items);
+                                    newSet.delete(identifyIncident);
+                                    return newSet;
+                                });
+                            }),
+                            takeUntil(this.destroy$)
+                        )
+                        .subscribe({
+                            next: (response) => {
+                                const dateFormat = dayjs(attendance.date).format("YYYY-MM-DD");
+                                const findAttendance = employee.attendances?.findIndex((item) => item.date === dateFormat);
+                                if (findAttendance !== undefined && findAttendance >= 0) {
+                                    employee.attendances![findAttendance].assistanceIncidents = [
+                                        ...(employee.attendances![findAttendance].assistanceIncidents || []),
+                                        response,
+                                    ];
+                                }
+                                this.showSuccess('Asignación completa');
+                            },
+                            error: (err) => {
+                                const message = err.error?.message || 'Ocurrió un error, por favor intentalo más tarde';
+                                this.showError(message);
+                            }
                         });
-                    },
-                    error: (err) => {
-                        const message = err.error?.message || 'Ocurrió un error, por favor intentalo más tarde';
-
-                        this._snackBar.open(message, '❌', {
-                            horizontalPosition: 'center',
-                            verticalPosition: 'top',
-                            panelClass: 'alert-error',
-                            duration: 3000
-                        });
-                    }
-                });
-            }
-        })
+                }
+            });
     }
 
     public asignWorkedDayOff(): void {
@@ -409,15 +481,11 @@ export class AttendaceComponent implements OnInit {
             data: this.workedDayOff(),
         });
 
-        dialogRef.afterClosed().subscribe(result => {
-            console.log('the assign worked day off', result);
-
-            if (result !== undefined) {
-                console.log({
-                    update: this.workedDayOff(),
-                });
-            }
-        })
+        dialogRef.afterClosed()
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(() => {
+                // Handler for dialog close
+            });
     }
 
     public asignIncident(employee: IEmployeeAttendance): void {
@@ -431,28 +499,24 @@ export class AttendaceComponent implements OnInit {
             }
         });
 
-        dialogRef.afterClosed().subscribe(result => {
-            if (result) {
-                const dateFormat = dayjs(result.date);
+        dialogRef.afterClosed()
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(result => {
+                if (result) {
+                    const dateFormat = dayjs(result.date).format("YYYY-MM-DD");
+                    const findAttendance = employee.attendances?.findIndex((item) => item.date === dateFormat);
 
-                var findAttendance = employee.attendances?.findIndex((item) => item.date === dateFormat.format("YYYY-MM-DD"));
+                    if (findAttendance !== undefined && findAttendance >= 0) {
+                        employee.attendances![findAttendance].assistanceIncidents = [
+                            ...(employee.attendances![findAttendance].assistanceIncidents || []),
+                        ];
 
-                if (findAttendance !== undefined && findAttendance >= 0) {
-                    employee.attendances![findAttendance].assistanceIncidents = [
-                        ...employee.attendances![findAttendance].assistanceIncidents || [],
-                    ];
-
-                    this.setIncidencia(result.incidentCode, employee.codigo, employee.company, employee.attendances![findAttendance], result.customValue);
-                } else {
-                    this._snackBar.open('Fecha no valida', undefined, {
-                        horizontalPosition: 'center',
-                        verticalPosition: 'top',
-                        panelClass: 'alert-error',
-                        duration: 3000
-                    });
+                        this.setIncidencia(result.incidentCode, employee.codigo, employee.company, employee.attendances![findAttendance], result.customValue);
+                    } else {
+                        this.showError('Fecha no válida');
+                    }
                 }
-            }
-        })
+            });
     }
 
     public detailsDay(employee: IEmployeeAttendance, attendance: IAttendance): void {
@@ -470,71 +534,68 @@ export class AttendaceComponent implements OnInit {
             }
         });
 
-        dialogRef.afterClosed().subscribe(result => {
-            if (result?.deleted.length) {
-                const isNotAdditional = attendance.assistanceIncidents?.filter((item) => item.isAdditional && result.deleted.includes(item.id));
+        dialogRef.afterClosed()
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(result => {
+                if (result?.deleted.length) {
+                    const hasNonAdditional = attendance.assistanceIncidents?.some(
+                        (item) => !item.isAdditional && result.deleted.includes(item.id)
+                    );
 
-                if (isNotAdditional) {
-                    attendance.incidentCode = 'N/A';
+                    if (hasNonAdditional) {
+                        attendance.incidentCode = 'N/A';
+                    }
+
+                    attendance.assistanceIncidents = attendance.assistanceIncidents?.filter(
+                        (item) => !result.deleted.includes(item.id)
+                    );
                 }
-
-                attendance.assistanceIncidents = attendance.assistanceIncidents?.filter((item) => !result.deleted.includes(item.id));
-            }
-        });
+            });
     }
 
     public getIsLoading(codigo: number, company: number, date: string): boolean {
-        return this.listItemsLoading().findIndex((item) => item === `${codigo}${company}${date}`) >= 0;
+        return this.listItemsLoading().has(`${codigo}${company}${date}`);
     }
 
     public downloadReport(typeFileDownload: TypeFileDownload): void {
         if (!this.payroll) {
-            this._snackBar.open('Selecciona un tipo de nómina', undefined, {
-                horizontalPosition: 'center',
-                verticalPosition: 'top',
-                panelClass: 'alert-error',
-                duration: 3000
-            });
-
+            this.showError('Selecciona un tipo de nómina');
             return;
         }
 
         if (!this.period) {
-            this._snackBar.open('Selecciona un periodo', undefined, {
-                horizontalPosition: 'center',
-                verticalPosition: 'top',
-                panelClass: 'alert-error',
-                duration: 3000
-            });
-
+            this.showError('Selecciona un periodo');
             return;
         }
 
         this.loading.set(true);
-        this.service.downloadReport(this.payroll.typeNom, this.period.numPeriod, typeFileDownload).pipe(finalize(() => {
-            this.loading.set(false);
-        })).subscribe({
-            next: (response) => {
-                const urlBlob = window.URL.createObjectURL(new Blob([response]));
-                const link = document.createElement('a');
-                link.href = urlBlob;
-                var type = typeFileDownload === TypeFileDownload.XLSX ? 'xlsx' : 'pdf';
-                link.download = `tarjeta_asistencia.${type}`;
-                link.click();
+        this.service.downloadReport(this.payroll.typeNom, this.period.numPeriod, typeFileDownload)
+            .pipe(
+                finalize(() => this.loading.set(false)),
+                takeUntil(this.destroy$)
+            )
+            .subscribe({
+                next: (response) => {
+                    const blob = new Blob([response]);
+                    const urlBlob = window.URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = urlBlob;
+                    const type = typeFileDownload === TypeFileDownload.XLSX ? 'xlsx' : 'pdf';
+                    link.download = `tarjeta_asistencia.${type}`;
+                    link.click();
 
-                window.URL.revokeObjectURL(urlBlob);
-            },
-            error: (err) => {
-                const message = err.error?.message || 'Ocurrió un error, por favor intentalo más tarde';
-
-                this._snackBar.open(message, undefined, {
-                  horizontalPosition: 'center',
-                  verticalPosition: 'top',
-                  panelClass: 'alert-error',
-                  duration: 3000
-                });
-            }
-        });
+                    // Revocar URL después de un pequeño delay para asegurar descarga
+                    timer(100)
+                        .pipe(takeUntil(this.destroy$))
+                        .subscribe(() => {
+                            window.URL.revokeObjectURL(urlBlob);
+                        });
+                },
+                error: (err) => {
+                    const message = err.error?.message || 'Ocurrió un error, por favor intentalo más tarde';
+                    this.showError(message);
+                }
+            });
     }
 
     public isInconsistencyChecks(attendance: IAttendance): boolean {
@@ -544,7 +605,6 @@ export class AttendaceComponent implements OnInit {
 
         const fechaInicio = dayjs(`${attendance.date}T${attendance.checkEntry}`);
         const fechaFin = dayjs(`${attendance.date}T${attendance.checkOut || attendance.checkEntry}`);
-
         const diferenciaEnMinutos = fechaFin.diff(fechaInicio, 'hour');
 
         return diferenciaEnMinutos <= 5;
@@ -552,31 +612,19 @@ export class AttendaceComponent implements OnInit {
 
     public confirmClosePeriod(): void {
         if (!this.payroll) {
-            this._snackBar.open('Selecciona un tipo de nómina', undefined, {
-                horizontalPosition: 'center',
-                verticalPosition: 'top',
-                panelClass: 'alert-error',
-                duration: 3000
-            });
-
+            this.showError('Selecciona un tipo de nómina');
             return;
         }
 
         if (!this.period) {
-            this._snackBar.open('Selecciona un periodo', undefined, {
-                horizontalPosition: 'center',
-                verticalPosition: 'top',
-                panelClass: 'alert-error',
-                duration: 3000
-            });
-
+            this.showError('Selecciona un periodo');
             return;
         }
 
         const dialogRef = this.dialog.open<ConfirmClosePeriodComponent, IConfirmClosePeriod, { confirm: boolean, tenant: string }>(ConfirmClosePeriodComponent, {
             data: {
                 periodName: this.period ? `${this.period.numPeriod} - ${dayjs(this.period.startDate).format("DD/MM/YYYY")} - ${dayjs(this.period.closingDate).format("DD/MM/YYYY")}` : '',
-                tenantId: this.authService.activeTenant.value.trim().replace('/\s+/g', ''),
+                tenantId: this.authService.activeTenant.value.trim().replace(/\s+/g, ''),
                 closedPeriod: this.closedPeriod,
                 listPeriodStatus: this.listPeriodStatus(),
                 TypePayroll: this.payroll!.typeNom,
@@ -584,40 +632,32 @@ export class AttendaceComponent implements OnInit {
             },
         });
 
-        dialogRef.afterClosed().subscribe(result => {
-            if (result?.confirm) {
-                this.loading.set(true);
-                this.service.changePeridStatus({
-                    TypePayroll: this.payroll!.typeNom,
-                    TenantId: result.tenant.trim(),
-                    NumPeriod: this.period!.numPeriod,
-                }).pipe(finalize(() => {
-                    this.loading.set(false);
-                })).subscribe({
-                    next: (response) => {
-                        this.listPeriodStatus.set(response);
-                        setTimeout(() => {
-                            this._snackBar.open(`El periodo ha sido modificado`, '✅', {
-                                horizontalPosition: 'center',
-                                verticalPosition: 'top',
-                                panelClass: 'alert-success',
-                                duration: 3000
-                            });
-                        }, 500);
-                    },
-                    error: (err) => {
-                        const message = err.error?.message || 'Ocurrió un error, por favor intentalo más tarde';
-
-                        this._snackBar.open(message, '❌', {
-                            horizontalPosition: 'center',
-                            verticalPosition: 'top',
-                            panelClass: 'alert-error',
-                            duration: 3000
-                        });
-                    }
-                });
-            }
-        });
+        dialogRef.afterClosed()
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(result => {
+                if (result?.confirm) {
+                    this.loading.set(true);
+                    this.service.changePeridStatus({
+                        TypePayroll: this.payroll!.typeNom,
+                        TenantId: result.tenant.trim(),
+                        NumPeriod: this.period!.numPeriod,
+                    })
+                    .pipe(
+                        finalize(() => this.loading.set(false)),
+                        takeUntil(this.destroy$)
+                    )
+                    .subscribe({
+                        next: (response) => {
+                            this.listPeriodStatus.set(response);
+                            this.showSuccess('El periodo ha sido modificado');
+                        },
+                        error: (err) => {
+                            const message = err.error?.message || 'Ocurrió un error, por favor intentalo más tarde';
+                            this.showError(message);
+                        }
+                    });
+                }
+            });
     }
 
     public handlePageEvent(e: PageEvent): void {
@@ -626,9 +666,8 @@ export class AttendaceComponent implements OnInit {
             page: e.pageIndex + 1
         }));
 
-        setTimeout(() => {
-            this.get();
-        }, 200);
+        // Triggear búsqueda inmediatamente
+        this.searchTrigger$.next(this.searchControl.value || '');
     }
 
     public handleChangeAttendance(employee: IEmployeeAttendance, attendance: IAttendance): void {
@@ -649,33 +688,47 @@ export class AttendaceComponent implements OnInit {
             }
         });
 
-        dialogRef.afterClosed().subscribe(result => {
-            if (result?.confirm) {
-                this._snackBar.open('Asistencia actualizada', '✅', {
-                    horizontalPosition: 'center',
-                    verticalPosition: 'top',
-                    panelClass: 'alert-success',
-                    duration: 3000
-                });
+        dialogRef.afterClosed()
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(result => {
+                if (result?.confirm) {
+                    this.showSuccess('Asistencia actualizada');
+                    // Refrescar datos
+                    this.searchTrigger$.next(this.searchControl.value || '');
+                } else if (result?.errorMessage) {
+                    this.showError(result.errorMessage);
+                }
+            });
+    }
 
-                setTimeout(() => {
-                    this.get();
-                }, 200);
-            } else if (result?.errorMessage) {
-                this._snackBar.open(result.errorMessage, '❌', {
-                    horizontalPosition: 'center',
-                    verticalPosition: 'top',
-                    panelClass: 'alert-error',
-                    duration: 3000
-                });
-            }
+    /**
+     * Muestra mensaje de error en snackbar
+     */
+    private showError(message: string): void {
+        this._snackBar.open(message, '❌', {
+            horizontalPosition: 'center',
+            verticalPosition: 'top',
+            panelClass: 'alert-error',
+            duration: 3000
+        });
+    }
+
+    /**
+     * Muestra mensaje de éxito en snackbar
+     */
+    private showSuccess(message: string): void {
+        this._snackBar.open(message, '✅', {
+            horizontalPosition: 'center',
+            verticalPosition: 'top',
+            panelClass: 'alert-success',
+            duration: 3000
         });
     }
 
     private generarFechas(startDate: string | Date, endDate: string | Date): Array<GeneratedDates> {
-        let dates: Array<GeneratedDates> = [];
+        const dates: Array<GeneratedDates> = [];
         let startAdmin = dayjs(startDate);
-        let endAdmin = dayjs(endDate);
+        const endAdmin = dayjs(endDate);
 
         while (startAdmin.isBefore(endAdmin) || startAdmin.isSame(endAdmin)) {
             dates.push({
@@ -685,7 +738,7 @@ export class AttendaceComponent implements OnInit {
             });
             startAdmin = startAdmin.add(1, "day");
         }
-    
+
         return dates;
     }
 }

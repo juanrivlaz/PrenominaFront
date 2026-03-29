@@ -5,10 +5,14 @@
                 T. Nómina | {{ payroll?.typeNom }} - {{ payroll?.label ?? 'Selecionar' }}
             </button>
             <mat-menu #menuTypeNom="matMenu">
-                <button mat-menu-item *ngFor="let item of listPayrolls()" (click)="setPayroll(item.typeNom)">
-                    <mat-icon *ngIf="payroll?.typeNom === item.typeNom">done</mat-icon>
-                    {{ item.typeNom }} | {{ item.label || item.typeNom }}
-                </button>
+                @for (item of listPayrolls(); track item.typeNom) {
+                    <button mat-menu-item (click)="setPayroll(item.typeNom)">
+                        @if (payroll?.typeNom === item.typeNom) {
+                            <mat-icon>done</mat-icon>
+                        }
+                        {{ item.typeNom }} | {{ item.label || item.typeNom }}
+                    </button>
+                }
             </mat-menu>
         </div>
         <div class="ctn-upload">

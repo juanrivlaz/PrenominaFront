@@ -1,50 +1,57 @@
 import { CommonModule } from "@angular/common";
-import { ChangeDetectorRef, Component, Input, OnChanges, Output, SimpleChanges, ViewChild, ViewEncapsulation } from "@angular/core";
-import { MatPaginator, MatPaginatorModule } from "@angular/material/paginator";
+import { Component, effect, input, output, viewChild, ViewEncapsulation } from "@angular/core";
+import { MatPaginator, MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { IIncidenceReport } from "@core/models/reports/incidences.interface";
 
 @Component({
-  selector: 'app-incidences-table',
-  templateUrl: './incidences-table.component.html',
-  styleUrl: './incidences-table.component.scss',
-  imports: [
-    CommonModule,
-    MatTableModule,
-    MatPaginatorModule,
-  ],
-  encapsulation: ViewEncapsulation.None,
+    selector: 'app-incidences-table',
+    templateUrl: './incidences-table.component.html',
+    styleUrl: './incidences-table.component.scss',
+    imports: [
+        CommonModule,
+        MatTableModule,
+        MatPaginatorModule,
+    ],
+    encapsulation: ViewEncapsulation.None,
 })
-export class IncidencesTableComponent implements OnChanges {
-  @Input() public dataSource: MatTableDataSource<IIncidenceReport> = new MatTableDataSource<IIncidenceReport>([]);
-  @Input() public totalRecords: number = 0;
-  @Input() public pageSize: number = 10;
-  @Output() public onPageChange: (event: any) => void = () => {};
-  @ViewChild(MatPaginator) paginator: MatPaginator = {} as MatPaginator;
+export class IncidencesTableComponent {
+    // Inputs usando signal-based API
+    public readonly dataSource = input<MatTableDataSource<IIncidenceReport>>(new MatTableDataSource<IIncidenceReport>([]));
+    public readonly totalRecords = input<number>(0);
+    public readonly pageSize = input<number>(10);
 
-  public readonly columns: Array<string> = [
-    'code',
-    'name',
-    'department',
-    'jobPosition',
-    'date',
-    'incidenceCode',
-    'description',
-    'userFullName',
-    'createdAt',
-  ];
+    // Output usando signal-based API
+    public readonly onPageChange = output<PageEvent>();
 
-  constructor(private cdr: ChangeDetectorRef) {}
+    // ViewChild usando signal-based API
+    public readonly paginator = viewChild<MatPaginator>(MatPaginator);
 
-  ngOnChanges(changes: SimpleChanges): void {
-    //Called before any other lifecycle hook. Use it to inject dependencies, but avoid any serious work here.
-    //Add '${implements OnChanges}' to the class.
-    if (changes['pageSize'] || changes['totalRecords']) {
-      this.paginator.pageSize = this.pageSize;
-      this.paginator.length = this.totalRecords;
-      this.cdr.detectChanges();
+    public readonly columns: Array<string> = [
+        'code',
+        'name',
+        'department',
+        'jobPosition',
+        'date',
+        'incidenceCode',
+        'description',
+        'userFullName',
+        'createdAt',
+    ];
 
-      this.dataSource.paginator = this.paginator;
+    constructor() {
+        // Effect reemplaza ngOnChanges
+        effect(() => {
+            const paginatorRef = this.paginator();
+            const pageSize = this.pageSize();
+            const totalRecords = this.totalRecords();
+            const dataSource = this.dataSource();
+
+            if (paginatorRef) {
+                paginatorRef.pageSize = pageSize;
+                paginatorRef.length = totalRecords;
+                dataSource.paginator = paginatorRef;
+            }
+        });
     }
-  }
 }

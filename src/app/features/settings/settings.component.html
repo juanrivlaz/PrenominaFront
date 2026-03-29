@@ -23,7 +23,9 @@
                     <mat-form-field class="mt-12">
                         <mat-label>Select an option</mat-label>
                         <mat-select [(ngModel)]="timeZone">
-                          <mat-option *ngFor="let item of timeZoneOptions" [value]="item.id">{{ item.label }}</mat-option>
+                            @for (item of timeZoneOptions; track item.id) {
+                                <mat-option [value]="item.id">{{ item.label }}</mat-option>
+                            }
                         </mat-select>
                     </mat-form-field>
                 </div>
@@ -38,7 +40,9 @@
                     <mat-form-field class="mt-12">
                         <mat-label>Tipo de relación</mat-label>
                         <mat-select [(ngModel)]="typeTenant">
-                          <mat-option *ngFor="let item of typeTenantsOptions" [value]="item.id">{{ item.label }}</mat-option>
+                            @for (item of typeTenantsOptions; track item.id) {
+                                <mat-option [value]="item.id">{{ item.label }}</mat-option>
+                            }
                         </mat-select>
                         <button [disabled]="loadingTypeTenant()" mat-icon-button matSuffix (click)="handleSaveTypeTenant($event)"><mat-icon>save</mat-icon></button>
                     </mat-form-field>

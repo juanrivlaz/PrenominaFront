@@ -1,0 +1,50 @@
+.employee-info {
+    background: #f5f5f5;
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+
+    p {
+        margin: 4px 0;
+    }
+}
+
+.movement-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.full-width {
+    width: 100%;
+}
+
+.time-input-row {
+    display: flex;
+    gap: 16px;
+
+    mat-form-field {
+        flex: 1;
+    }
+}
+
+.partial-label {
+    margin: 0 0 4px;
+    font-size: 13px;
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0.7);
+}
+
+.time-hint {
+    display: block;
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.6);
+    margin-bottom: 8px;
+}
+
+.time-error {
+    display: block;
+    font-size: 12px;
+    color: #f44336;
+    margin-bottom: 8px;
+}

@@ -1,29 +1,34 @@
-import { Directive, EventEmitter, HostListener, Output } from '@angular/core';
+import { Directive, HostListener, output, signal } from '@angular/core';
 
 @Directive({
-  selector: '[appLongPress]'
+    selector: '[appLongPress]'
 })
 export class LongPressDirective {
-  @Output() longPress = new EventEmitter<void>();
-  private timeout: any;
-  private isLongPressing = false;
+    // Output usando signal-based API
+    public readonly longPress = output<void>();
 
-  @HostListener('mousedown', ['$event'])
-  @HostListener('touchstart', ['$event'])
-  onPressStart(event: Event): void {
-    event.preventDefault();
-    this.isLongPressing = false;
-    this.timeout = setTimeout(() => {
-      this.isLongPressing = true;
-      this.longPress.emit();
-    }, 2000);
-  }
+    private timeout: ReturnType<typeof setTimeout> | null = null;
+    private readonly isLongPressing = signal(false);
 
-  @HostListener('mouseup')
-  @HostListener('mouseleave')
-  @HostListener('touchend')
-  @HostListener('touchcancel')
-  onPressEnd(): void {
-    clearTimeout(this.timeout);
-  }
+    @HostListener('mousedown', ['$event'])
+    @HostListener('touchstart', ['$event'])
+    onPressStart(event: Event): void {
+        event.preventDefault();
+        this.isLongPressing.set(false);
+        this.timeout = setTimeout(() => {
+            this.isLongPressing.set(true);
+            this.longPress.emit();
+        }, 2000);
+    }
+
+    @HostListener('mouseup')
+    @HostListener('mouseleave')
+    @HostListener('touchend')
+    @HostListener('touchcancel')
+    onPressEnd(): void {
+        if (this.timeout) {
+            clearTimeout(this.timeout);
+            this.timeout = null;
+        }
+    }
 }

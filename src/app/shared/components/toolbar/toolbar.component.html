@@ -4,14 +4,18 @@
             {{ company }}
         </button>
         <mat-menu #menuCompany="matMenu">
-            <button mat-menu-item *ngFor="let item of companies()" (click)="selectCompany(item.id)">{{ item.name }} | {{ item.rfc }}</button>
+            @for (item of companies(); track item.id) {
+                <button mat-menu-item (click)="selectCompany(item.id)">{{ item.name }} | {{ item.rfc }}</button>
+            }
         </mat-menu>
         <mat-icon>arrow_forward_ios</mat-icon>
         <button class="btn-filter-tn" mat-button [matMenuTriggerFor]="menuDepartment" matTooltip="Departamentos">
             {{ tenant }}
         </button>
         <mat-menu #menuDepartment="matMenu">
-            <button mat-menu-item *ngFor="let item of tenants" (click)="selectTenant(item.id)">{{ item.label }}</button>
+            @for (item of tenants; track item.id) {
+                <button mat-menu-item (click)="selectTenant(item.id)">{{ item.label }}</button>
+            }
         </mat-menu>
     </div>
     <div class="avatar">

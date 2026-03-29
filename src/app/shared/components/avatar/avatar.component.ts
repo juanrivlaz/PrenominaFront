@@ -1,4 +1,4 @@
-import { Component, Input, ViewEncapsulation } from "@angular/core";
+import { Component, computed, input, ViewEncapsulation } from "@angular/core";
 
 @Component({
     selector: 'app-avatar',
@@ -7,13 +7,16 @@ import { Component, Input, ViewEncapsulation } from "@angular/core";
     encapsulation: ViewEncapsulation.None
 })
 export class AvatarComponent {
-    @Input() name: string = '';
+    // Input usando signal-based API
+    public readonly name = input<string>('');
 
-    public get label(): string {
-        return this.name.split(" ")
-        .filter(word => word.length > 0)
-        .map(word => word[0].toUpperCase())
-        .slice(0, 2)
-        .join("");
-    }
+    // Computed signal para la etiqueta
+    public readonly label = computed(() => {
+        return this.name()
+            .split(" ")
+            .filter(word => word.length > 0)
+            .map(word => word[0].toUpperCase())
+            .slice(0, 2)
+            .join("");
+    });
 }

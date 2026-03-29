@@ -1,5 +1,5 @@
 import { CommonModule } from "@angular/common";
-import { Component, inject, model, OnInit, signal, ViewChild, ViewEncapsulation, WritableSignal } from "@angular/core";
+import { Component, inject, model, OnInit, signal, viewChild, ViewEncapsulation, WritableSignal } from "@angular/core";
 import { MatChipsModule } from "@angular/material/chips";
 import { MatDividerModule } from "@angular/material/divider";
 import { appAnimations } from "@core/animations";
@@ -21,13 +21,15 @@ import { SysKey } from "@core/models/enum/sys-key";
 import { IPrenominaPeriod } from "@core/models/prenomina-period.interface";
 import { TypeFileDownload } from "@core/models/enum/type-file-download";
 import { MatSnackBar } from "@angular/material/snack-bar";
+import { MatDialog } from "@angular/material/dialog";
 import { AuthService } from "@core/services/auth/auth.service";
-import { combineLatest, debounceTime, finalize } from "rxjs";
+import { combineLatest, debounceTime, finalize, take } from "rxjs";
 import { IAttendanceReport } from "@core/models/reports/attendance.interface";
 import { AttendanceTableComponent } from "./attendance-table/attendance-table.component";
 import { MatDatepicker, MatDatepickerModule } from "@angular/material/datepicker";
 import { IncidencesTableComponent } from "./incidences-table/incidences-table.component";
 import { IIncidenceReport } from "@core/models/reports/incidences.interface";
+import { ConfirmDialogComponent, ConfirmDialogData } from "@shared/components/confirm-dialog/confirm-dialog.component";
 import dayjs from "dayjs";
 
 @Component({
@@ -53,9 +55,11 @@ import dayjs from "dayjs";
     encapsulation: ViewEncapsulation.None,
 })
 export class ReportsComponent implements OnInit {
-    @ViewChild('dateFilter') picker!: MatDatepicker<Date>;
+    // ViewChild usando signal-based API
+    public readonly picker = viewChild<MatDatepicker<Date>>('dateFilter');
 
     private readonly _snackBar = inject(MatSnackBar);
+    private readonly _dialog = inject(MatDialog);
     private _listPeriods: WritableSignal<Array<IPrenominaPeriod>> = signal([]);
 
     public delays: MatTableDataSource<IDelayReport> = new MatTableDataSource<IDelayReport>([]);
@@ -131,7 +135,7 @@ export class ReportsComponent implements OnInit {
     }
 
     public openDatepicker(): void {
-        this.picker.open();
+        this.picker()?.open();
     }
 
     public getInit(): void {
@@ -233,6 +237,42 @@ export class ReportsComponent implements OnInit {
     }
 
     public setPeriod(id: number): void {
+        if (this.activePeriod && this.activePayroll && this.activeSection() === Section.Overtimes) {
+            this.reportsService.checkPendingOvertimes(this.activePayroll, this.activePeriod)
+                .pipe(take(1))
+                .subscribe({
+                    next: (result) => {
+                        if (result.hasPending) {
+                            const dialogRef = this._dialog.open<ConfirmDialogComponent, ConfirmDialogData>(ConfirmDialogComponent, {
+                                width: '450px',
+                                data: {
+                                    title: 'Horas extras sin procesar',
+                                    message: `Existen ${result.count} empleado(s) con horas extras sin procesar en el periodo actual. ¿Desea continuar con el cambio de periodo?`,
+                                    confirmText: 'Continuar',
+                                    cancelText: 'Cancelar',
+                                    confirmColor: 'warn'
+                                }
+                            });
+
+                            dialogRef.afterClosed().subscribe(confirmed => {
+                                if (confirmed) {
+                                    this.applyPeriodChange(id);
+                                }
+                            });
+                        } else {
+                            this.applyPeriodChange(id);
+                        }
+                    },
+                    error: () => {
+                        this.applyPeriodChange(id);
+                    }
+                });
+        } else {
+            this.applyPeriodChange(id);
+        }
+    }
+
+    private applyPeriodChange(id: number): void {
         this.activePeriod = id;
         window.sessionStorage.setItem(SysKey.ActiveNumPeriod, id.toString());
         this.get();

@@ -1,5 +1,5 @@
 import { CommonModule } from "@angular/common";
-import { Component, inject, model, OnInit, signal, ViewEncapsulation, WritableSignal } from "@angular/core";
+import { Component, inject, model, OnInit, OnDestroy, signal, ViewEncapsulation, WritableSignal } from "@angular/core";
 import { AvatarComponent } from "../../shared/components/avatar/avatar.component";
 import { MaterialModule } from "../../shared/modules/material/material.module";
 import { MatTooltipModule } from "@angular/material/tooltip";
@@ -9,7 +9,7 @@ import { AssignTimeOffComponent } from "./assign-time-off/assign-time-off.compon
 import { IAssignTimeOff } from "./assign-time-off/assign-time-off.interface";
 import { AttendaceService } from "../attendace/attendace.service";
 import { AuthService } from "@core/services/auth/auth.service";
-import { combineLatest, debounceTime, finalize } from "rxjs";
+import { combineLatest, debounceTime, finalize, Subject, switchMap, takeUntil, timer, of } from "rxjs";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { IPayroll } from "@core/models/payroll.interface";
 import { IPrenominaPeriod } from "@core/models/prenomina-period.interface";
@@ -39,9 +39,16 @@ import { IAssignTimeOffOutput } from "./assign-time-off/assign-time-off-output.i
     styleUrl: './time-off-manager.component.scss',
     encapsulation: ViewEncapsulation.None,
 })
-export class TimeOffManagerComponent implements OnInit {
+export class TimeOffManagerComponent implements OnInit, OnDestroy {
     private readonly _snackBar = inject(MatSnackBar);
     private readonly dialog = inject(MatDialog);
+
+    // Subject para cleanup de subscripciones - PREVIENE MEMORY LEAKS
+    private readonly destroy$ = new Subject<void>();
+
+    // Subject para cancelar requests anteriores
+    private readonly searchTrigger$ = new Subject<string>();
+
     private _listPeriods: WritableSignal<Array<IPrenominaPeriod>> = signal([]);
     public loading: WritableSignal<boolean> = signal(true);
     public selectedEmployee?: number;
@@ -81,13 +88,64 @@ export class TimeOffManagerComponent implements OnInit {
     ) {}
 
     ngOnInit(): void {
-        combineLatest([this.authService.activeCompany, this.authService.activeTenant]).subscribe(() => {
-            this.getInit();
-        });
+        // Usar takeUntil para limpieza automática
+        combineLatest([this.authService.activeCompany, this.authService.activeTenant])
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(() => {
+                this.getInit();
+            });
 
-        this.searchControl.valueChanges.pipe(debounceTime(1200)).subscribe((value) => {
-            this.getEmployee(value);
-        });
+        // Configurar búsqueda con switchMap para cancelar requests anteriores
+        this.searchTrigger$
+            .pipe(
+                debounceTime(800),
+                switchMap((search) => {
+                    if (!this.activePayroll()) {
+                        return of(null);
+                    }
+                    this.configService.setLoading(true);
+                    return this.service.getEmployeeByPayroll(
+                        this.activePayroll(),
+                        this.paginatorDetails().page,
+                        search || ''
+                    ).pipe(
+                        finalize(() => this.configService.setLoading(false))
+                    );
+                }),
+                takeUntil(this.destroy$)
+            )
+            .subscribe({
+                next: (response) => {
+                    if (response) {
+                        this.listEmployees.set(response.items);
+                        const listAttendaceIncidents = response.items
+                            .map((employee) => employee.attendancesIncident.map((ai) => ({
+                                key: `${employee.codigo}:${ai.date}`,
+                                code: ai.incidentCode
+                            })))
+                            .flat();
+                        this.attendancesIncidents = new Map(listAttendaceIncidents.map((item) => [item.key, item.code]));
+                        this.paginatorDetails.set({
+                            totalRecord: response.totalRecords,
+                            pageSize: response.pageSize,
+                            page: this.paginatorDetails().page
+                        });
+                    }
+                },
+                error: (err) => {
+                    this.showError(err.error?.message || 'Ocurrió un error, por favor intentalo más tarde');
+                }
+            });
+
+        // Conectar searchControl al searchTrigger
+        this.searchControl.valueChanges
+            .pipe(
+                debounceTime(400),
+                takeUntil(this.destroy$)
+            )
+            .subscribe((value) => {
+                this.searchTrigger$.next(value || '');
+            });
 
         const storageTypeNom = window.sessionStorage.getItem(SysKey.ActiveTypeNom);
         if (storageTypeNom) {
@@ -96,64 +154,42 @@ export class TimeOffManagerComponent implements OnInit {
 
         const storageNumPeriod = window.sessionStorage.getItem(SysKey.ActiveNumPeriod);
         if (storageNumPeriod) {
-            setTimeout(() => {
-                this.setPeriod(parseInt(storageNumPeriod, 10));
-            }, 800);
+            // Usar timer de RxJS en lugar de setTimeout
+            timer(800)
+                .pipe(takeUntil(this.destroy$))
+                .subscribe(() => {
+                    this.setPeriod(parseInt(storageNumPeriod, 10));
+                });
         }
+    }
+
+    ngOnDestroy(): void {
+        this.destroy$.next();
+        this.destroy$.complete();
     }
 
     public getInit(): void {
         this.configService.setLoading(true);
-        this.serviceAttendace.getInit().pipe(finalize(() => {
-            this.configService.setLoading(false);
-        })).subscribe({
-            next: (response) => {
-                const now = dayjs();
-                this.listPayrolls.set(response.payrolls);
-                this._listPeriods.set(response.periods);//.filter((item) => (dayjs(item.startAdminDate) <= now && dayjs(item.closingAdminDate) >= now) || dayjs(item.startAdminDate) >= now));
-                this.listIncidentCodes.set(response.incidentCodes.filter((item) => !item.isAdditional));
-                this.listIncidentCodesAditional.set(response.incidentCodes.filter((item) => item.isAdditional));
-            },
-            error: (err) => {
-                const message = err.error?.message || 'Ocurrió un error, por favor intentalo más tarde';
-
-                this._snackBar.open(message, undefined, {
-                    horizontalPosition: 'center',
-                    verticalPosition: 'top',
-                    panelClass: 'alert-error',
-                    duration: 3000
-                });
-            }
-        });
+        this.serviceAttendace.getInit()
+            .pipe(
+                finalize(() => this.configService.setLoading(false)),
+                takeUntil(this.destroy$)
+            )
+            .subscribe({
+                next: (response) => {
+                    this.listPayrolls.set(response.payrolls);
+                    this._listPeriods.set(response.periods);
+                    this.listIncidentCodes.set(response.incidentCodes.filter((item) => !item.isAdditional));
+                    this.listIncidentCodesAditional.set(response.incidentCodes.filter((item) => item.isAdditional));
+                },
+                error: (err) => {
+                    this.showError(err.error?.message || 'Ocurrió un error, por favor intentalo más tarde');
+                }
+            });
     }
 
     public getEmployee(search: string = ''): void {
-        this.configService.setLoading(true);
-        this.service.getEmployeeByPayroll(this.activePayroll(), this.paginatorDetails().page, search || this.searchControl.value).pipe(finalize(() => {
-            this.configService.setLoading(false);
-        })).subscribe({
-            next: (response) => {
-                this.listEmployees.set(response.items);
-
-                const listAttendaceIncidents = response.items.map((employee) => employee.attendancesIncident.map((ai) => ({ key: `${employee.codigo}:${ai.date}`, code: ai.incidentCode}) )).flat();
-                this.attendancesIncidents = new Map(listAttendaceIncidents.map((item) => [item.key, item.code]));
-                this.paginatorDetails.set({
-                    totalRecord: response.totalRecords,
-                    pageSize: response.pageSize,
-                    page: this.paginatorDetails().page
-                });
-            },
-            error: (err) => {
-                const message = err.error?.message || 'Ocurrió un error, por favor intentalo más tarde';
-
-                this._snackBar.open(message, undefined, {
-                    horizontalPosition: 'center',
-                    verticalPosition: 'top',
-                    panelClass: 'alert-error',
-                    duration: 3000
-                });
-            }
-        })
+        this.searchTrigger$.next(search || this.searchControl.value || '');
     }
 
     public handleClickDay(id: number, employeeId: number): void {
@@ -172,8 +208,6 @@ export class TimeOffManagerComponent implements OnInit {
 
                 this.assignTimeOff(assignTimeOff);
             }
-
-            // message error
 
             return;
         }
@@ -198,51 +232,49 @@ export class TimeOffManagerComponent implements OnInit {
             data: assignTimeOff,
         });
 
-        dialogRef.afterClosed().subscribe(result => {
-            this.initialItem = undefined;
-            this.endItem = undefined;
-            this.selectedEmployee = undefined;
+        dialogRef.afterClosed()
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(result => {
+                this.initialItem = undefined;
+                this.endItem = undefined;
+                this.selectedEmployee = undefined;
 
-            if (result !== undefined) {
-                this.configService.setLoading(true);
+                if (result !== undefined) {
+                    this.configService.setLoading(true);
 
-                this.service.registerToUser({
-                    dates: assignTimeOff.dates.map((item) => dayjs(item).format('YYYY-MM-DD')),
-                    employeeCode: assignTimeOff.employeeCode,
-                    incidentCode: result.incidentCode,
-                    notes: result.notes,
-                    requireAbsenceRequest: result.requireAbsenceRequest,
-                }).pipe(finalize(() => {
-                    this.configService.setLoading(false);
-                })).subscribe({
-                    next: (result) => {
-                        const currentEmployees = this.listEmployees().map((item) => {
-                            if (item.codigo == result.codigo) {
-                                return result;
-                            }
+                    this.service.registerToUser({
+                        dates: assignTimeOff.dates.map((item) => dayjs(item).format('YYYY-MM-DD')),
+                        employeeCode: assignTimeOff.employeeCode,
+                        incidentCode: result.incidentCode,
+                        notes: result.notes,
+                        requireAbsenceRequest: result.requireAbsenceRequest,
+                    })
+                    .pipe(
+                        finalize(() => this.configService.setLoading(false)),
+                        takeUntil(this.destroy$)
+                    )
+                    .subscribe({
+                        next: (resultData) => {
+                            const currentEmployees = this.listEmployees().map((item) => {
+                                if (item.codigo == resultData.codigo) {
+                                    return resultData;
+                                }
+                                return item;
+                            });
 
-                            return item;
-                        });
+                            this.listEmployees.set(currentEmployees);
 
-                        this.listEmployees.set(currentEmployees);
-
-                        result.attendancesIncident.forEach((item) => {
-                            const key = `${result.codigo}:${item.date}`;
-                            this.attendancesIncidents.set(key, item.incidentCode);
-                        });
-                    },
-                    error: (err) => {
-                        const message = err.error?.message || 'Ocurrió un error, por favor intentalo más tarde';
-                        this._snackBar.open(message, '❌', {
-                            horizontalPosition: 'center',
-                            verticalPosition: 'top',
-                            panelClass: 'alert-error',
-                            duration: 3000
-                        });
-                    }
-                });
-            }
-        });
+                            resultData.attendancesIncident.forEach((item) => {
+                                const key = `${resultData.codigo}:${item.date}`;
+                                this.attendancesIncidents.set(key, item.incidentCode);
+                            });
+                        },
+                        error: (err) => {
+                            this.showError(err.error?.message || 'Ocurrió un error, por favor intentalo más tarde');
+                        }
+                    });
+                }
+            });
     }
 
     public get payroll(): IPayroll | undefined {
@@ -262,14 +294,8 @@ export class TimeOffManagerComponent implements OnInit {
 
         if (!this.period) {
             if (!noAlert) {
-                this._snackBar.open('Selecciona un periodo', '⚠️', {
-                    horizontalPosition: 'center',
-                    verticalPosition: 'top',
-                    panelClass: 'alert-error',
-                    duration: 3000
-                });
+                this.showError('Selecciona un periodo');
             }
-
             return;
         }
 
@@ -284,11 +310,15 @@ export class TimeOffManagerComponent implements OnInit {
 
         this.activePayroll.set(id);
         window.sessionStorage.setItem(SysKey.ActiveTypeNom, id.toString());
-        setTimeout(() => {
-            this.listDates.set([]);
-            this.setPeriod(0, true);
-            this.getEmployee();
-        }, 200);
+
+        // Usar timer en lugar de setTimeout
+        timer(200)
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(() => {
+                this.listDates.set([]);
+                this.setPeriod(0, true);
+                this.getEmployee();
+            });
     }
 
     public getIncidentForDate(employeeCode: number, date: string) {
@@ -297,13 +327,7 @@ export class TimeOffManagerComponent implements OnInit {
 
     public syncIncapacity(): void {
         if (!this.period) {
-            this._snackBar.open('Selecciona un periodo', '⚠️', {
-                horizontalPosition: 'center',
-                verticalPosition: 'top',
-                panelClass: 'alert-error',
-                duration: 3000
-            });
-
+            this.showError('Selecciona un periodo');
             return;
         }
 
@@ -313,19 +337,26 @@ export class TimeOffManagerComponent implements OnInit {
             TypeNom: this.activePayroll(),
             PeriodId: this.period.id,
             TenantId: this.authService.activeTenant.value
-        }).pipe(finalize(() => {
-            this.configService.setLoading(false);
-        })).subscribe({
+        })
+        .pipe(
+            finalize(() => this.configService.setLoading(false)),
+            takeUntil(this.destroy$)
+        )
+        .subscribe({
             next: (result) => {
-                this._snackBar.open(`Se han sincronizado ${result.totalIncapacities} incapacidades y ${result.totalVacations} vacaciones`, undefined, {
-                    horizontalPosition: 'center',
-                    verticalPosition: 'top',
-                    panelClass: 'alert-success',
-                    duration: 3500
-                });
+                this._snackBar.open(
+                    `Se han sincronizado ${result.totalIncapacities} incapacidades y ${result.totalVacations} vacaciones`,
+                    '✅',
+                    {
+                        horizontalPosition: 'center',
+                        verticalPosition: 'top',
+                        panelClass: 'alert-success',
+                        duration: 3500
+                    }
+                );
             },
             error: (err) => {
-                console.log(err);
+                this.showError(err.error?.message || 'Error al sincronizar');
             }
         });
     }
@@ -336,9 +367,17 @@ export class TimeOffManagerComponent implements OnInit {
             page: e.pageIndex + 1
         }));
 
-        setTimeout(() => {
-            this.getEmployee();
-        }, 200);
+        // Triggear búsqueda inmediatamente
+        this.searchTrigger$.next(this.searchControl.value || '');
+    }
+
+    private showError(message: string): void {
+        this._snackBar.open(message, '❌', {
+            horizontalPosition: 'center',
+            verticalPosition: 'top',
+            panelClass: 'alert-error',
+            duration: 3000
+        });
     }
 
     private generarFechas(startDate: string | Date, endDate: string | Date): Array<{
@@ -347,10 +386,10 @@ export class TimeOffManagerComponent implements OnInit {
         label: string,
         key: number
     }> {
-        let dates = [];
+        const dates = [];
         let start = dayjs(startDate);
-        let end = dayjs(endDate);
-    
+        const end = dayjs(endDate);
+
         while (start.isBefore(end) || start.isSame(end)) {
             dates.push({
                 day: start.format("ddd").toUpperCase(),
@@ -360,7 +399,7 @@ export class TimeOffManagerComponent implements OnInit {
             });
             start = start.add(1, "day");
         }
-    
+
         return dates;
     }
 }

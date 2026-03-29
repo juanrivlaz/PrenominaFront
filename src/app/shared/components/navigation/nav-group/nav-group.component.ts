@@ -1,4 +1,4 @@
-import { Component, HostBinding, Input, ViewEncapsulation } from "@angular/core";
+import { Component, HostBinding, input, ViewEncapsulation } from "@angular/core";
 import { MenuGroupInterface } from "../../../interfaces/menu-group.interface";
 import { AppNavCollapse } from "../nav-collapse/nav-collapse.component";
 import { AppNavItem } from "../nav-item/nav-item.component";
@@ -13,5 +13,7 @@ import { CommonModule } from "@angular/common";
 })
 export class AppNavGroup {
     @HostBinding('class') classes = 'nav-group nav-item';
-    @Input() item: MenuGroupInterface | undefined;
+
+    // Input usando signal-based API
+    public readonly item = input<MenuGroupInterface | undefined>(undefined);
 }

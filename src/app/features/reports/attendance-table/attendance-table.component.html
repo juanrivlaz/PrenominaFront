@@ -1,6 +1,6 @@
-<table mat-table #table [dataSource]="dataSource">
+<table mat-table #table [dataSource]="dataSource()">
     <ng-container matColumnDef="code">
-        <th mat-header-cell *matHeaderCellDef> Código </th>
+        <th mat-header-cell *matHeaderCellDef> Codigo </th>
         <td mat-cell *matCellDef="let row"> {{row.code}} </td>
     </ng-container>
     <ng-container matColumnDef="name">
@@ -33,8 +33,8 @@
 </table>
 
 <mat-paginator
-    [length]="totalRecords"
-    [pageSize]="pageSize"
+    [length]="totalRecords()"
+    [pageSize]="pageSize()"
     [pageSizeOptions]="[5, 10, 25, 100]"
-    (page)="onPageChange($event)">
+    (page)="onPageChange.emit($event)">
 </mat-paginator>

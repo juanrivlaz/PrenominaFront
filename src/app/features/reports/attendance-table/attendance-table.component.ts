@@ -1,5 +1,5 @@
 import { CommonModule } from "@angular/common";
-import { ChangeDetectorRef, Component, Input, OnChanges, Output, SimpleChanges, ViewChild, ViewEncapsulation } from "@angular/core";
+import { Component, effect, input, output, viewChild, ViewEncapsulation } from "@angular/core";
 import { MatPaginator, MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { IAttendanceReport } from "@core/models/reports/attendance.interface";
@@ -15,12 +15,17 @@ import { IAttendanceReport } from "@core/models/reports/attendance.interface";
     ],
     encapsulation: ViewEncapsulation.None,
 })
-export class AttendanceTableComponent implements OnChanges {
-    @Input() public dataSource: MatTableDataSource<IAttendanceReport> = new MatTableDataSource();
-    @Input() public totalRecords: number = 0;
-    @Input() public pageSize: number = 10;
-    @Output() public onPageChange: (event: PageEvent) => void = () => {};
-    @ViewChild(MatPaginator) paginator: MatPaginator = {} as MatPaginator;
+export class AttendanceTableComponent {
+    // Inputs usando signal-based API
+    public readonly dataSource = input<MatTableDataSource<IAttendanceReport>>(new MatTableDataSource());
+    public readonly totalRecords = input<number>(0);
+    public readonly pageSize = input<number>(10);
+
+    // Output usando signal-based API
+    public readonly onPageChange = output<PageEvent>();
+
+    // ViewChild usando signal-based API
+    public readonly paginator = viewChild<MatPaginator>(MatPaginator);
 
     public readonly columns: Array<string> = [
         'code',
@@ -32,15 +37,19 @@ export class AttendanceTableComponent implements OnChanges {
         'checkOut',
     ];
 
-    constructor(private cdr: ChangeDetectorRef) {}
-    
-    ngOnChanges(changes: SimpleChanges): void {
-        if (changes['pageSize'] || changes['totalRecords']) {
-            this.paginator.pageSize = this.pageSize;
-            this.paginator.length = this.totalRecords;
-            this.cdr.detectChanges();
+    constructor() {
+        // Effect reemplaza ngOnChanges
+        effect(() => {
+            const paginatorRef = this.paginator();
+            const pageSize = this.pageSize();
+            const totalRecords = this.totalRecords();
+            const dataSource = this.dataSource();
 
-            this.dataSource.paginator = this.paginator;
-        }
+            if (paginatorRef) {
+                paginatorRef.pageSize = pageSize;
+                paginatorRef.length = totalRecords;
+                dataSource.paginator = paginatorRef;
+            }
+        });
     }
 }

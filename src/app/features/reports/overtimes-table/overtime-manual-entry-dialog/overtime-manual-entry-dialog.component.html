@@ -1,0 +1,52 @@
+<h2 mat-dialog-title>Agregar registro externo de tiempo extra</h2>
+<mat-dialog-content>
+    <form [formGroup]="form" class="manual-entry-form">
+        <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Codigo de empleado</mat-label>
+            <input matInput type="number" formControlName="employeeCode" placeholder="Ej: 1234">
+            <mat-error>Ingrese un codigo de empleado valido</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Fecha del tiempo extra</mat-label>
+            <input matInput [matDatepicker]="picker" formControlName="sourceDate">
+            <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+            <mat-datepicker #picker></mat-datepicker>
+            <mat-error>La fecha es requerida</mat-error>
+        </mat-form-field>
+
+        <div class="time-input-row">
+            <mat-form-field appearance="outline">
+                <mat-label>Horas</mat-label>
+                <input matInput type="number" formControlName="hours" min="0">
+                <span matTextSuffix>hrs</span>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+                <mat-label>Minutos</mat-label>
+                <input matInput type="number" formControlName="minutes" min="0" max="59">
+                <span matTextSuffix>min</span>
+            </mat-form-field>
+        </div>
+        @if (getTotalMinutes() > 0) {
+            <p class="time-total">Total: {{ formatMinutes(getTotalMinutes()) }}</p>
+        }
+
+        <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Referencia del sistema externo</mat-label>
+            <input matInput formControlName="externalReference" placeholder="Ej: Folio, ticket, etc.">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Notas (opcional)</mat-label>
+            <textarea matInput formControlName="notes" rows="3" placeholder="Agregar notas o comentarios"></textarea>
+        </mat-form-field>
+    </form>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+    <button mat-button mat-dialog-close [disabled]="processing()">Cancelar</button>
+    <button mat-raised-button color="primary"
+            (click)="submit()"
+            [disabled]="!form.valid || getTotalMinutes() === 0 || processing()">
+        {{ processing() ? 'Registrando...' : 'Registrar' }}
+    </button>
+</mat-dialog-actions>

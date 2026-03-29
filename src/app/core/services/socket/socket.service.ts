@@ -1,43 +1,91 @@
-import { Injectable } from "@angular/core";
-import { environment } from "src/environments/environment";
+import { Injectable, OnDestroy } from "@angular/core";
+import { SecureConfigService } from "@core/services/config/secure-config.service";
 import * as signalR from "@microsoft/signalr";
 
 @Injectable({
   providedIn: "root",
 })
-export class SocketService {
+export class SocketService implements OnDestroy {
   private hubConnection: signalR.HubConnection | null = null;
-  private readonly hubUrl: string = "";
+  private readonly hubUrl: string;
+  private reconnectAttempts = 0;
+  private readonly maxReconnectAttempts = 5;
+  private isConnecting = false;
 
-  constructor() {
-    const apiUrl = (window as any).env?.apiUrl;
-    const hostname = window.location.hostname;
-    const protocol = window.location.protocol;
+  constructor(private readonly secureConfig: SecureConfigService) {
+    this.hubUrl = this.secureConfig.socketUrl;
+  }
 
-    if (environment.production) {
-      const url = apiUrl || `${protocol}//${hostname}:5000/api` || environment.apiUrl;
-      this.hubUrl = url.replace("/api", "/socket-notification");
-    } else {
-      this.hubUrl = environment.apiUrl.replace("/api", "/socket-notification");
-    }
+  ngOnDestroy(): void {
+    this.stopConnection();
   }
 
   public startConnection(): void {
+    if (this.isConnecting || this.hubConnection?.state === signalR.HubConnectionState.Connected) {
+      return;
+    }
+
+    this.isConnecting = true;
+
     this.hubConnection = new signalR.HubConnectionBuilder()
       .withUrl(this.hubUrl)
+      .withAutomaticReconnect({
+        nextRetryDelayInMilliseconds: (retryContext) => {
+          if (retryContext.previousRetryCount >= this.maxReconnectAttempts) {
+            return null; // Stop retrying
+          }
+          // Exponential backoff: 1s, 2s, 4s, 8s, 16s
+          return Math.min(1000 * Math.pow(2, retryContext.previousRetryCount), 16000);
+        }
+      })
+      .configureLogging(signalR.LogLevel.Warning)
       .build();
 
     this.hubConnection
       .start()
-      .then(() => console.log("SignalR Connection Started"))
-      .catch((err) => console.log("Error while starting connection: " + err));
+      .then(() => {
+        this.isConnecting = false;
+        this.reconnectAttempts = 0;
+        // Connection established - no console.log in production
+      })
+      .catch((err: Error) => {
+        this.isConnecting = false;
+        this.handleConnectionError(err);
+      });
+
+    // Handle connection closed
+    this.hubConnection.onclose((error) => {
+      if (error) {
+        this.handleConnectionError(error);
+      }
+    });
   }
 
-  public addListener(eventName: string, callback: (...args: any[]) => void): void {
+  private handleConnectionError(error: Error): void {
+    // Log error safely without exposing sensitive information
+    if (this.reconnectAttempts < this.maxReconnectAttempts) {
+      this.reconnectAttempts++;
+      setTimeout(() => this.startConnection(), 5000);
+    }
+  }
+
+  public addListener(eventName: string, callback: (...args: unknown[]) => void): void {
+    if (!eventName || typeof eventName !== 'string') {
+      return;
+    }
+
     if (this.hubConnection) {
       this.hubConnection.on(eventName, callback);
-    } else {
-      console.error("Hub connection is not established.");
+    }
+  }
+
+  public removeListener(eventName: string): void {
+    if (!eventName || typeof eventName !== 'string') {
+      return;
+    }
+
+    if (this.hubConnection) {
+      this.hubConnection.off(eventName);
     }
   }
 
@@ -45,8 +93,17 @@ export class SocketService {
     if (this.hubConnection) {
       this.hubConnection
         .stop()
-        .then(() => console.log("SignalR Connection Stopped"))
-        .catch((err) => console.log("Error while stopping connection: " + err));
+        .catch(() => {
+          // Silently handle stop errors
+        })
+        .finally(() => {
+          this.hubConnection = null;
+          this.isConnecting = false;
+        });
     }
+  }
+
+  public get connectionState(): signalR.HubConnectionState | null {
+    return this.hubConnection?.state ?? null;
   }
 }

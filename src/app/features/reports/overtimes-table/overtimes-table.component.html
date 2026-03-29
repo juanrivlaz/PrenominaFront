@@ -1,44 +1,281 @@
-<table mat-table #table [dataSource]="dataSource">
-    <ng-container matColumnDef="code">
-        <th mat-header-cell *matHeaderCellDef> Código </th>
-        <td mat-cell *matCellDef="let row"> {{row.code}} </td>
-    </ng-container>
-    <ng-container matColumnDef="name">
-        <th mat-header-cell *matHeaderCellDef> Nombre </th>
-        <td mat-cell *matCellDef="let row"> {{row.fullName}} </td>
-    </ng-container>
-    <ng-container matColumnDef="department">
-        <th mat-header-cell *matHeaderCellDef> Departamento </th>
-        <td mat-cell *matCellDef="let row"> {{row.department}} </td>
-    </ng-container>
-    <ng-container matColumnDef="jobPosition">
-        <th mat-header-cell *matHeaderCellDef> Puesto </th>
-        <td mat-cell *matCellDef="let row"> {{row.jobPosition}} </td>
-    </ng-container>
-    <ng-container matColumnDef="date">
-        <th mat-header-cell *matHeaderCellDef> Fecha </th>
-        <td mat-cell *matCellDef="let row"> {{row.date}} </td>
-    </ng-container>
-    <ng-container matColumnDef="checkIn">
-        <th mat-header-cell *matHeaderCellDef> Checada Entrada </th>
-        <td mat-cell *matCellDef="let row"> {{row.checkIn}} </td>
-    </ng-container>
-    <ng-container matColumnDef="checkOut">
-        <th mat-header-cell *matHeaderCellDef> Checada Salida </th>
-        <td mat-cell *matCellDef="let row"> {{row.checkOut}} </td>
-    </ng-container>
-    <ng-container matColumnDef="overtime">
-        <th mat-header-cell *matHeaderCellDef> Tiempo Extra </th>
-        <td mat-cell *matCellDef="let row"> {{formatToTime(row.overtime - (8 * 60))}} </td>
-    </ng-container>
+<div class="overtimes-container">
+    <!-- Actions header -->
+    <div class="overtimes-actions">
+        <button mat-stroked-button (click)="openManualEntry()" [disabled]="loading()" matTooltip="Agregar registro de sistema externo">
+            <mat-icon>post_add</mat-icon>
+            Registro externo
+        </button>
+        <div class="filter-chips">
+            <mat-chip-set>
+                <mat-chip [class.active-filter]="statusFilter() === 'all'" (click)="statusFilter.set('all')">Todos</mat-chip>
+                <mat-chip [class.active-filter]="statusFilter() === 'pending'" (click)="statusFilter.set('pending')">Pendientes</mat-chip>
+                <mat-chip [class.active-filter]="statusFilter() === 'applied'" (click)="statusFilter.set('applied')">Aplicadas</mat-chip>
+            </mat-chip-set>
+        </div>
+        <button mat-icon-button (click)="loadSummaryData()" [disabled]="loading()" matTooltip="Actualizar">
+            <mat-icon>refresh</mat-icon>
+        </button>
+    </div>
 
-    <tr mat-header-row *matHeaderRowDef="columns"></tr>
-    <tr mat-row *matRowDef="let row; columns: columns;"></tr>
-</table>
+    <!-- Summary table -->
+    <table mat-table [dataSource]="filteredData()" multiTemplateDataRows class="overtimes-table">
+        <!-- Expand Column -->
+        <ng-container matColumnDef="expand">
+            <th mat-header-cell *matHeaderCellDef></th>
+            <td mat-cell *matCellDef="let row">
+                <button mat-icon-button (click)="toggleExpand(row.employeeCode); $event.stopPropagation()">
+                    <mat-icon>{{isExpanded(row.employeeCode) ? 'expand_less' : 'expand_more'}}</mat-icon>
+                </button>
+            </td>
+        </ng-container>
 
-<mat-paginator
-    [length]="totalRecords"
-    [pageSize]="pageSize"
-    [pageSizeOptions]="[5, 10, 25, 100]"
-    (page)="onPageChange($event)">
-</mat-paginator>
+        <!-- Code Column -->
+        <ng-container matColumnDef="code">
+            <th mat-header-cell *matHeaderCellDef>Codigo</th>
+            <td mat-cell *matCellDef="let row">{{row.employeeCode}}</td>
+        </ng-container>
+
+        <!-- Name Column -->
+        <ng-container matColumnDef="name">
+            <th mat-header-cell *matHeaderCellDef>Nombre</th>
+            <td mat-cell *matCellDef="let row">{{row.fullName}}</td>
+        </ng-container>
+
+        <!-- Department Column -->
+        <ng-container matColumnDef="department">
+            <th mat-header-cell *matHeaderCellDef>Departamento</th>
+            <td mat-cell *matCellDef="let row">{{row.department}}</td>
+        </ng-container>
+
+        <!-- Total Overtime Column -->
+        <ng-container matColumnDef="totalOvertime">
+            <th mat-header-cell *matHeaderCellDef>T. Extra Periodo</th>
+            <td mat-cell *matCellDef="let row">{{row.totalOvertimeFormatted}}</td>
+        </ng-container>
+
+        <!-- Balance Column -->
+        <ng-container matColumnDef="balance">
+            <th mat-header-cell *matHeaderCellDef>Balance</th>
+            <td mat-cell *matCellDef="let row">
+                <span class="balance-chip" [class.has-balance]="row.currentBalance > 0">
+                    {{row.currentBalanceFormatted}}
+                </span>
+            </td>
+        </ng-container>
+
+        <!-- Accumulated Column -->
+        <ng-container matColumnDef="accumulated">
+            <th mat-header-cell *matHeaderCellDef>Acumulado</th>
+            <td mat-cell *matCellDef="let row">
+                <span class="accumulated-chip" [class.has-value]="row.accumulatedMinutes > 0">
+                    {{formatToTime(row.accumulatedMinutes)}}
+                </span>
+            </td>
+        </ng-container>
+
+        <!-- Paid Overtime Column -->
+        <ng-container matColumnDef="paidOvertime">
+            <th mat-header-cell *matHeaderCellDef>T. Extra Pagado</th>
+            <td mat-cell *matCellDef="let row">
+                <span class="paid-chip" [class.has-value]="row.paidMinutes > 0">
+                    {{row.paidMinutesFormatted || formatToTime(row.paidMinutes)}}
+                </span>
+            </td>
+        </ng-container>
+
+        <!-- Pending + Actions Column -->
+        <ng-container matColumnDef="pending">
+            <th mat-header-cell *matHeaderCellDef>Pendiente</th>
+            <td mat-cell *matCellDef="let row">
+                <div class="pending-actions-cell">
+                    @if (row.pendingMinutes > 0) {
+                        <span class="pending-chip">
+                            {{formatToTime(row.pendingMinutes)}}
+                        </span>
+                    } @else {
+                        <span class="completed-chip">
+                            Procesado
+                        </span>
+                    }
+                </div>
+            </td>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef>Acciones</th>
+            <td mat-cell *matCellDef="let row">
+                <button mat-icon-button [matMenuTriggerFor]="menu" matTooltip="Acciones">
+                    <mat-icon>more_vert</mat-icon>
+                </button>
+                <mat-menu #menu="matMenu">
+                    <button mat-menu-item (click)="accumulateAll(row)" [disabled]="row.pendingMinutes === 0">
+                        <mat-icon>playlist_add</mat-icon>
+                        <span>Acumular todo</span>
+                    </button>
+                    <button mat-menu-item (click)="payAllDirect(row)" [disabled]="row.pendingMinutes === 0">
+                        <mat-icon>payments</mat-icon>
+                        <span>Pagar todo</span>
+                    </button>
+                    <mat-divider></mat-divider>
+                    <button mat-menu-item (click)="useForRestDay(row)" [disabled]="row.currentBalance === 0">
+                        <mat-icon>event_available</mat-icon>
+                        <span>Usar para descanso</span>
+                    </button>
+                    <mat-divider></mat-divider>
+                    <button mat-menu-item (click)="viewHistory(row)">
+                        <mat-icon>history</mat-icon>
+                        <span>Ver historial</span>
+                    </button>
+                </mat-menu>
+            </td>
+        </ng-container>
+        
+
+        <!-- Expanded Detail Row -->
+        <ng-container matColumnDef="expandedDetail">
+            <td mat-cell *matCellDef="let row" [attr.colspan]="columns.length" style="border-bottom: none !important;">
+                <div class="detail-row" [class.detail-wrapper-expanded]="isExpanded(row.employeeCode)" [@detailExpand]="isExpanded(row.employeeCode) ? 'expanded' : 'collapsed'">
+                    @if (isExpanded(row.employeeCode)) {
+                        <div class="detail-content">
+                            <div class="detail-header">
+                                <h4>Detalle de dias con tiempo extra</h4>
+                                @if (daySelection.selected.length > 0) {
+                                    <div class="bulk-actions-bar">
+                                        <span class="selection-count">{{daySelection.selected.length}} seleccionados</span>
+                                        <button mat-raised-button color="primary" (click)="accumulateSelected(row)" [disabled]="loading()">
+                                            <mat-icon>playlist_add</mat-icon> Acumular seleccionados
+                                        </button>
+                                        <button mat-raised-button color="accent" (click)="paySelected(row)" [disabled]="loading()">
+                                            <mat-icon>payments</mat-icon> Pagar seleccionados
+                                        </button>
+                                    </div>
+                                }
+                            </div>
+                            <table mat-table [dataSource]="getFilteredDayDetails(row.dayDetails)" class="detail-table">
+                                <!-- Select Column -->
+                                <ng-container matColumnDef="select">
+                                    <th mat-header-cell *matHeaderCellDef>
+                                        <mat-checkbox
+                                            (change)="toggleAllPending(row)"
+                                            [checked]="isAllPendingSelected(row)"
+                                            [indeterminate]="daySelection.selected.length > 0 && !isAllPendingSelected(row)">
+                                        </mat-checkbox>
+                                    </th>
+                                    <td mat-cell *matCellDef="let day">
+                                        @if (isDaySelectable(day)) {
+                                            <mat-checkbox
+                                                (click)="$event.stopPropagation()"
+                                                (change)="daySelection.toggle(day)"
+                                                [checked]="daySelection.isSelected(day)">
+                                            </mat-checkbox>
+                                        }
+                                    </td>
+                                </ng-container>
+
+                                <!-- Date Column -->
+                                <ng-container matColumnDef="date">
+                                    <th mat-header-cell *matHeaderCellDef>Fecha</th>
+                                    <td mat-cell *matCellDef="let day"> {{day.date | date: "dd/MM/yyyy"}}</td>
+                                </ng-container>
+
+                                <!-- CheckIn Column -->
+                                <ng-container matColumnDef="checkIn">
+                                    <th mat-header-cell *matHeaderCellDef>Entrada</th>
+                                    <td mat-cell *matCellDef="let day">{{formatTime(day.checkIn)}}</td>
+                                </ng-container>
+
+                                <!-- CheckOut Column -->
+                                <ng-container matColumnDef="checkOut">
+                                    <th mat-header-cell *matHeaderCellDef>Salida</th>
+                                    <td mat-cell *matCellDef="let day">{{formatTime(day.checkOut)}}</td>
+                                </ng-container>
+
+                                <!-- Overtime Column -->
+                                <ng-container matColumnDef="overtime">
+                                    <th mat-header-cell *matHeaderCellDef>Tiempo Extra</th>
+                                    <td mat-cell *matCellDef="let day">{{day.overtimeFormatted}}</td>
+                                </ng-container>
+
+                                <!-- Status Column -->
+                                <ng-container matColumnDef="status">
+                                    <th mat-header-cell *matHeaderCellDef>Estado</th>
+                                    <td mat-cell *matCellDef="let day">
+                                        <mat-chip [ngClass]="getStatusClass(day.status)">
+                                            {{day.statusLabel}}
+                                        </mat-chip>
+                                    </td>
+                                </ng-container>
+
+                                <!-- Day Actions Column -->
+                                <ng-container matColumnDef="actions">
+                                    <th mat-header-cell *matHeaderCellDef>Acciones</th>
+                                    <td mat-cell *matCellDef="let day">
+                                        @if (day.status === 0 || day.status === 3) {
+                                            <button mat-icon-button color="primary"
+                                                    (click)="accumulateDay(row, day)"
+                                                    matTooltip="Acumular">
+                                                <mat-icon>add_circle</mat-icon>
+                                            </button>
+                                            <button mat-icon-button color="accent"
+                                                    (click)="payDirectDay(row, day)"
+                                                    matTooltip="Pagar directo">
+                                                <mat-icon>attach_money</mat-icon>
+                                            </button>
+                                            <button mat-icon-button
+                                                    (click)="sendToHourBank(row, day)"
+                                                    matTooltip="Banco de Horas"
+                                                    class="hour-bank-btn">
+                                                <mat-icon>savings</mat-icon>
+                                            </button>
+                                        }
+                                        @if (day.status === 1 || day.status === 2) {
+                                            <button mat-icon-button color="warn"
+                                                    (click)="cancelMovement(row, day)"
+                                                    matTooltip="Cancelar">
+                                                <mat-icon>cancel</mat-icon>
+                                            </button>
+                                        }
+                                    </td>
+                                </ng-container>
+
+                                <tr mat-header-row *matHeaderRowDef="dayColumns"></tr>
+                                <tr mat-row *matRowDef="let day; columns: dayColumns;"></tr>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="columns"></tr>
+        <tr mat-row *matRowDef="let row; columns: columns;"
+            class="element-row"
+            [class.expanded-row]="isExpanded(row.employeeCode)"
+            (click)="toggleExpand(row.employeeCode)">
+        </tr>
+        <tr mat-row *matRowDef="let row; columns: ['expandedDetail']" class="detail-row-def"></tr>
+    </table>
+
+    <!-- Empty state -->
+    @if (filteredData().length === 0 && !loading()) {
+        <div class="empty-state">
+            <mat-icon>hourglass_empty</mat-icon>
+            <p>No hay registros de tiempo extra para este periodo</p>
+        </div>
+    }
+
+    <!-- Loading state -->
+    @if (loading()) {
+        <div class="loading-state">
+            <mat-icon>sync</mat-icon>
+            <p>Cargando datos...</p>
+        </div>
+    }
+
+    <mat-paginator
+        [length]="filteredData().length"
+        [pageSize]="pageSize()"
+        [pageSizeOptions]="[5, 10, 25, 100]"
+        (page)="onPageChange.emit($event)">
+    </mat-paginator>
+</div>

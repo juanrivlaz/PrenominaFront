@@ -1,0 +1,85 @@
+<h2 mat-dialog-title>{{ getTitle() }}</h2>
+<mat-dialog-content>
+    <div class="employee-info">
+        <p><strong>Empleado:</strong> {{ data.employeeName }} ({{ data.employeeCode }})</p>
+        @if (data.sourceDate) {
+            <p><strong>Fecha:</strong> {{ formatDate(data.sourceDate) }}</p>
+        }
+        @if (data.minutes) {
+            <p><strong>Tiempo extra:</strong> {{ formatMinutes(data.minutes) }}</p>
+        }
+        @if (data.checkIn) {
+            <p><strong>Horario:</strong> {{ data.checkIn }} - {{ data.checkOut || '--' }}</p>
+        }
+        @if (data.currentBalance !== undefined) {
+            <p><strong>Balance actual:</strong> {{ data.currentBalanceFormatted }}</p>
+        }
+    </div>
+
+    <form [formGroup]="form" class="movement-form">
+        @if (data.action === 'use-rest-day') {
+            <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Fecha del descanso</mat-label>
+                <input matInput [matDatepicker]="picker" formControlName="restDate">
+                <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+                <mat-datepicker #picker></mat-datepicker>
+                <mat-error>La fecha es requerida</mat-error>
+            </mat-form-field>
+
+            <div class="time-input-row">
+                <mat-form-field appearance="outline">
+                    <mat-label>Horas</mat-label>
+                    <input matInput type="number" formControlName="hoursToUse" min="0">
+                    <span matTextSuffix>hrs</span>
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                    <mat-label>Minutos</mat-label>
+                    <input matInput type="number" formControlName="minutesToUse" min="0" max="59">
+                    <span matTextSuffix>min</span>
+                </mat-form-field>
+            </div>
+            <mat-hint class="time-hint">Disponible: {{ data.currentBalanceFormatted }} | Total: {{ formatMinutes(getTotalMinutesToUse()) }}</mat-hint>
+            @if (!isMinutesValid() && getTotalMinutesToUse() > 0) {
+                <mat-error class="time-error">Excede el balance disponible</mat-error>
+            }
+        }
+
+        @if (allowsPartial) {
+            <p class="partial-label">Tiempo a procesar:</p>
+            <div class="time-input-row">
+                <mat-form-field appearance="outline">
+                    <mat-label>Horas</mat-label>
+                    <input matInput type="number" formControlName="hoursToUse" min="0">
+                    <span matTextSuffix>hrs</span>
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                    <mat-label>Minutos</mat-label>
+                    <input matInput type="number" formControlName="minutesToUse" min="0" max="59">
+                    <span matTextSuffix>min</span>
+                </mat-form-field>
+            </div>
+            <mat-hint class="time-hint">Disponible: {{ formatMinutes(data.minutes || 0) }} | A procesar: {{ formatMinutes(getTotalMinutesToUse()) }}</mat-hint>
+            @if (!isMinutesValid() && getTotalMinutesToUse() > 0) {
+                <mat-error class="time-error">Excede el tiempo extra disponible</mat-error>
+            }
+        }
+
+        <mat-form-field appearance="outline" class="full-width">
+            <mat-label>{{ data.action === 'cancel' ? 'Motivo de cancelacion' : 'Notas (opcional)' }}</mat-label>
+            <textarea matInput formControlName="notes" rows="3"
+                      [placeholder]="data.action === 'cancel' ? 'Ingrese el motivo de la cancelacion' : 'Agregar notas o comentarios'">
+            </textarea>
+            @if (data.action === 'cancel') {
+                <mat-error>El motivo es requerido (min. 10 caracteres)</mat-error>
+            }
+        </mat-form-field>
+    </form>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+    <button mat-button mat-dialog-close [disabled]="processing()">Cancelar</button>
+    <button mat-raised-button [color]="getButtonColor()"
+            (click)="submit()"
+            [disabled]="!form.valid || !isMinutesValid() || processing()">
+        {{ processing() ? 'Procesando...' : getButtonText() }}
+    </button>
+</mat-dialog-actions>
