@@ -9,6 +9,7 @@
             <mat-chip (click)="handleChangeSection('Profile')" [ngClass]="{'active': sectionIsActive('Profile')}">Profile</mat-chip>
             <mat-chip (click)="handleChangeSection('Security')" [ngClass]="{'active': sectionIsActive('Security')}">Security</mat-chip>
             <mat-chip (click)="handleChangeSection('Appearance')" [ngClass]="{'active': sectionIsActive('Appearance')}">Apariencia</mat-chip>
+            <mat-chip (click)="handleChangeSection('BioTime')" [ngClass]="{'active': sectionIsActive('BioTime')}">BioTime</mat-chip>
         </mat-chip-set>
     </div>
     <mat-divider class="divider"></mat-divider>
@@ -171,6 +172,83 @@
                 </div>
             </div>
             <mat-divider class="divider"></mat-divider>
+        </div>
+        <div class="ctn-item-step content-biotime" [@fadeInOut]="sectionIsActive('BioTime') ? '1' : '0'">
+            <div class="biotime-section">
+                <!-- Programacion -->
+                <div class="biotime-card">
+                    <div class="biotime-card-header">
+                        <mat-icon>schedule</mat-icon>
+                        <h4>Programacion de sincronizacion</h4>
+                    </div>
+                    <p class="biotime-card-description">Configura la hora diaria en que se importan automaticamente las checadas del dia anterior.</p>
+                    <div class="biotime-card-body">
+                        <div class="biotime-field-row">
+                            <mat-slide-toggle [formControl]="bioTimeEnabled">Sincronizacion activa</mat-slide-toggle>
+                        </div>
+                        <div class="biotime-field-row">
+                            <mat-form-field appearance="outline">
+                                <mat-label>Hora de sincronizacion</mat-label>
+                                <input matInput type="time" [formControl]="bioTimeSyncHour">
+                                <mat-hint>Ejemplo: 20:00 para sincronizar a las 8 PM</mat-hint>
+                            </mat-form-field>
+                        </div>
+                        <button mat-raised-button color="primary" (click)="handleSaveBioTimeConfig()" [disabled]="loadingBioTimeConfig()">
+                            {{ loadingBioTimeConfig() ? 'Guardando...' : 'Guardar programacion' }}
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Credenciales -->
+                <div class="biotime-card">
+                    <div class="biotime-card-header">
+                        <mat-icon>vpn_key</mat-icon>
+                        <h4>Credenciales de acceso</h4>
+                        @if (bioTimeCredentialsConfigured()) {
+                            <span class="configured-badge">Configurado</span>
+                        }
+                    </div>
+                    <p class="biotime-card-description">Las credenciales se almacenan cifradas en la base de datos.</p>
+                    <div class="biotime-card-body">
+                        <mat-form-field appearance="outline">
+                            <mat-label>Company</mat-label>
+                            <input matInput [formControl]="bioTimeCompany" placeholder="ej: vad">
+                            <mat-hint>URL generada: {{ getBioTimeApiUrl() || '---' }}</mat-hint>
+                        </mat-form-field>
+                        <mat-form-field appearance="outline">
+                            <mat-label>Email</mat-label>
+                            <input matInput type="email" [formControl]="bioTimeEmail">
+                        </mat-form-field>
+                        <mat-form-field appearance="outline">
+                            <mat-label>Password</mat-label>
+                            <input matInput type="password" [formControl]="bioTimePassword" placeholder="Dejar vacio para mantener actual">
+                        </mat-form-field>
+                        <button mat-raised-button color="primary" (click)="handleSaveBioTimeCredentials()" [disabled]="loadingBioTimeCreds()">
+                            {{ loadingBioTimeCreds() ? 'Guardando...' : 'Guardar credenciales' }}
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Sync manual -->
+                <div class="biotime-card">
+                    <div class="biotime-card-header">
+                        <mat-icon>sync</mat-icon>
+                        <h4>Sincronizacion manual</h4>
+                    </div>
+                    <p class="biotime-card-description">Ejecuta la sincronizacion del dia anterior bajo demanda.</p>
+                    <div class="biotime-card-body">
+                        <button mat-raised-button color="accent"
+                                (click)="handleSyncBioTimeNow()"
+                                [disabled]="loadingBioTimeSync() || !bioTimeCredentialsConfigured()">
+                            <mat-icon>{{ loadingBioTimeSync() ? 'hourglass_top' : 'cloud_download' }}</mat-icon>
+                            {{ loadingBioTimeSync() ? 'Sincronizando...' : 'Sincronizar ahora' }}
+                        </button>
+                        @if (!bioTimeCredentialsConfigured()) {
+                            <p class="biotime-warning">Configure las credenciales primero para poder sincronizar.</p>
+                        }
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

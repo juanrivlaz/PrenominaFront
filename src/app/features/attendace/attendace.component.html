@@ -54,6 +54,14 @@
                     </button>
                 </mat-menu>
             </div>
+            <div class="ctn-filter-missing">
+                <mat-slide-toggle
+                    [checked]="filterMissingOnly()"
+                    (change)="filterMissingOnly.set($event.checked)"
+                    matTooltip="Mostrar solo empleados con dias sin checada ni incidencia">
+                    Sin capturar
+                </mat-slide-toggle>
+            </div>
             <div class="ctn-close-period">
                 @if (canClosePayrollPeriod) {
                     <button (click)="confirmClosePeriod()" mat-icon-button color="warn" matTooltip="{{!closedPeriod ? 'Cerrar Periodo' : 'Abrir Periodo'}}">
@@ -72,7 +80,7 @@
     }
 
     <div class="list-employees">
-        @for (employee of listEmployeeAttendance(); track employee.codigo) {
+        @for (employee of filteredEmployeeAttendance(); track employee.codigo) {
             <div class="ctn-employee">
                 <span class="color-identify"></span>
                 <div class="head">

@@ -46,4 +46,25 @@ export class SettingsService {
             Year,
         });
     }
+
+    // BioTime Sync
+    public getBioTimeSyncConfig(): Observable<{ syncHour: string; enabled: boolean }> {
+        return this.httpService.get<{ syncHour: string; enabled: boolean }>('/BioTimeSync/config');
+    }
+
+    public saveBioTimeSyncConfig(config: { syncHour: string; enabled: boolean }): Observable<any> {
+        return this.httpService.put('/BioTimeSync/config', config);
+    }
+
+    public saveBioTimeCredentials(credentials: { email: string; password: string; company: string }): Observable<any> {
+        return this.httpService.put('/BioTimeSync/credentials', credentials);
+    }
+
+    public getBioTimeCredentialsStatus(): Observable<{ configured: boolean; email: string; company: string }> {
+        return this.httpService.get<{ configured: boolean; email: string; company: string }>('/BioTimeSync/credentials/status');
+    }
+
+    public syncBioTimeNow(): Observable<any> {
+        return this.httpService.post('/BioTimeSync/sync-now', {});
+    }
 }

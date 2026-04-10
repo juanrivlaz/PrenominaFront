@@ -107,12 +107,9 @@ export class AppToolbar {
     }
 
     public selectCompany(id: number): void {
-        const firstTenant = this._tenants.filter((item) => item.company === id)[0]?.id;
         this.authService.setActiveCompany(id);
-
-        if (firstTenant) {
-            this.selectTenant(firstTenant);
-        }
+        const firstTenant = this._tenants.filter((item) => item.company === id || item.company === -999)[0];
+        this.selectTenant(firstTenant?.id || '0');
     }
 
     public selectTenant(id: string): void {

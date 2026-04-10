@@ -1,8 +1,9 @@
 import { CommonModule } from "@angular/common";
-import { Component, inject, model, OnInit, ViewEncapsulation } from "@angular/core";
+import { Component, inject, model, OnInit, signal, ViewEncapsulation, WritableSignal } from "@angular/core";
 import { MatChipsModule } from "@angular/material/chips";
 import { MatDividerModule } from "@angular/material/divider";
 import { MatSelectModule } from "@angular/material/select";
+import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { NgxColorsModule } from "ngx-colors";
 import { MaterialModule } from "@shared/modules/material/material.module";
@@ -30,7 +31,8 @@ import { TypeAttendance } from "@core/models/reports/type-attendance.enum";
         FormsModule,
         MatSelectModule,
         EditorModule,
-        ReactiveFormsModule
+        ReactiveFormsModule,
+        MatSlideToggleModule,
     ],
     providers: [
         SettingsService,
@@ -111,6 +113,17 @@ export class SettingsComponent implements OnInit {
     public minToOvertimeReport: FormControl;
     public loadingMinToOvertimeReport = model<boolean>(false);
 
+    // BioTime Sync
+    public bioTimeEnabled = new FormControl(false);
+    public bioTimeSyncHour = new FormControl('20:00', [Validators.required]);
+    public bioTimeEmail = new FormControl('', [Validators.required]);
+    public bioTimePassword = new FormControl('');
+    public bioTimeCompany = new FormControl('', [Validators.required]);
+    public loadingBioTimeConfig: WritableSignal<boolean> = signal(false);
+    public loadingBioTimeCreds: WritableSignal<boolean> = signal(false);
+    public loadingBioTimeSync: WritableSignal<boolean> = signal(false);
+    public bioTimeCredentialsConfigured: WritableSignal<boolean> = signal(false);
+
     public constructor(
         private appConfigService: AppConfigService,
         private authService: AuthService,
@@ -168,6 +181,26 @@ export class SettingsComponent implements OnInit {
             error: (err) => {
                 const message = err.error?.message || 'Ocurrió un error, por favor intentalo más tarde';
                 this.showMessage(message, true, 3000);
+            }
+        });
+
+        this.loadBioTimeConfig();
+    }
+
+    private loadBioTimeConfig(): void {
+        this.service.getBioTimeSyncConfig().subscribe({
+            next: (config: any) => {
+                this.bioTimeEnabled.setValue(config.enabled);
+                this.bioTimeSyncHour.setValue(config.syncHour || '20:00');
+            }
+        });
+        this.service.getBioTimeCredentialsStatus().subscribe({
+            next: (status) => {
+                this.bioTimeCredentialsConfigured.set(status.configured);
+                if (status.configured) {
+                    this.bioTimeEmail.setValue(status.email);
+                    this.bioTimeCompany.setValue(status.company);
+                }
             }
         });
     }
@@ -304,6 +337,55 @@ export class SettingsComponent implements OnInit {
                 this.showMessage(message, true, 3000);
             }
         });
+    }
+
+    public handleSaveBioTimeConfig(): void {
+        this.loadingBioTimeConfig.set(true);
+        this.service.saveBioTimeSyncConfig({
+            syncHour: this.bioTimeSyncHour.value || '20:00',
+            enabled: this.bioTimeEnabled.value || false
+        }).pipe(finalize(() => this.loadingBioTimeConfig.set(false)))
+        .subscribe({
+            next: () => this.showMessage('Configuración de sincronización guardada', false, 1500),
+            error: (err) => this.showMessage(err.error?.message || 'Error al guardar', true, 3000)
+        });
+    }
+
+    public getBioTimeApiUrl(): string {
+        const company = this.bioTimeCompany.value || '';
+        return company ? `https://${company}.biotime.mx` : '';
+    }
+
+    public handleSaveBioTimeCredentials(): void {
+        if (this.bioTimeEmail.invalid || this.bioTimeCompany.invalid) {
+            this.showMessage('Complete todos los campos requeridos', true, 3000);
+            return;
+        }
+
+        this.loadingBioTimeCreds.set(true);
+        this.service.saveBioTimeCredentials({
+            email: this.bioTimeEmail.value || '',
+            password: this.bioTimePassword.value || '',
+            company: this.bioTimeCompany.value || ''
+        }).pipe(finalize(() => this.loadingBioTimeCreds.set(false)))
+        .subscribe({
+            next: () => {
+                this.bioTimeCredentialsConfigured.set(true);
+                this.bioTimePassword.setValue('');
+                this.showMessage('Credenciales guardadas de forma segura', false, 1500);
+            },
+            error: (err) => this.showMessage(err.error?.message || 'Error al guardar', true, 3000)
+        });
+    }
+
+    public handleSyncBioTimeNow(): void {
+        this.loadingBioTimeSync.set(true);
+        this.service.syncBioTimeNow()
+            .pipe(finalize(() => this.loadingBioTimeSync.set(false)))
+            .subscribe({
+                next: () => this.showMessage('Sincronización completada', false, 3000),
+                error: (err) => this.showMessage(err.error?.message || 'Error en sincronización', true, 3000)
+            });
     }
 
     private showMessage(message: string, isError: boolean = false, duration: number = 3000): void {

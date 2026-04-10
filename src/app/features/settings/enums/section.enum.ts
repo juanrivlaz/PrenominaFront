@@ -3,5 +3,6 @@ export enum Section {
     Reports,
     Profile,
     Security,
-    Appearance
+    Appearance,
+    BioTime
 }

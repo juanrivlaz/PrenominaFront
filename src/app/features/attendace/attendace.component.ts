@@ -1,9 +1,10 @@
-import { ChangeDetectionStrategy, Component, inject, model, OnInit, OnDestroy, signal, ViewEncapsulation, WritableSignal } from "@angular/core";
+import { ChangeDetectionStrategy, Component, computed, inject, model, OnInit, OnDestroy, signal, ViewEncapsulation, WritableSignal } from "@angular/core";
 import { MaterialModule } from "../../shared/modules/material/material.module";
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { CommonModule } from "@angular/common";
 import { MatDialog } from "@angular/material/dialog";
 import { AssignDoubleShiftComponent } from "./assign-double-shift/assign-double-shift.component";
@@ -13,7 +14,7 @@ import { IAssignWorkedDayOff } from "./assign-worked-day-off/assign-worked-day-o
 import { AssignSpecialIncidentComponent } from "./assign-special-incident/assign-special-incident.component";
 import { DetailDayComponent } from "./details-day/details-day.component";
 import { AttendaceService } from "./attendace.service";
-import { combineLatest, debounceTime, finalize, forkJoin, Subject, switchMap, takeUntil, timer, of } from "rxjs";
+import { BehaviorSubject, combineLatest, debounceTime, finalize, forkJoin, Subject, switchMap, takeUntil, timer, of } from "rxjs";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { MatProgressBarModule } from "@angular/material/progress-bar";
 import { AuthService } from "@core/services/auth/auth.service";
@@ -48,6 +49,7 @@ import { IChangeAttendanceResponse } from "./change-attendance/change-attendance
         MatPaginatorModule,
         MatProgressSpinnerModule,
         MatProgressBarModule,
+        MatSlideToggleModule,
         ReactiveFormsModule
     ],
     providers: [
@@ -67,6 +69,10 @@ export class AttendaceComponent implements OnInit, OnDestroy {
 
     // Subject para cancelar requests anteriores - PREVIENE RACE CONDITIONS
     private readonly searchTrigger$ = new Subject<string>();
+
+    // Subjects reactivos para payroll y period
+    private readonly activePayroll$ = new BehaviorSubject<number>(0);
+    private readonly activePeriod$ = new BehaviorSubject<number>(0);
 
     private readonly _listPeriods: WritableSignal<Array<IPrenominaPeriod>> = signal([]);
 
@@ -112,6 +118,27 @@ export class AttendaceComponent implements OnInit, OnDestroy {
     public listDayOffs: Array<IDayOffs> = [];
     public canClosePayrollPeriod: boolean = false;
     public canModifyCheckins: boolean = false;
+    public filterMissingOnly: WritableSignal<boolean> = signal(false);
+
+    public readonly filteredEmployeeAttendance = computed(() => {
+        const employees = this.listEmployeeAttendance();
+        if (!this.filterMissingOnly()) return employees;
+
+        return employees
+            .map(emp => {
+                const missingDays = emp.attendances?.filter(
+                    (a: IAttendance) => a.checkEntry === null && a.incidentCode === 'N/A' && !a.isDayOff
+                ) || [];
+
+                if (missingDays.length === 0) return null;
+
+                return {
+                    ...emp,
+                    attendances: missingDays
+                };
+            })
+            .filter(Boolean) as Array<IEmployeeAttendance>;
+    });
 
     constructor(
         private readonly service: AttendaceService,
@@ -120,12 +147,38 @@ export class AttendaceComponent implements OnInit, OnDestroy {
     ) {}
 
     ngOnInit(): void {
-        // Usar takeUntil para limpieza automática
-        combineLatest([this.authService.activeCompany, this.authService.activeTenant])
+        // Solo getInit cuando cambia activeCompany
+        this.authService.activeCompany
             .pipe(takeUntil(this.destroy$))
             .subscribe(() => {
                 this.getInit();
             });
+
+        // Llamar service.get cuando cambia cualquiera de los 4 valores
+        // Si todos tienen valor → cargar datos, si no → limpiar tabla
+        combineLatest([
+            this.authService.activeCompany,
+            this.authService.activeTenant,
+            this.activePayroll$,
+            this.activePeriod$
+        ]).pipe(
+            takeUntil(this.destroy$)
+        ).subscribe(([company, tenant, payroll, period]) => {
+            console.log({
+                company,
+                tenant,
+                payroll,
+                period
+            });
+
+            if (company && tenant && payroll && period) {
+                this.get();
+            } else {
+                this.listEmployeeAttendance.set([]);
+                this.listDates.set([]);
+                this.paginatorDetails.set({ totalRecord: 0, pageSize: 30, page: 1 });
+            }
+        });
 
         // Usar switchMap para cancelar requests anteriores (previene race conditions)
         this.searchTrigger$
@@ -210,6 +263,8 @@ export class AttendaceComponent implements OnInit, OnDestroy {
         // Limpiar todas las subscripciones
         this.destroy$.next();
         this.destroy$.complete();
+        this.activePayroll$.complete();
+        this.activePeriod$.complete();
         // Limpiar cache
         this.dayOffsCache.clear();
     }
@@ -231,6 +286,27 @@ export class AttendaceComponent implements OnInit, OnDestroy {
                     this.listDayOffs = response[0];
                     // Precalcular cache de días festivos
                     this.buildDayOffsCache();
+
+                    // Revalidar activePayroll: si existe en la nueva lista dejarlo, si no seleccionar el primero
+                    const payrolls = response[1].payrolls;
+                    const payrollExists = payrolls.some((p) => p.typeNom === this.activePayroll);
+                    if (!payrollExists) {
+                        this.setPayroll(payrolls[0]?.typeNom || 0);
+                    }
+
+                    // Revalidar activePeriod: si existe en los periodos filtrados dejarlo, si no seleccionar el más cercano a hoy
+                    const periods = this._listPeriods().filter((p) => p.typePayroll === this.activePayroll);
+                    const periodExists = periods.some((p) => p.numPeriod === this.activePeriod);
+                    if (!periodExists) {
+                        const today = dayjs();
+                        const closest = periods.reduce<IPrenominaPeriod | null>((best, p) => {
+                            if (!best) return p;
+                            const bestDiff = Math.abs(dayjs(best.startDate).diff(today));
+                            const currDiff = Math.abs(dayjs(p.startDate).diff(today));
+                            return currDiff < bestDiff ? p : best;
+                        }, null);
+                        this.setPeriod(closest?.numPeriod || 0);
+                    }
                 },
                 error: (err) => {
                     const message = err.error?.message || 'Ocurrió un error, por favor intentalo más tarde';
@@ -302,6 +378,7 @@ export class AttendaceComponent implements OnInit, OnDestroy {
 
     public setPayroll(id: number): void {
         this.activePayroll = id;
+        this.activePayroll$.next(id);
         window.sessionStorage.setItem(SysKey.ActiveTypeNom, id.toString());
     }
 
@@ -311,8 +388,8 @@ export class AttendaceComponent implements OnInit, OnDestroy {
 
     public setPeriod(id: number): void {
         this.activePeriod = id;
+        this.activePeriod$.next(id);
         window.sessionStorage.setItem(SysKey.ActiveNumPeriod, id.toString());
-        this.get();
     }
 
     public get listPeriods(): Array<IPrenominaPeriod> {
