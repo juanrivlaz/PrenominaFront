@@ -10,4 +10,5 @@ export interface IAdditionalPay {
   operator: string;
   operationValue: number;
   total: number;
+  notes?: string;
 }

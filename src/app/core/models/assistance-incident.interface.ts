@@ -6,6 +6,10 @@ export interface IAssistanceIncident {
     incidentCode: string;
     timeOffRequest: boolean;
     approved: boolean;
+    rejected: boolean;
+    rejectionComment?: string;
+    rejectedAt?: Date;
+    requestGroupId?: string;
     label?: string;
     isAdditional: boolean;
     updatedAt: Date;

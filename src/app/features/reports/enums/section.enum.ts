@@ -3,5 +3,6 @@ export enum Section {
     Overtimes,
     HoursWorked,
     Attendance,
-    Incidences
+    Incidences,
+    Abandonment
 }

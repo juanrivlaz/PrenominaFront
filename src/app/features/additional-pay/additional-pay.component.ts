@@ -61,6 +61,7 @@ export class AdditionalPayComponent implements OnInit {
     'operator',
     'operationValue',
     'total',
+    'notes',
   ];
 
   constructor(

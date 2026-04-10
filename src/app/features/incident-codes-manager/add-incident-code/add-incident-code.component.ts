@@ -66,6 +66,7 @@ export class AddIncidentCodeComponent {
                 columnForOperation: new FormControl(this.data.item?.incidentCodeMetadata?.columnForOperation ?? ''),
             }),
             incidentApprovers: new FormControl(this.data.item?.incidentApprovers?.map(approver => approver.userId) ?? ''),
+            availableForTimeOff: new FormControl<boolean>(this.data.item?.availableForTimeOff ?? false),
             restrictedWithRoles: new FormControl<boolean>(this.data.item?.restrictedWithRoles ?? false),
             allowedRoles: new FormControl<Array<string>>(this.data.item?.incidentCodeAllowedRoles?.map(role => role.roleId) ?? []),
         });

@@ -17,12 +17,13 @@ import { Observable } from "rxjs";
 export class AttendaceService {
     constructor(private readonly httpService: HttpClient) {}
 
-    public insertAttendaceIncident(incidentCode: string, date: string, employeeCode: number, customValue?: number): Observable<IAssistanceIncident> {
+    public insertAttendaceIncident(incidentCode: string, date: string, employeeCode: number, customValue?: number, notes?: string): Observable<IAssistanceIncident> {
         return this.httpService.patch<IAssistanceIncident>('/Attendance/apply-incident', {
             incidentCode,
             date,
             employeeCode,
-            amount: customValue
+            amount: customValue,
+            notes
         });
     }
 

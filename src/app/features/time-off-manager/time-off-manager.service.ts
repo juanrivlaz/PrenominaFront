@@ -6,6 +6,7 @@ import { Observable } from "rxjs";
 import { IAssignTimeOff } from "./assign-time-off/assign-time-off.interface";
 import { ISyncIncapacityOutput } from "@core/models/sync-incapacity-output.interface";
 import { IAssignTimeOffOutput } from "./assign-time-off/assign-time-off-output.interface";
+import { IAssistanceIncident } from "@core/models/assistance-incident.interface";
 
 @Injectable()
 export class TimeOffManagerService {
@@ -26,6 +27,14 @@ export class TimeOffManagerService {
 
     public registerToUser(form: Pick<IAssignTimeOff, 'employeeCode'> & IAssignTimeOffOutput & { dates: Array<string> }): Observable<IEmployessDayOff> {
         return this.httpService.post<IEmployessDayOff>('/DayOffs/register-to-user', form);
+    }
+
+    public rejectDayOff(form: {
+        employeeCode: number;
+        date: string;
+        comment: string;
+    }): Observable<Array<IAssistanceIncident>> {
+        return this.httpService.post<Array<IAssistanceIncident>>('/DayOffs/reject', form);
     }
 
     public syncIncapacity(form: {

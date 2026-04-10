@@ -12,6 +12,7 @@ export interface IIncidentCode {
     withOperation: boolean;
     isAdditional: boolean;
     restrictedWithRoles: boolean;
+    availableForTimeOff: boolean;
     applyMode: ApplyMode;
     incidentApprovers: Array<IIncidentApprover>;
     incidentCodeMetadata?: IIncidentCodeMetadata;

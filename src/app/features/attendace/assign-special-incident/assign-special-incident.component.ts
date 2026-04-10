@@ -35,7 +35,8 @@ export class AssignSpecialIncidentComponent {
                 validators: [Validators.required],
             }),
             date: new FormControl('', [Validators.required]),
-            customValue: new FormControl('', [Validators.min(1)])
+            customValue: new FormControl('', [Validators.min(1)]),
+            notes: new FormControl('')
         });
 
         this.formGroup.get('incidentCode')?.valueChanges.subscribe((value) => {

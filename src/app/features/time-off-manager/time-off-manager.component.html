@@ -31,6 +31,21 @@
                 <button mat-icon-button (click)="syncIncapacity()" color="primary" matTooltip="Sincronizar Incapacidades / Vacaciones">
                     <mat-icon>sync</mat-icon>
                 </button>
+                <button mat-icon-button [matMenuTriggerFor]="helpMenu" matTooltip="Ayuda">
+                    <mat-icon>help_outline</mat-icon>
+                </button>
+                <mat-menu #helpMenu="matMenu" class="help-menu">
+                    <div class="help-content" (click)="$event.stopPropagation()">
+                        <h4>Asignar permisos</h4>
+                        <p>Click en un dia para seleccionar inicio, luego click en otro dia para seleccionar fin. Se abrira un dialogo para elegir el codigo de incidencia.</p>
+                        <h4>Rechazar permisos</h4>
+                        <p>Click derecho sobre una celda con permiso asignado (verde) para rechazarlo. Si el permiso fue asignado en grupo, se rechazaran todos los dias del grupo.</p>
+                        <h4>Ver motivo de rechazo</h4>
+                        <p>Pase el cursor sobre una celda rechazada (roja) para ver el motivo, o haga click derecho.</p>
+                        <h4>Editar permiso rechazado</h4>
+                        <p>Seleccione los dias con click izquierdo y reasigne el permiso. El rechazo se eliminara automaticamente.</p>
+                    </div>
+                </mat-menu>
             </div>
         </div>
     </div>
@@ -60,10 +75,17 @@
                     *ngFor="let date of listDates()"
                     (mouseover)="handleOverDay(date.key)"
                     (click)="handleClickDay(date.key, employee.codigo)"
+                    (contextmenu)="rejectTimeOff(employee.codigo, date.date, $event)"
                     [ngClass]="{
                         'active': selectedEmployee === employee.codigo && (initialItem === date.key || isActive(date.key)),
-                        'with-data': getIncidentForDate(employee.codigo, date.date)
+                        'with-data': getIncidentForDate(employee.codigo, date.date),
+                        'rejected': isRejected(employee.codigo, date.date)
                     }"
+                    [matTooltip]="isRejected(employee.codigo, date.date)
+                        ? 'Rechazado: ' + getRejectionComment(employee.codigo, date.date)
+                        : getIncidentForDate(employee.codigo, date.date)
+                            ? 'Click derecho para rechazar'
+                            : ''"
                     class="day d-{{ date.key }}"
                 >
                     <div class="item">{{ getIncidentForDate(employee.codigo, date.date) }}</div>

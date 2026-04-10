@@ -433,7 +433,7 @@ export class AttendaceComponent implements OnInit, OnDestroy {
         });
     }
 
-    public setIncidencia(incidentCode: string, employeeCode: number, company: number, attendance: IAttendance, customValue?: number): void {
+    public setIncidencia(incidentCode: string, employeeCode: number, company: number, attendance: IAttendance, customValue?: number, notes?: string): void {
         const identifyIncident = `${employeeCode}${company}${attendance.date}`;
 
         // Usar Set para mejor rendimiento
@@ -443,7 +443,7 @@ export class AttendaceComponent implements OnInit, OnDestroy {
             return newSet;
         });
 
-        this.service.insertAttendaceIncident(incidentCode, attendance.date, employeeCode, customValue)
+        this.service.insertAttendaceIncident(incidentCode, attendance.date, employeeCode, customValue, notes)
             .pipe(
                 finalize(() => {
                     this.listItemsLoading.update(items => {
@@ -588,7 +588,7 @@ export class AttendaceComponent implements OnInit, OnDestroy {
                             ...(employee.attendances![findAttendance].assistanceIncidents || []),
                         ];
 
-                        this.setIncidencia(result.incidentCode, employee.codigo, employee.company, employee.attendances![findAttendance], result.customValue);
+                        this.setIncidencia(result.incidentCode, employee.codigo, employee.company, employee.attendances![findAttendance], result.customValue, result.notes);
                     } else {
                         this.showError('Fecha no válida');
                     }

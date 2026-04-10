@@ -1,0 +1,42 @@
+<table mat-table #table [dataSource]="dataSource()">
+    <ng-container matColumnDef="code">
+        <th mat-header-cell *matHeaderCellDef> Codigo </th>
+        <td mat-cell *matCellDef="let row"> {{row.code}} </td>
+    </ng-container>
+    <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef> Nombre </th>
+        <td mat-cell *matCellDef="let row"> {{row.fullName}} </td>
+    </ng-container>
+    <ng-container matColumnDef="department">
+        <th mat-header-cell *matHeaderCellDef> Departamento </th>
+        <td mat-cell *matCellDef="let row"> {{row.department}} </td>
+    </ng-container>
+    <ng-container matColumnDef="jobPosition">
+        <th mat-header-cell *matHeaderCellDef> Puesto </th>
+        <td mat-cell *matCellDef="let row"> {{row.jobPosition}} </td>
+    </ng-container>
+    <ng-container matColumnDef="consecutiveDays">
+        <th mat-header-cell *matHeaderCellDef> Días Consecutivos </th>
+        <td mat-cell *matCellDef="let row">
+            <span class="badge-days" [class.critical]="row.consecutiveDays >= 3">{{row.consecutiveDays}}</span>
+        </td>
+    </ng-container>
+    <ng-container matColumnDef="startDate">
+        <th mat-header-cell *matHeaderCellDef> Fecha Inicio </th>
+        <td mat-cell *matCellDef="let row"> {{row.startDate | date: 'dd/MM/yyyy'}} </td>
+    </ng-container>
+    <ng-container matColumnDef="endDate">
+        <th mat-header-cell *matHeaderCellDef> Fecha Fin </th>
+        <td mat-cell *matCellDef="let row"> {{row.endDate | date: 'dd/MM/yyyy'}} </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="columns"></tr>
+    <tr mat-row *matRowDef="let row; columns: columns;"></tr>
+</table>
+
+<mat-paginator
+    [length]="totalRecords()"
+    [pageSize]="pageSize()"
+    [pageSizeOptions]="[5, 10, 25, 100]"
+    (page)="onPageChange.emit($event)">
+</mat-paginator>

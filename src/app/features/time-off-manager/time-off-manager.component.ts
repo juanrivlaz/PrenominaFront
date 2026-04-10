@@ -22,6 +22,8 @@ import { FormControl, ReactiveFormsModule } from "@angular/forms";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { SysKey } from "@core/models/enum/sys-key";
 import { IAssignTimeOffOutput } from "./assign-time-off/assign-time-off-output.interface";
+import { RejectTimeOffComponent } from "./reject-time-off/reject-time-off.component";
+import { IRejectTimeOff, IRejectTimeOffOutput } from "./reject-time-off/reject-time-off.interface";
 
 @Component({
     selector: 'app-time-off-manager',
@@ -69,6 +71,8 @@ export class TimeOffManagerComponent implements OnInit, OnDestroy {
         key: number,
     }>> = signal([]);
     public attendancesIncidents: Map<string, string> = new Map<string, string>();
+    public rejectedIncidents: Map<string, string> = new Map<string, string>();
+    public incidentGroups: Map<string, Array<string>> = new Map<string, Array<string>>();
     public searchControl = new FormControl();
     public paginatorDetails: WritableSignal<{
         totalRecord: number;
@@ -121,10 +125,41 @@ export class TimeOffManagerComponent implements OnInit, OnDestroy {
                         const listAttendaceIncidents = response.items
                             .map((employee) => employee.attendancesIncident.map((ai) => ({
                                 key: `${employee.codigo}:${ai.date}`,
-                                code: ai.incidentCode
+                                code: ai.incidentCode,
+                                rejected: ai.rejected,
+                                requestGroupId: ai.requestGroupId,
+                                date: String(ai.date),
+                                employeeCode: employee.codigo,
                             })))
                             .flat();
                         this.attendancesIncidents = new Map(listAttendaceIncidents.map((item) => [item.key, item.code]));
+                        this.rejectedIncidents = new Map<string, string>();
+                        for (const item of listAttendaceIncidents) {
+                            if (item.rejected) {
+                                const ai = response.items
+                                    .find(e => e.codigo === item.employeeCode)
+                                    ?.attendancesIncident.find(a => String(a.date) === item.date);
+                                this.rejectedIncidents.set(item.key, ai?.rejectionComment || '');
+                            }
+                        }
+
+                        this.incidentGroups = new Map<string, Array<string>>();
+                        const groupMap = new Map<string, Array<string>>();
+                        for (const item of listAttendaceIncidents) {
+                            if (item.requestGroupId) {
+                                const groupKey = `${item.employeeCode}:${item.requestGroupId}`;
+                                if (!groupMap.has(groupKey)) {
+                                    groupMap.set(groupKey, []);
+                                }
+                                groupMap.get(groupKey)!.push(item.date);
+                            }
+                        }
+                        for (const item of listAttendaceIncidents) {
+                            if (item.requestGroupId) {
+                                const groupKey = `${item.employeeCode}:${item.requestGroupId}`;
+                                this.incidentGroups.set(item.key, groupMap.get(groupKey)!);
+                            }
+                        }
                         this.paginatorDetails.set({
                             totalRecord: response.totalRecords,
                             pageSize: response.pageSize,
@@ -179,8 +214,8 @@ export class TimeOffManagerComponent implements OnInit, OnDestroy {
                 next: (response) => {
                     this.listPayrolls.set(response.payrolls);
                     this._listPeriods.set(response.periods);
-                    this.listIncidentCodes.set(response.incidentCodes.filter((item) => !item.isAdditional));
-                    this.listIncidentCodesAditional.set(response.incidentCodes.filter((item) => item.isAdditional));
+                    this.listIncidentCodes.set(response.incidentCodes.filter((item) => !item.isAdditional && item.availableForTimeOff));
+                    this.listIncidentCodesAditional.set(response.incidentCodes.filter((item) => item.isAdditional && item.availableForTimeOff));
                 },
                 error: (err) => {
                     this.showError(err.error?.message || 'Ocurrió un error, por favor intentalo más tarde');
@@ -267,6 +302,7 @@ export class TimeOffManagerComponent implements OnInit, OnDestroy {
                             resultData.attendancesIncident.forEach((item) => {
                                 const key = `${resultData.codigo}:${item.date}`;
                                 this.attendancesIncidents.set(key, item.incidentCode);
+                                this.rejectedIncidents.delete(key);
                             });
                         },
                         error: (err) => {
@@ -323,6 +359,97 @@ export class TimeOffManagerComponent implements OnInit, OnDestroy {
 
     public getIncidentForDate(employeeCode: number, date: string) {
         return this.attendancesIncidents.get(`${employeeCode}:${date}`) || '';
+    }
+
+    public isRejected(employeeCode: number, date: string): boolean {
+        return this.rejectedIncidents.has(`${employeeCode}:${date}`);
+    }
+
+    public getRejectionComment(employeeCode: number, date: string): string {
+        return this.rejectedIncidents.get(`${employeeCode}:${date}`) || '';
+    }
+
+    public rejectTimeOff(employeeCode: number, date: string, event: MouseEvent): void {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const incidentCode = this.getIncidentForDate(employeeCode, date);
+        if (!incidentCode) {
+            return;
+        }
+
+        if (this.isRejected(employeeCode, date)) {
+            const comment = this.getRejectionComment(employeeCode, date);
+            this._snackBar.open(
+                `Motivo del rechazo: ${comment || 'Sin comentario'}`,
+                'Cerrar',
+                {
+                    horizontalPosition: 'center',
+                    verticalPosition: 'top',
+                    duration: 6000
+                }
+            );
+            return;
+        }
+
+        const employee = this.listEmployees().find((item) => item.codigo === employeeCode);
+        if (!employee) {
+            return;
+        }
+
+        const key = `${employeeCode}:${date}`;
+        const groupDates = this.incidentGroups.get(key) || [date];
+
+        const data: IRejectTimeOff = {
+            employeeCode,
+            employeeName: `${employee.name} ${employee.lastName} ${employee.mLastName}`,
+            date,
+            incidentCode,
+            groupDates,
+        };
+
+        const dialogRef = this.dialog.open<RejectTimeOffComponent, IRejectTimeOff, IRejectTimeOffOutput>(RejectTimeOffComponent, {
+            data,
+            width: '450px',
+        });
+
+        dialogRef.afterClosed()
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(result => {
+                if (result) {
+                    this.configService.setLoading(true);
+                    this.service.rejectDayOff({
+                        employeeCode,
+                        date,
+                        comment: result.comment,
+                    })
+                    .pipe(
+                        finalize(() => this.configService.setLoading(false)),
+                        takeUntil(this.destroy$)
+                    )
+                    .subscribe({
+                        next: (rejectedItems) => {
+                            rejectedItems.forEach((item) => {
+                                this.rejectedIncidents.set(`${employeeCode}:${item.date}`, result.comment);
+                            });
+                            const count = rejectedItems.length;
+                            this._snackBar.open(
+                                count > 1 ? `${count} permisos rechazados correctamente` : 'Permiso rechazado correctamente',
+                                '✅',
+                                {
+                                    horizontalPosition: 'center',
+                                    verticalPosition: 'top',
+                                    panelClass: 'alert-success',
+                                    duration: 3000
+                                }
+                            );
+                        },
+                        error: (err) => {
+                            this.showError(err.error?.message || 'Error al rechazar el permiso');
+                        }
+                    });
+                }
+            });
     }
 
     public syncIncapacity(): void {

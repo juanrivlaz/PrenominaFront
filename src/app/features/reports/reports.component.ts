@@ -31,6 +31,8 @@ import { IncidencesTableComponent } from "./incidences-table/incidences-table.co
 import { IIncidenceReport } from "@core/models/reports/incidences.interface";
 import { ConfirmDialogComponent, ConfirmDialogData } from "@shared/components/confirm-dialog/confirm-dialog.component";
 import dayjs from "dayjs";
+import { AbandonmentTableComponent } from "./abandonment-table/abandonment-table.component";
+import { IAbandonmentReport } from "@core/models/reports/abandonment.interface";
 
 @Component({
     selector: 'app-reports',
@@ -47,6 +49,7 @@ import dayjs from "dayjs";
         OvertimesTableComponent,
         AttendanceTableComponent,
         IncidencesTableComponent,
+        AbandonmentTableComponent,
     ],
     providers: [ReportsService],
     templateUrl: './reports.component.html',
@@ -81,6 +84,10 @@ export class ReportsComponent implements OnInit {
     public incidences: MatTableDataSource<IIncidenceReport> = new MatTableDataSource<IIncidenceReport>([]);
     public totalIncidencesRecords: number = 0;
     public incidencesPageSize: number = 1;
+
+    public abandonment: MatTableDataSource<IAbandonmentReport> = new MatTableDataSource<IAbandonmentReport>([]);
+    public totalAbandonmentRecords: number = 0;
+    public abandonmentPageSize: number = 1;
 
     public activeSection = model<Section>(Section.Delays);
     public searchControl = new FormControl<string>('');
@@ -194,6 +201,8 @@ export class ReportsComponent implements OnInit {
             this.getAttendance(search, filterDates);
         } else if (this.activeSection() === Section.Incidences) {
             this.getIncidences(search, filterDates);
+        } else if (this.activeSection() === Section.Abandonment) {
+            this.getAbandonment(search, filterDates);
         }
     }
 
@@ -209,6 +218,8 @@ export class ReportsComponent implements OnInit {
         } else if (this.activeSection() === Section.Attendance && this.attendance.data.length) {
             return;
         } else if (this.activeSection() === Section.Incidences && this.incidences.data.length) {
+            return;
+        } else if (this.activeSection() === Section.Abandonment && this.abandonment.data.length) {
             return;
         }
 
@@ -369,6 +380,21 @@ export class ReportsComponent implements OnInit {
             });
         } else if (this.activeSection() === Section.Incidences) {
             service = this.reportsService.downloadExcelIncidences(
+            {
+                page: 1,
+                pageSize: 30,
+                payroll: this.payroll?.typeNom || undefined,
+                numPeriod: this.period?.numPeriod,
+                search: this.searchControl.value || '',
+                ...(this.filterForDates.value.start && this.filterForDates.value.end ? {
+                    filterDates: {
+                        start: this.filterForDates.value.start!,
+                        end: this.filterForDates.value.end!,
+                    }
+                } : {})
+            });
+        } else if (this.activeSection() === Section.Abandonment) {
+            service = this.reportsService.downloadExcelAbandonment(
             {
                 page: 1,
                 pageSize: 30,
@@ -556,6 +582,36 @@ export class ReportsComponent implements OnInit {
                 });
                 this.totalIncidencesRecords = response.length;
                 this.incidencesPageSize = 30;
+            },
+            error: (err) => {
+                const message = err.error?.message || 'Ocurrió un error, por favor intentalo más tarde';
+
+                this._snackBar.open(message, '❌', {
+                    horizontalPosition: 'center',
+                    verticalPosition: 'top',
+                    panelClass: 'alert-error',
+                    duration: 3000
+                });
+            }
+        });
+    }
+
+    private getAbandonment(search: string = '', filterDates?: { start: Date; end: Date }): void {
+        this.appConfigService.setLoading(true);
+        this.reportsService.getAbandonment({
+            page: 1,
+            pageSize: 30,
+            payroll: this.payroll?.typeNom || undefined,
+            numPeriod: this.period?.numPeriod,
+            search: search || this.searchControl.value || '',
+            filterDates,
+        }).pipe(finalize(() => {
+            this.appConfigService.setLoading(false);
+        })).subscribe({
+            next: (response) => {
+                this.abandonment.data = response;
+                this.totalAbandonmentRecords = response.length;
+                this.abandonmentPageSize = 30;
             },
             error: (err) => {
                 const message = err.error?.message || 'Ocurrió un error, por favor intentalo más tarde';
