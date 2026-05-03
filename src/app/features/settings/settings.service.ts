@@ -64,7 +64,7 @@ export class SettingsService {
         return this.httpService.get<{ configured: boolean; email: string; company: string }>('/BioTimeSync/credentials/status');
     }
 
-    public syncBioTimeNow(): Observable<any> {
-        return this.httpService.post('/BioTimeSync/sync-now', {});
+    public syncBioTimeNow(range?: { startDate: string | null; endDate: string | null }): Observable<any> {
+        return this.httpService.post('/BioTimeSync/sync-now', range ?? {});
     }
 }

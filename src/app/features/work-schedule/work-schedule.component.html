@@ -1,0 +1,82 @@
+<div class="container module-container">
+    <div class="ctn-title">
+        <div class="title">
+            <h2>Horarios laborales</h2>
+            <span>Gestión de horarios y turnos para asignar a empleados</span>
+        </div>
+        <div class="ctn-btns">
+            <button mat-flat-button (click)="openCreate()">
+                <mat-icon>add</mat-icon>
+                Horario
+            </button>
+        </div>
+    </div>
+
+    @if (loading()) {
+        <div class="ctn-loading">
+            <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+        </div>
+    }
+
+    <div class="ctn-items">
+        @for (schedule of schedules(); track schedule.id) {
+            <div class="item">
+                <div class="item-header">
+                    <p class="item-label">{{ schedule.label }}</p>
+                    @if (schedule.isNightShift) {
+                        <span class="badge badge-night">
+                            <mat-icon>nights_stay</mat-icon>
+                            Nocturno
+                        </span>
+                    } @else {
+                        <span class="badge badge-day">
+                            <mat-icon>wb_sunny</mat-icon>
+                            Diurno
+                        </span>
+                    }
+                </div>
+                <mat-list>
+                    <mat-list-item>
+                        <mat-icon matListItemIcon>login</mat-icon>
+                        <div matListItemTitle>{{ schedule.startTime }}</div>
+                        <div matListItemLine>Hora de entrada</div>
+                    </mat-list-item>
+                    <mat-list-item>
+                        <mat-icon matListItemIcon>logout</mat-icon>
+                        <div matListItemTitle>{{ schedule.endTime }}</div>
+                        <div matListItemLine>Hora de salida</div>
+                    </mat-list-item>
+                    <mat-list-item>
+                        <mat-icon matListItemIcon>schedule</mat-icon>
+                        <div matListItemTitle>{{ schedule.workHours }} h</div>
+                        <div matListItemLine>Horas laborables</div>
+                    </mat-list-item>
+                    @if (schedule.breakStart && schedule.breakEnd) {
+                        <mat-list-item>
+                            <mat-icon matListItemIcon>local_cafe</mat-icon>
+                            <div matListItemTitle>{{ schedule.breakStart }} - {{ schedule.breakEnd }}</div>
+                            <div matListItemLine>Descanso</div>
+                        </mat-list-item>
+                    }
+                </mat-list>
+                <div class="actions">
+                    <button mat-button (click)="openEdit(schedule)">
+                        <mat-icon>edit</mat-icon>
+                        Editar
+                    </button>
+                    <button mat-button color="warn" (click)="deleteSchedule(schedule)">
+                        <mat-icon>delete</mat-icon>
+                        Eliminar
+                    </button>
+                </div>
+            </div>
+        }
+        @if (!loading() && schedules().length === 0) {
+            <div class="empty">
+                <mat-icon>event_busy</mat-icon>
+                <p>No hay horarios configurados</p>
+                <span>Crea el primero usando el botón "Horario"</span>
+            </div>
+        }
+    </div>
+</div>

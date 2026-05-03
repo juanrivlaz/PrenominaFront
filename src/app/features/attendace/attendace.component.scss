@@ -234,6 +234,24 @@ app-attendace {
                                             }
                                         }
 
+                                        &.isNightShift {
+                                            .entry, .output {
+                                                background-color: #d6c9f5;
+                                            }
+
+                                            .next-day-tag {
+                                                display: inline-block;
+                                                margin-left: 4px;
+                                                padding: 1px 4px;
+                                                background-color: #1a237e;
+                                                color: white;
+                                                border-radius: 4px;
+                                                font-size: 9px;
+                                                font-weight: 600;
+                                                vertical-align: middle;
+                                            }
+                                        }
+
                                         &.no-data {
                                             .entry, .output {
                                                 background-color: #ffcaca;

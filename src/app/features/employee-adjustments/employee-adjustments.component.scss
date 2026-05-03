@@ -1,4 +1,20 @@
 app-employee-adjustments {
+    .schedule-select {
+        min-width: 180px;
+
+        .mat-mdc-form-field-subscript-wrapper {
+            display: none;
+        }
+
+        .night-icon {
+            font-size: 14px;
+            width: 14px;
+            height: 14px;
+            margin-left: 4px;
+            vertical-align: middle;
+        }
+    }
+
     .ctn-filter {
         display: flex;
         justify-content: flex-end;

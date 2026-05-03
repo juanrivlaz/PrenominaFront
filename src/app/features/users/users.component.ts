@@ -20,6 +20,7 @@ import { TypeTenant } from "@core/models/enum/type-tenant";
 import { MatMenuModule } from "@angular/material/menu";
 import { DialogConfirmComponent } from "@shared/components/dialog-confirm/dialog-confirm.component";
 import { IDialogConfirm } from "@shared/components/dialog-confirm/dialog-confirm.interface";
+import dayjs from "dayjs";
 
 @Component({
     selector: 'app-users',
@@ -66,6 +67,10 @@ export class UsersComponent implements OnInit {
     public handleChangeSearch(event: Event): void {
         const filterValue = (event.target as HTMLInputElement).value;
         this.users.filter = filterValue.trim().toLowerCase();
+    }
+
+    public formatLastConnection(date?: string | null): string {
+        return date ? dayjs(date).fromNow() : 'Nunca';
     }
 
     public addUser(): void {

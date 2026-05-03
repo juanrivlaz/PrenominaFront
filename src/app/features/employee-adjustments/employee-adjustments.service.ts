@@ -8,6 +8,11 @@ import { IIncidentCode } from "@core/models/incident-code.interface";
 import { IPagedResult } from "@core/models/paged-result.interface";
 import { ITabulator } from "@core/models/tabulator.interface";
 import { ITenantsForIgnoreIncident } from "@core/models/tenants-for-ignore-incident.interface";
+import {
+    IActivityScheduleConfig,
+    IEmployeeScheduleAssignment,
+    IWorkSchedule
+} from "@core/models/work-schedule.interface";
 import { Observable } from "rxjs";
 
 @Injectable()
@@ -89,6 +94,16 @@ export class EmployeeAdjustmentsService {
         return this.httpService.get<number[]>('/Employees/overtime-configs');
     }
 
+    public updateBlockOnClocks(employeeCode: number, blocked: boolean): Observable<boolean> {
+        return this.httpService.put<boolean>(`/Employees/${employeeCode}/block-on-clocks`, {
+            blocked
+        });
+    }
+
+    public getBlockedEmployees(): Observable<number[]> {
+        return this.httpService.get<number[]>('/Employees/clock-block-configs');
+    }
+
     public getExcludedActivities(): Observable<number[]> {
         return this.httpService.get<number[]>('/Activities/overtime-configs');
     }
@@ -96,6 +111,31 @@ export class EmployeeAdjustmentsService {
     public updateExcludeOvertimeActivity(activityId: number, excludeOvertime: boolean): Observable<boolean> {
         return this.httpService.put<boolean>(`/Activities/${activityId}/exclude-overtime`, {
             excludeOvertime
+        });
+    }
+
+    public getWorkSchedules(): Observable<Array<IWorkSchedule>> {
+        return this.httpService.get<Array<IWorkSchedule>>('/WorkSchedule');
+    }
+
+    public getActivityScheduleConfigs(): Observable<Record<number, IActivityScheduleConfig>> {
+        return this.httpService.get<Record<number, IActivityScheduleConfig>>('/Activities/schedule-configs');
+    }
+
+    public getEmployeeScheduleAssignments(): Observable<Record<number, IEmployeeScheduleAssignment>> {
+        return this.httpService.get<Record<number, IEmployeeScheduleAssignment>>('/Employees/schedule-assignments');
+    }
+
+    public assignActivitySchedule(activityId: number, workScheduleId: string | null): Observable<boolean> {
+        return this.httpService.put<boolean>(`/Activities/${activityId}/work-schedule`, {
+            workScheduleId
+        });
+    }
+
+    public assignEmployeeSchedule(employeeCode: number, workScheduleId: string | null): Observable<boolean> {
+        return this.httpService.put<boolean>(`/Employees/${employeeCode}/work-schedule`, {
+            workScheduleId,
+            effectiveFrom: new Date().toISOString().substring(0, 10)
         });
     }
 }

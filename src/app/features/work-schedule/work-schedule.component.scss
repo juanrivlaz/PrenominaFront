@@ -1,0 +1,128 @@
+@use '../../core/scss/app';
+
+app-work-schedule {
+    .ctn-title {
+        padding: 0 14px;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 24px;
+
+        .title {
+            h2, span {
+                margin: 0;
+            }
+
+            span {
+                color: darkgray;
+            }
+        }
+
+        .ctn-btns {
+            display: flex;
+            gap: 12px;
+
+            button {
+                background-color: var(--second-color);
+            }
+        }
+    }
+
+    .ctn-loading {
+        padding: 0 14px 16px;
+    }
+
+    .ctn-items {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1rem;
+        padding: 1rem;
+
+        .item {
+            box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px;
+            max-width: 360px;
+            padding: 16px;
+            border-radius: 8px;
+            background-color: white;
+            display: flex;
+            flex-direction: column;
+
+            .item-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                margin-bottom: 12px;
+            }
+
+            .item-label {
+                margin: 0;
+                font-weight: 600;
+                font-size: 1rem;
+            }
+
+            .badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                padding: 4px 10px;
+                border-radius: 12px;
+                font-size: 0.75rem;
+                font-weight: 500;
+
+                mat-icon {
+                    font-size: 16px;
+                    width: 16px;
+                    height: 16px;
+                }
+            }
+
+            .badge-night {
+                background-color: #1a237e;
+                color: white;
+            }
+
+            .badge-day {
+                background-color: #fff8e1;
+                color: #f57f17;
+            }
+
+            .actions {
+                display: flex;
+                margin-top: 12px;
+
+                button {
+                    flex: 1 1 auto;
+                }
+            }
+        }
+
+        .empty {
+            grid-column: 1 / -1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 60px 20px;
+            color: darkgray;
+
+            mat-icon {
+                font-size: 64px;
+                width: 64px;
+                height: 64px;
+            }
+
+            p {
+                margin: 0;
+                font-size: 1.1rem;
+                font-weight: 500;
+            }
+
+            span {
+                font-size: 0.875rem;
+            }
+        }
+    }
+}

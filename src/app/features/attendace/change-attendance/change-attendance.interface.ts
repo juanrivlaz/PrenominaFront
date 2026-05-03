@@ -13,4 +13,5 @@ export interface IChangeAttendance {
   checkEntry?: string | null;
   checkOutId?: string | null;
   checkOut?: string | null;
+  isNightShift?: boolean;
 }

@@ -164,13 +164,6 @@ export class AttendaceComponent implements OnInit, OnDestroy {
         ]).pipe(
             takeUntil(this.destroy$)
         ).subscribe(([company, tenant, payroll, period]) => {
-            console.log({
-                company,
-                tenant,
-                payroll,
-                period
-            });
-
             if (company && tenant && payroll && period) {
                 this.get();
             } else {
@@ -680,8 +673,14 @@ export class AttendaceComponent implements OnInit, OnDestroy {
             return false;
         }
 
+        // Para turnos nocturnos, la salida puede caer el día siguiente — no es una inconsistencia.
+        if (attendance.isNightShift) {
+            return false;
+        }
+
         const fechaInicio = dayjs(`${attendance.date}T${attendance.checkEntry}`);
-        const fechaFin = dayjs(`${attendance.date}T${attendance.checkOut || attendance.checkEntry}`);
+        const checkOutDate = attendance.checkOutDate || attendance.date;
+        const fechaFin = dayjs(`${checkOutDate}T${attendance.checkOut || attendance.checkEntry}`);
         const diferenciaEnMinutos = fechaFin.diff(fechaInicio, 'hour');
 
         return diferenciaEnMinutos <= 5;
@@ -761,6 +760,7 @@ export class AttendaceComponent implements OnInit, OnDestroy {
                 checkEntry: attendance.checkEntry,
                 checkOutId: attendance.checkOutId,
                 checkOut: attendance.checkOut,
+                isNightShift: attendance.isNightShift,
                 service: this.service,
             }
         });
@@ -774,6 +774,25 @@ export class AttendaceComponent implements OnInit, OnDestroy {
                     this.searchTrigger$.next(this.searchControl.value || '');
                 } else if (result?.errorMessage) {
                     this.showError(result.errorMessage);
+                }
+            });
+    }
+
+    public fixNightShiftChecks(): void {
+        this.loading.set(true);
+        this.service.fixNightShiftEoS()
+            .pipe(
+                finalize(() => this.loading.set(false)),
+                takeUntil(this.destroy$)
+            )
+            .subscribe({
+                next: (response) => {
+                    this.showSuccess(response.message);
+                    this.searchTrigger$.next(this.searchControl.value || '');
+                },
+                error: (err) => {
+                    const message = err.error?.message || 'Ocurrio un error al corregir checadas nocturnas';
+                    this.showError(message);
                 }
             });
     }

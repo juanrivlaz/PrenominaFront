@@ -25,7 +25,7 @@
                     <app-avatar [name]="row.name" />
                     <div class="labels">
                         <p>{{ row.name }}</p>
-                        <span>Últ. Conex: 30m</span>
+                        <span>Últ. Conex: {{ formatLastConnection(row.lastConnectionAt) }}</span>
                     </div>
                 </div>
             </td>

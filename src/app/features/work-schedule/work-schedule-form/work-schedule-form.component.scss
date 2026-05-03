@@ -1,0 +1,29 @@
+app-work-schedule-form {
+    .form-content {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-width: 380px;
+    }
+
+    .row {
+        display: flex;
+        gap: 12px;
+
+        mat-form-field {
+            flex: 1 1 0;
+        }
+    }
+
+    .night-toggle {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 8px 0;
+
+        .hint {
+            font-size: 0.75rem;
+            color: darkgray;
+        }
+    }
+}

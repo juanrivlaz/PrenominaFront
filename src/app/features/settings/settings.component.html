@@ -235,8 +235,25 @@
                         <mat-icon>sync</mat-icon>
                         <h4>Sincronizacion manual</h4>
                     </div>
-                    <p class="biotime-card-description">Ejecuta la sincronizacion del dia anterior bajo demanda.</p>
+                    <p class="biotime-card-description">Ejecuta la sincronizacion bajo demanda. Si no seleccionas un rango se sincroniza el dia anterior.</p>
                     <div class="biotime-card-body">
+                        <mat-form-field appearance="outline">
+                            <mat-label>Rango de fechas</mat-label>
+                            <mat-date-range-input [formGroup]="bioTimeSyncRange" [rangePicker]="bioTimeRangePicker" [max]="bioTimeMaxDate">
+                                <input matStartDate formControlName="start" placeholder="Fecha inicio">
+                                <input matEndDate formControlName="end" placeholder="Fecha fin">
+                            </mat-date-range-input>
+                            <mat-datepicker-toggle matIconSuffix [for]="bioTimeRangePicker"></mat-datepicker-toggle>
+                            <mat-date-range-picker #bioTimeRangePicker></mat-date-range-picker>
+                            <mat-hint>Opcional. Dejar vacio para sincronizar el dia anterior.</mat-hint>
+
+                            @if (bioTimeSyncRange.controls.start.hasError('matStartDateInvalid')) {
+                                <mat-error>Fecha de inicio invalida</mat-error>
+                            }
+                            @if (bioTimeSyncRange.controls.end.hasError('matEndDateInvalid')) {
+                                <mat-error>Fecha de fin invalida</mat-error>
+                            }
+                        </mat-form-field>
                         <button mat-raised-button color="accent"
                                 (click)="handleSyncBioTimeNow()"
                                 [disabled]="loadingBioTimeSync() || !bioTimeCredentialsConfigured()">

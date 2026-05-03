@@ -18,13 +18,23 @@ export class AttendaceService {
     constructor(private readonly httpService: HttpClient) {}
 
     public insertAttendaceIncident(incidentCode: string, date: string, employeeCode: number, customValue?: number, notes?: string): Observable<IAssistanceIncident> {
-        return this.httpService.patch<IAssistanceIncident>('/Attendance/apply-incident', {
+        const payload: Record<string, unknown> = {
             incidentCode,
             date,
             employeeCode,
-            amount: customValue,
-            notes
-        });
+        };
+
+        // Solo incluir amount si es un número válido; el form puede entregar '' cuando
+        // la incidencia no requiere monto, y C# no puede parsear "" como decimal?.
+        if (typeof customValue === 'number' && !Number.isNaN(customValue)) {
+            payload['amount'] = customValue;
+        }
+
+        if (notes) {
+            payload['notes'] = notes;
+        }
+
+        return this.httpService.patch<IAssistanceIncident>('/Attendance/apply-incident', payload);
     }
 
     public getInit(): Observable<IInitAttendanceRecords> {
@@ -81,5 +91,13 @@ export class AttendaceService {
 
     public changeAttendance(form: IChangeAttendance): Observable<boolean> {
         return this.httpService.patch<boolean>('/Attendance/change', form);
+    }
+
+    public deleteCheckins(form: { checkEntryId?: string | null; checkOutId?: string | null }): Observable<boolean> {
+        return this.httpService.patch<boolean>('/Attendance/delete-checkins', form);
+    }
+
+    public fixNightShiftEoS(): Observable<{ totalFixed: number; message: string }> {
+        return this.httpService.post<{ totalFixed: number; message: string }>('/Attendance/fix-night-shift-eos', {});
     }
 }

@@ -1,5 +1,5 @@
 import { CommonModule } from "@angular/common";
-import { Component, inject, model, OnInit, ViewEncapsulation } from "@angular/core";
+import { Component, inject, model, OnInit, signal, ViewEncapsulation } from "@angular/core";
 import { MaterialModule } from "@shared/modules/material/material.module";
 import { MatTabsModule } from "@angular/material/tabs";
 import { MatDialog } from "@angular/material/dialog";
@@ -12,15 +12,17 @@ import { IEmployee } from "@core/models/employee.interface";
 import { IIncidentCode } from "@core/models/incident-code.interface";
 import { ISettingIncident } from "./setting-incident/setting-incident.interface";
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { AppConfigService } from "@core/services/app-config/app-config.service";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { ITabulator } from "@core/models/tabulator.interface";
 import { TypeApplyIgnoreIncident } from "@core/models/enum/type-apply-ignore-incident";
+import { IWorkSchedule } from "@core/models/work-schedule.interface";
 
 @Component({
     selector: 'app-employee-adjustments',
-    imports: [CommonModule, MaterialModule, MatTabsModule, MatSlideToggleModule, MatTableModule],
+    imports: [CommonModule, MaterialModule, MatTabsModule, MatSlideToggleModule, MatSelectModule, MatTableModule],
     providers: [EmployeeAdjustmentsService],
     templateUrl: './employee-adjustments.component.html',
     styleUrl: './employee-adjustments.component.scss',
@@ -34,6 +36,7 @@ export class EmployeeAdjustmentsComponent implements OnInit {
     public incidentCodes = model<Array<IIncidentCode>>([]);
     public tenants: MatTableDataSource<{ id: number | string; label: string;}> = new MatTableDataSource<{id: number | string; label: string;}>([]);
     public activities: MatTableDataSource<ITabulator> = new MatTableDataSource<ITabulator>([]);
+    public readonly workSchedules = signal<Array<IWorkSchedule>>([]);
     public columnTableTenants: Array<string> = [
         'id',
         'label',
@@ -43,7 +46,8 @@ export class EmployeeAdjustmentsComponent implements OnInit {
         'id',
         'label',
         'actions',
-        'exclude-overtime-activity'
+        'exclude-overtime-activity',
+        'work-schedule-activity'
     ];
     public columnTableEmployees: Array<string> = [
         'code',
@@ -52,7 +56,8 @@ export class EmployeeAdjustmentsComponent implements OnInit {
         'tenant',
         'actions',
         'block-clock',
-        'exclude-overtime'
+        'exclude-overtime',
+        'work-schedule-employee'
     ];
 
     constructor(
@@ -99,6 +104,81 @@ export class EmployeeAdjustmentsComponent implements OnInit {
             error: (err) => {
                 event.source.checked = !excludeOvertime;
                 const message = err.error?.message || 'Error al actualizar configuración';
+                this._snackBar.open(message, undefined, {
+                    horizontalPosition: 'center',
+                    verticalPosition: 'top',
+                    panelClass: 'alert-error',
+                    duration: 3000
+                });
+            }
+        });
+    }
+
+    public toggleBlockClock(employee: IEmployee, event: any): void {
+        const blocked = event.checked;
+        this.service.updateBlockOnClocks(employee.codigo, blocked).subscribe({
+            next: () => {
+                employee.isBlockedOnClocks = blocked;
+                this._snackBar.open(
+                    blocked ? 'Empleado bloqueado en todos los relojes' : 'Empleado desbloqueado en todos los relojes',
+                    undefined,
+                    {
+                        horizontalPosition: 'center',
+                        verticalPosition: 'top',
+                        panelClass: 'alert-success',
+                        duration: 3000
+                    }
+                );
+            },
+            error: (err) => {
+                event.source.checked = !blocked;
+                const message = err.error?.message || 'No se pudo aplicar el bloqueo en los relojes';
+                this._snackBar.open(message, undefined, {
+                    horizontalPosition: 'center',
+                    verticalPosition: 'top',
+                    panelClass: 'alert-error',
+                    duration: 5000
+                });
+            }
+        });
+    }
+
+    public onChangeActivitySchedule(activity: ITabulator, scheduleId: string | null): void {
+        this.service.assignActivitySchedule(activity.ocupation, scheduleId).subscribe({
+            next: () => {
+                (activity as any).workScheduleId = scheduleId;
+                this._snackBar.open('Horario actualizado para la actividad', undefined, {
+                    horizontalPosition: 'center',
+                    verticalPosition: 'top',
+                    panelClass: 'alert-success',
+                    duration: 3000
+                });
+            },
+            error: (err) => {
+                const message = err.error?.message || 'Error al actualizar horario';
+                this._snackBar.open(message, undefined, {
+                    horizontalPosition: 'center',
+                    verticalPosition: 'top',
+                    panelClass: 'alert-error',
+                    duration: 3000
+                });
+            }
+        });
+    }
+
+    public onChangeEmployeeSchedule(employee: IEmployee, scheduleId: string | null): void {
+        this.service.assignEmployeeSchedule(employee.codigo, scheduleId).subscribe({
+            next: () => {
+                (employee as any).workScheduleId = scheduleId;
+                this._snackBar.open('Horario actualizado para el empleado', undefined, {
+                    horizontalPosition: 'center',
+                    verticalPosition: 'top',
+                    panelClass: 'alert-success',
+                    duration: 3000
+                });
+            },
+            error: (err) => {
+                const message = err.error?.message || 'Error al actualizar horario';
                 this._snackBar.open(message, undefined, {
                     horizontalPosition: 'center',
                     verticalPosition: 'top',
@@ -209,6 +289,8 @@ export class EmployeeAdjustmentsComponent implements OnInit {
             this.service.getIncidentCodes(),
             this.service.getActivities(),
             this.service.getExcludedActivities(),
+            this.service.getWorkSchedules(),
+            this.service.getActivityScheduleConfigs(),
         ]).pipe(finalize(() => {
             this.configService.setLoading(false);
         })).subscribe({
@@ -217,6 +299,8 @@ export class EmployeeAdjustmentsComponent implements OnInit {
                 this.incidentCodes.set(response[1]);
 
                 const excludedActivityIds = new Set(response[3]);
+                this.workSchedules.set(response[4]);
+                const activityScheduleConfigs = response[5] || {};
 
                 let itemsActivities = [];
                 if (response[0].typeTenant === TypeTenant.Department) {
@@ -235,7 +319,8 @@ export class EmployeeAdjustmentsComponent implements OnInit {
 
                 const activitiesWithConfig = response[2].map((a: ITabulator) => ({
                     ...a,
-                    excludeOvertime: excludedActivityIds.has(a.ocupation)
+                    excludeOvertime: excludedActivityIds.has(a.ocupation),
+                    workScheduleId: activityScheduleConfigs[a.ocupation]?.workScheduleId ?? null
                 }));
                 this.activities = new MatTableDataSource<ITabulator>(activitiesWithConfig);
 
@@ -259,13 +344,19 @@ export class EmployeeAdjustmentsComponent implements OnInit {
         combineLatest([
             this.service.getEmployee(),
             this.service.getExcludedEmployees(),
+            this.service.getEmployeeScheduleAssignments(),
+            this.service.getBlockedEmployees(),
         ]).pipe(finalize(() => {
             this.configService.setLoading(false);
         })).subscribe({
-            next: ([response, excludedCodes]) => {
+            next: ([response, excludedCodes, assignments, blockedCodes]) => {
                 const excludedSet = new Set(excludedCodes);
+                const blockedSet = new Set(blockedCodes);
+                const assignmentMap = assignments || {};
                 response.items.forEach((e: any) => {
                     e.excludeOvertime = excludedSet.has(e.codigo);
+                    e.workScheduleId = assignmentMap[e.codigo]?.workScheduleId ?? null;
+                    e.isBlockedOnClocks = blockedSet.has(e.codigo);
                 });
                 this.employees = new MatTableDataSource(response.items);
             },

@@ -146,6 +146,15 @@ export const ItemsNavigations: Array<MenuIntemInterface | MenuCollapseInterface 
         url: '/clocks'
     },
     {
+        id: 'workschedules',
+        title: 'Horarios Laborales',
+        type: 'item',
+        exactMatch: true,
+        icon: 'schedule',
+        url: '/work-schedules',
+        isItemConfig: true,
+    },
+    {
         id: 'documents',
         title: 'Documentos',
         type: 'item',

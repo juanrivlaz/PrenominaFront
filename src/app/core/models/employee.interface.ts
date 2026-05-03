@@ -9,4 +9,5 @@ export interface IEmployee {
     active: string;
     activity?: string;
     tenantName?: string;
+    isBlockedOnClocks?: boolean;
 }

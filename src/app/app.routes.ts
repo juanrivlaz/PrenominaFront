@@ -87,6 +87,11 @@ export const routes: Routes = [
     canActivate: [AuthGuard]
   },
   {
+    path: 'work-schedules',
+    loadComponent: () => import('./features/work-schedule/work-schedule.component').then(m => m.WorkScheduleComponent),
+    canActivate: [AuthGuard]
+  },
+  {
     path: 'documents',
     loadComponent: () => import('./features/documents/documents.component').then(m => m.DocumentsComponent),
     canActivate: [AuthGuard]

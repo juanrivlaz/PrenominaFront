@@ -14,4 +14,6 @@ export interface IAttendance {
     customValue?: string;
     isInconsistency?: boolean;
     isDayOff?: boolean;
+    isNightShift?: boolean;
+    checkOutDate?: string | null;
 }

@@ -58,6 +58,27 @@
                         </mat-slide-toggle>
                     </td>
                 </ng-container>
+
+                <ng-container matColumnDef="work-schedule-activity">
+                    <th mat-header-cell *matHeaderCellDef> Horario </th>
+                    <td mat-cell *matCellDef="let row">
+                        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="schedule-select">
+                            <mat-select
+                                [value]="row.workScheduleId"
+                                (selectionChange)="onChangeActivitySchedule(row, $event.value)">
+                                <mat-option [value]="null">— Sin horario —</mat-option>
+                                @for (sched of workSchedules(); track sched.id) {
+                                    <mat-option [value]="sched.id">
+                                        {{ sched.label }}
+                                        @if (sched.isNightShift) {
+                                            <mat-icon class="night-icon">nights_stay</mat-icon>
+                                        }
+                                    </mat-option>
+                                }
+                            </mat-select>
+                        </mat-form-field>
+                    </td>
+                </ng-container>
                 <tr mat-header-row *matHeaderRowDef="columnTableActivities"></tr>
                 <tr mat-row *matRowDef="let row; columns: columnTableActivities;"></tr>
             </table>
@@ -91,7 +112,10 @@
                 <ng-container matColumnDef="block-clock">
                     <th mat-header-cell *matHeaderCellDef> Bloqueo en Relojes </th>
                     <td mat-cell *matCellDef="let row">
-                        <mat-slide-toggle />
+                        <mat-slide-toggle
+                            [checked]="row.isBlockedOnClocks"
+                            (change)="toggleBlockClock(row, $event)">
+                        </mat-slide-toggle>
                     </td>
                 </ng-container>
 
@@ -102,6 +126,27 @@
                             [checked]="row.excludeOvertime"
                             (change)="toggleExcludeOvertime(row, $event)">
                         </mat-slide-toggle>
+                    </td>
+                </ng-container>
+
+                <ng-container matColumnDef="work-schedule-employee">
+                    <th mat-header-cell *matHeaderCellDef> Horario </th>
+                    <td mat-cell *matCellDef="let row">
+                        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="schedule-select">
+                            <mat-select
+                                [value]="row.workScheduleId"
+                                (selectionChange)="onChangeEmployeeSchedule(row, $event.value)">
+                                <mat-option [value]="null">— Sin horario —</mat-option>
+                                @for (sched of workSchedules(); track sched.id) {
+                                    <mat-option [value]="sched.id">
+                                        {{ sched.label }}
+                                        @if (sched.isNightShift) {
+                                            <mat-icon class="night-icon">nights_stay</mat-icon>
+                                        }
+                                    </mat-option>
+                                }
+                            </mat-select>
+                        </mat-form-field>
                     </td>
                 </ng-container>
                 <tr mat-header-row *matHeaderRowDef="columnTableEmployees"></tr>

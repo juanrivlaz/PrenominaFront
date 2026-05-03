@@ -29,7 +29,7 @@
         }
 
         @if (formGroup.get('checkOut')?.hasError('errorAttendance')) {
-          <mat-error> La hora de salida debe ser mayor a la hora de entrada </mat-error>
+          <mat-error> La hora de salida no es válida para el horario de entrada </mat-error>
         }
 
         <mat-icon matSuffix>schedule</mat-icon>
@@ -42,6 +42,13 @@
   @if (loading) {
     <mat-spinner diameter="30"></mat-spinner>
   } @else {
+    @if (canDelete) {
+      <button mat-button color="warn" class="btn-delete" (click)="delete()">
+        <mat-icon>delete</mat-icon>
+        Eliminar
+      </button>
+    }
+    <span class="spacer"></span>
     <button mat-button (click)="cancel()" cdkFocusInitial>Cancelar</button>
     <button mat-flat-button (click)="confirm()" [disabled]="formGroup.invalid">Confirmar</button>
   }

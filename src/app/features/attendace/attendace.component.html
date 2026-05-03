@@ -62,6 +62,13 @@
                     Sin capturar
                 </mat-slide-toggle>
             </div>
+            @if (canModifyCheckins) {
+                <div class="ctn-fix-night">
+                    <button mat-icon-button (click)="fixNightShiftChecks()" matTooltip="Corregir checadas de turnos nocturnos" color="primary">
+                        <mat-icon>nightlight</mat-icon>
+                    </button>
+                </div>
+            }
             <div class="ctn-close-period">
                 @if (canClosePayrollPeriod) {
                     <button (click)="confirmClosePeriod()" mat-icon-button color="warn" matTooltip="{{!closedPeriod ? 'Cerrar Periodo' : 'Abrir Periodo'}}">
@@ -117,13 +124,17 @@
                                 @for (attendance of employee.attendances; track attendance.date) {
                                     <td [ngClass]="{'isSunday': attendance.day === 'DOM.', 'isDayOff': attendance.isDayOff}">
                                         @if (attendance.checkEntry !== null) {
-                                            <div class="ctn-registers" [ngClass]="{'isInconsistency': attendance.isInconsistency}">
+                                            <div class="ctn-registers" [ngClass]="{'isInconsistency': attendance.isInconsistency, 'isNightShift': attendance.isNightShift}">
                                                 @if (!getIsLoading(employee.codigo, employee.company, attendance.date)) {
                                                     <div (click)="asignDoubleShift(attendance, employee)" class="entry" matTooltip="Asignar doble turno" matTooltipPosition="above">{{ attendance.checkEntry }}</div>
                                                     @if (canModifyCheckins) {
-                                                        <div class="output" (click)="handleChangeAttendance(employee, attendance)" matTooltip="Modificar Asistencia">{{ attendance.checkOut }}</div>
+                                                        <div class="output" (click)="handleChangeAttendance(employee, attendance)" [matTooltip]="attendance.checkOutDate && attendance.checkOutDate !== attendance.date ? 'Salida del día siguiente' : 'Modificar Asistencia'">
+                                                            {{ attendance.checkOut }}
+                                                        </div>
                                                     } @else {
-                                                        <div class="output">{{ attendance.checkOut }}</div>
+                                                        <div class="output">
+                                                            {{ attendance.checkOut }}
+                                                        </div>
                                                     }
                                                 } @else {
                                                     <mat-spinner diameter="30"></mat-spinner>
@@ -133,7 +144,7 @@
                                         }
 
                                         @if (attendance.checkEntry === null) {
-                                            <div class="ctn-registers no-data" [ngClass]="{'saved': attendance.incidentCode !== 'N/A'}">
+                                            <div class="ctn-registers no-data" [ngClass]="{'saved': attendance.incidentCode !== 'N/A', 'isNightShift': attendance.isNightShift, 'hasOrphanCheckOut': attendance.checkOut}">
                                             @if (!getIsLoading(employee.codigo, employee.company, attendance.date)) {
                                                 <div class="entry">
                                                     <button [disabled]="closedPeriod" mat-button [matMenuTriggerFor]="menuIncidents">{{ attendance.incidentCode }}</button>
@@ -149,9 +160,11 @@
                                                     </mat-menu>
                                                 </div>
                                                 @if (canModifyCheckins) {
-                                                    <div class="output" (click)="handleChangeAttendance(employee, attendance)" matTooltip="Modificar Asistencia"></div>
+                                                    <div class="output" (click)="handleChangeAttendance(employee, attendance)" matTooltip="Modificar Asistencia">
+                                                        {{ attendance.checkOut }}
+                                                    </div>
                                                 } @else {
-                                                    <div class="output"></div>
+                                                    <div class="output">{{ attendance.checkOut }}</div>
                                                 }
                                             } @else {
                                                 <mat-spinner diameter="30"></mat-spinner>

@@ -1,10 +1,11 @@
 import { CommonModule } from "@angular/common";
 import { Component, inject, model, OnInit, signal, ViewEncapsulation, WritableSignal } from "@angular/core";
 import { MatChipsModule } from "@angular/material/chips";
+import { MatDatepickerModule } from "@angular/material/datepicker";
 import { MatDividerModule } from "@angular/material/divider";
 import { MatSelectModule } from "@angular/material/select";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
-import { FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
+import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { NgxColorsModule } from "ngx-colors";
 import { MaterialModule } from "@shared/modules/material/material.module";
 import { Section } from "./enums/section.enum";
@@ -33,6 +34,7 @@ import { TypeAttendance } from "@core/models/reports/type-attendance.enum";
         EditorModule,
         ReactiveFormsModule,
         MatSlideToggleModule,
+        MatDatepickerModule,
     ],
     providers: [
         SettingsService,
@@ -123,6 +125,11 @@ export class SettingsComponent implements OnInit {
     public loadingBioTimeCreds: WritableSignal<boolean> = signal(false);
     public loadingBioTimeSync: WritableSignal<boolean> = signal(false);
     public bioTimeCredentialsConfigured: WritableSignal<boolean> = signal(false);
+    public readonly bioTimeSyncRange = new FormGroup({
+        start: new FormControl<Date | null>(null),
+        end: new FormControl<Date | null>(null),
+    });
+    public readonly bioTimeMaxDate = new Date();
 
     public constructor(
         private appConfigService: AppConfigService,
@@ -379,13 +386,35 @@ export class SettingsComponent implements OnInit {
     }
 
     public handleSyncBioTimeNow(): void {
+        const { start, end } = this.bioTimeSyncRange.value;
+
+        if ((start && !end) || (!start && end)) {
+            this.showMessage('Seleccione un rango de fechas completo', true, 3000);
+            return;
+        }
+
+        if (start && end && start > end) {
+            this.showMessage('La fecha de inicio no puede ser mayor a la fecha fin', true, 3000);
+            return;
+        }
+
         this.loadingBioTimeSync.set(true);
-        this.service.syncBioTimeNow()
+        this.service.syncBioTimeNow({
+            startDate: start ? this.formatDate(start) : null,
+            endDate: end ? this.formatDate(end) : null,
+        })
             .pipe(finalize(() => this.loadingBioTimeSync.set(false)))
             .subscribe({
                 next: () => this.showMessage('Sincronización completada', false, 3000),
                 error: (err) => this.showMessage(err.error?.message || 'Error en sincronización', true, 3000)
             });
+    }
+
+    private formatDate(date: Date): string {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
     }
 
     private showMessage(message: string, isError: boolean = false, duration: number = 3000): void {

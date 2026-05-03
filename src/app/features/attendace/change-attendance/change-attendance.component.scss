@@ -39,4 +39,18 @@ app-change-attendance {
       }
     }
   }
+
+  mat-dialog-actions {
+    .spacer {
+      flex: 1 1 auto;
+    }
+
+    .btn-delete mat-icon {
+      margin-right: 4px;
+      font-size: 18px;
+      height: 18px;
+      width: 18px;
+      vertical-align: middle;
+    }
+  }
 }

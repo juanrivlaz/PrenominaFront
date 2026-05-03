@@ -35,7 +35,7 @@ export class AssignSpecialIncidentComponent {
                 validators: [Validators.required],
             }),
             date: new FormControl('', [Validators.required]),
-            customValue: new FormControl('', [Validators.min(1)]),
+            customValue: new FormControl<number | null>(null, [Validators.min(1)]),
             notes: new FormControl('')
         });
 
