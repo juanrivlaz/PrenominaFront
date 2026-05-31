@@ -1,9 +1,28 @@
 <div class="container module-container">
+    <div class="header-row">
+        <h2 class="page-title">Aprobación de Incidencias</h2>
+    </div>
+
     <div class="ctn-filter">
+        <div class="status-chips">
+            <button type="button" class="status-chip" [class.active]="statusFilter() === -1" (click)="setStatusFilter(-1)">Todas</button>
+            <button type="button" class="status-chip pending" [class.active]="statusFilter() === statusPending" (click)="setStatusFilter(statusPending)">Pendientes</button>
+            <button type="button" class="status-chip approved" [class.active]="statusFilter() === statusApproved" (click)="setStatusFilter(statusApproved)">Aprobadas</button>
+            <button type="button" class="status-chip rejected" [class.active]="statusFilter() === statusRejected" (click)="setStatusFilter(statusRejected)">Rechazadas</button>
+        </div>
         <div class="ctn-others">
+            <mat-form-field appearance="outline" class="date-range">
+                <mat-label>Filtrar por fechas</mat-label>
+                <mat-date-range-input [formGroup]="dateRange" [rangePicker]="picker">
+                    <input matStartDate formControlName="start" placeholder="Inicio">
+                    <input matEndDate formControlName="end" placeholder="Fin">
+                </mat-date-range-input>
+                <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+                <mat-date-range-picker #picker></mat-date-range-picker>
+            </mat-form-field>
             <div class="ctn-search">
                 <div class="input-search">
-                    <input type="search" name="search" id="search" placeholder="Buscar">
+                    <input type="search" name="search" id="search" placeholder="Buscar" [formControl]="searchControl">
                     <mat-icon>search</mat-icon>
                 </div>
             </div>

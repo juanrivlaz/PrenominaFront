@@ -93,7 +93,7 @@ export class CreateUserComponent {
             if (this.data.typeTenant === TypeTenant.Department) {
                 const departments = this.data.editData.userCompanies.flatMap((c) => c.userDepartments?.map(
                     (d) => {
-                        const department = this.data.centers.find((center) => center.id.trim() === d.departmentCode.trim())!;
+                        const department = this.data.centers.find((center) => (parseInt(center.id).toString()).trim() === d.departmentCode.trim())!;
                         const company = this.data.companies.find((company) => company.id == c.companyId);
 
                         return new Tenant(parseInt(department.id, 10), department.departmentName, company?.name, company?.id)

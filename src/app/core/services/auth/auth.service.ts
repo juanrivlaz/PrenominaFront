@@ -185,6 +185,25 @@ export class AuthService {
         }
     }
 
+    public getActiveTenantName(): string {
+        const id = this.activeTenant.value;
+        if (id === '-999' || id === '0' || !id) {
+            return 'todos';
+        }
+        if (this.typeTenant.value === TypeTenant.Department) {
+            const center = this.centers.value.find((c) => c.id?.trim() === id.trim());
+            return center?.departmentName || id;
+        }
+        const supervisor = this.supervisors.value.find((s) => s.id === parseInt(id, 10));
+        return supervisor?.name || id;
+    }
+
+    public getActiveCompanyName(): string {
+        const id = this.activeCompany.value;
+        const company = this.companies.value.find((c) => c.id === id);
+        return company?.name || '';
+    }
+
     public setActiveTenant(tenant: string): void {
         this.secureStorage.setSession(SysKey.ActiveTenant, tenant.toString());
         if (this.activeTenant.value !== tenant) {

@@ -111,7 +111,8 @@ export class TimeOffManagerComponent implements OnInit, OnDestroy {
                     return this.service.getEmployeeByPayroll(
                         this.activePayroll(),
                         this.paginatorDetails().page,
-                        search || ''
+                        search || '',
+                        this.activePeriod()
                     ).pipe(
                         finalize(() => this.configService.setLoading(false))
                     );
@@ -182,12 +183,12 @@ export class TimeOffManagerComponent implements OnInit, OnDestroy {
                 this.searchTrigger$.next(value || '');
             });
 
-        const storageTypeNom = window.sessionStorage.getItem(SysKey.ActiveTypeNom);
+        const storageTypeNom = window.localStorage.getItem(SysKey.ActiveTypeNom);
         if (storageTypeNom) {
             this.setPayroll(parseInt(storageTypeNom, 10));
         }
 
-        const storageNumPeriod = window.sessionStorage.getItem(SysKey.ActiveNumPeriod);
+        const storageNumPeriod = window.localStorage.getItem(SysKey.ActiveNumPeriod);
         if (storageNumPeriod) {
             // Usar timer de RxJS en lugar de setTimeout
             timer(800)
@@ -214,7 +215,14 @@ export class TimeOffManagerComponent implements OnInit, OnDestroy {
                 next: (response) => {
                     this.listPayrolls.set(response.payrolls);
                     this._listPeriods.set(response.periods);
-                    this.listIncidentCodes.set(response.incidentCodes.filter((item) => !item.isAdditional && item.availableForTimeOff));
+                    // Filtra incidencias disponibles para permisos. Sólo muestra aquellas cuyo label
+                    // contenga la palabra "permiso" (con o sin goce). Las demás (vacaciones, castigos,
+                    // incapacidades, etc.) se manejan en otros flujos.
+                    this.listIncidentCodes.set(response.incidentCodes.filter((item) =>
+                        !item.isAdditional &&
+                        item.availableForTimeOff &&
+                        (item.label || '').toLowerCase().includes('permiso')
+                    ));
                     this.listIncidentCodesAditional.set(response.incidentCodes.filter((item) => item.isAdditional && item.availableForTimeOff));
                 },
                 error: (err) => {
@@ -325,6 +333,14 @@ export class TimeOffManagerComponent implements OnInit, OnDestroy {
         return this._listPeriods().filter((item) => item.typePayroll === this.activePayroll());
     }
 
+    // Devuelve el periodo activo + los próximos 2 (3 en total) ordenados por numPeriod ascendente.
+    public get quickPeriods(): Array<IPrenominaPeriod> {
+        const periods = this.listPeriods;
+        const activeIndex = periods.findIndex((p) => p.isActive);
+        if (activeIndex === -1) return [];
+        return periods.slice(activeIndex, activeIndex + 3);
+    }
+
     public setPeriod(id: number, noAlert = false): void {
         this.activePeriod.set(id);
 
@@ -335,8 +351,9 @@ export class TimeOffManagerComponent implements OnInit, OnDestroy {
             return;
         }
 
-        window.sessionStorage.setItem(SysKey.ActiveNumPeriod, id.toString());
+        window.localStorage.setItem(SysKey.ActiveNumPeriod, id.toString());
         this.listDates.set(this.generarFechas(this.period.startAdminDate, this.period.closingAdminDate));
+        this.getEmployee();
     }
 
     public setPayroll(id: number): void {
@@ -345,7 +362,7 @@ export class TimeOffManagerComponent implements OnInit, OnDestroy {
         }
 
         this.activePayroll.set(id);
-        window.sessionStorage.setItem(SysKey.ActiveTypeNom, id.toString());
+        window.localStorage.setItem(SysKey.ActiveTypeNom, id.toString());
 
         // Usar timer en lugar de setTimeout
         timer(200)

@@ -1,4 +1,23 @@
 <div class="container module-container">
+    @if (quickPeriods.length > 0) {
+        <div class="quick-periods">
+            @for (qp of quickPeriods; track qp.numPeriod; let i = $index) {
+                <button
+                    type="button"
+                    class="quick-period-chip"
+                    [class.active]="period?.numPeriod === qp.numPeriod"
+                    (click)="setPeriod(qp.numPeriod)">
+                    @if (i === 0) {
+                        Periodo Actual
+                    } @else {
+                        Siguiente {{ i }}
+                    }
+                    <small>P. {{ qp.numPeriod }}</small>
+                </button>
+            }
+        </div>
+    }
+
     <div class="ctn-filter">
         <div class="ctn-period">
             <button class="btn-filter-tn" mat-flat-button [matMenuTriggerFor]="menuTypeNom" matTooltip="Tipo De Nómina">
@@ -28,9 +47,6 @@
                 </div>
             </div>
             <div class="ctn-sync-incapacity">
-                <button mat-icon-button (click)="syncIncapacity()" color="primary" matTooltip="Sincronizar Incapacidades / Vacaciones">
-                    <mat-icon>sync</mat-icon>
-                </button>
                 <button mat-icon-button [matMenuTriggerFor]="helpMenu" matTooltip="Ayuda">
                     <mat-icon>help_outline</mat-icon>
                 </button>

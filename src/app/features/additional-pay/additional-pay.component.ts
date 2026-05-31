@@ -68,12 +68,12 @@ export class AdditionalPayComponent implements OnInit {
     private readonly configService: AppConfigService,
     private readonly additionalPayService: AdditionalPayService
   ) {
-    const storageTypeNom = window.sessionStorage.getItem(SysKey.ActiveTypeNom);
+    const storageTypeNom = window.localStorage.getItem(SysKey.ActiveTypeNom);
     if (storageTypeNom) {
       this.setPayroll(+storageTypeNom);
     }
 
-    const storageNumPeriod = window.sessionStorage.getItem(
+    const storageNumPeriod = window.localStorage.getItem(
       SysKey.ActiveNumPeriod,
     );
     if (storageNumPeriod) {
@@ -158,7 +158,7 @@ export class AdditionalPayComponent implements OnInit {
 
   public setPayroll(id: number): void {
     this.activePayroll = id;
-    window.sessionStorage.setItem(SysKey.ActiveTypeNom, id.toString());
+    window.localStorage.setItem(SysKey.ActiveTypeNom, id.toString());
   }
 
   public get period(): IPrenominaPeriod | undefined {
@@ -169,8 +169,28 @@ export class AdditionalPayComponent implements OnInit {
 
   public setPeriod(id: number): void {
     this.activePeriod = id;
-    window.sessionStorage.setItem(SysKey.ActiveNumPeriod, id.toString());
+    window.localStorage.setItem(SysKey.ActiveNumPeriod, id.toString());
     this.get();
+  }
+
+  public downloadTemplate(): void {
+    this.configService.setLoading(true);
+    this.additionalPayService.downloadTemplate().pipe(finalize(() => {
+      this.configService.setLoading(false);
+    })).subscribe({
+      next: (response) => {
+        const urlBlob = window.URL.createObjectURL(new Blob([response]));
+        const link = document.createElement('a');
+        link.href = urlBlob;
+        link.download = 'plantilla_pagos_adicionales.xlsx';
+        link.click();
+        window.URL.revokeObjectURL(urlBlob);
+      },
+      error: (err) => {
+        const message = err.error?.message || 'Error al descargar la plantilla';
+        this.showMessage(message, true);
+      }
+    });
   }
 
   public downloadReport(typeFileDownload: TypeFileDownload): void {

@@ -1,8 +1,67 @@
 app-pendings-attendamce-incident {
+    .header-row {
+        padding: 8px 0 16px;
+
+        .page-title {
+            margin: 0;
+            font-size: 18px;
+            color: #1f384c;
+        }
+    }
+
+    .status-chips {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+
+        .status-chip {
+            padding: 6px 14px;
+            border-radius: 16px;
+            border: 1px solid #d9dde1;
+            background: #f4f5f7;
+            color: #686f7c;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.18s ease;
+
+            &.active {
+                color: white;
+                border-color: transparent;
+            }
+
+            &.active:not(.pending):not(.approved):not(.rejected) {
+                background: var(--primary-color, #1976d2);
+            }
+
+            &.pending.active {
+                background: #f57c00;
+            }
+
+            &.approved.active {
+                background: #2e7d32;
+            }
+
+            &.rejected.active {
+                background: #c62828;
+            }
+
+            &:hover:not(.active) {
+                background: #e9ecf1;
+            }
+        }
+    }
+
     .ctn-filter {
         display: flex;
-        justify-content: flex-end;
+        justify-content: space-between;
         align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+
+        .date-range {
+            min-width: 240px;
+        }
 
         .ctn-others {
             display: flex;

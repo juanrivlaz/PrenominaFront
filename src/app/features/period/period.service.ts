@@ -34,4 +34,14 @@ export class PeriodService {
             isActive,
         });
     }
+
+    public update(id: string, payload: {
+        startDate: string,
+        closingDate: string,
+        datePayment: string,
+        startAdminDate: string,
+        closingAdminDate: string,
+    }): Observable<boolean> {
+        return this.httpService.put<boolean>(`/Period/${id}`, payload);
+    }
 }

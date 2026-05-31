@@ -48,8 +48,19 @@ export class ContractsComponent implements OnInit, OnDestroy {
         'initContract',
         'finalContract',
         'days',
+        'isActive',
         'generateContract'
     ];
+
+    public isContractActive(contract: Contract): boolean {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const start = contract.startDate ? new Date(contract.startDate) : null;
+        const end = contract.terminationDate ? new Date(contract.terminationDate) : null;
+        if (start && start > today) return false;
+        if (end && end < today) return false;
+        return true;
+    }
     public catalogStatus = {
         all: 'Todos',
         'about-to-expire': 'Por Vencer',

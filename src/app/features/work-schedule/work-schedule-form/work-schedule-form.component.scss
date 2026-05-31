@@ -26,4 +26,51 @@ app-work-schedule-form {
             color: darkgray;
         }
     }
+
+    .work-days-section {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 8px 0;
+
+        .work-days-label {
+            margin: 0;
+            font-weight: 500;
+            color: #43464d;
+        }
+
+        .hint {
+            font-size: 0.75rem;
+            color: darkgray;
+        }
+
+        .work-days-chips {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .work-day-chip {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 1px solid #c9c9c9;
+            background: white;
+            color: #43464d;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            transition: all 0.18s ease;
+
+            &.selected {
+                background: var(--primary-color, #1976d2);
+                color: white;
+                border-color: transparent;
+            }
+
+            &:hover:not(.selected) {
+                background: #f1f3f6;
+            }
+        }
+    }
 }

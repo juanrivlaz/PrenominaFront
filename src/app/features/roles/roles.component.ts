@@ -11,6 +11,7 @@ import { AppConfigService } from "@core/services/app-config/app-config.service";
 import { ICreateRole } from "./create-role/create-rol.interface";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatMenuModule } from "@angular/material/menu";
+import { MatTooltipModule } from "@angular/material/tooltip";
 
 @Component({
     selector: 'app-roles',
@@ -19,6 +20,7 @@ import { MatMenuModule } from "@angular/material/menu";
         MaterialModule,
         MatTableModule,
         MatMenuModule,
+        MatTooltipModule,
     ],
     providers: [RolesService],
     templateUrl: './roles.component.html',

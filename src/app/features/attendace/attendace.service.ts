@@ -9,6 +9,7 @@ import { TypeFileDownload } from "@core/models/enum/type-file-download";
 import { IInitAttendanceRecords } from "@core/models/init-attendance-records.interface";
 import { IPagedResult } from "@core/models/paged-result.interface";
 import { IPeriodStatus } from "@core/models/period-status.interface";
+import { ISyncIncapacityOutput } from "@core/models/sync-incapacity-output.interface";
 import { Observable } from "rxjs";
 
 @Injectable({
@@ -99,5 +100,9 @@ export class AttendaceService {
 
     public fixNightShiftEoS(): Observable<{ totalFixed: number; message: string }> {
         return this.httpService.post<{ totalFixed: number; message: string }>('/Attendance/fix-night-shift-eos', {});
+    }
+
+    public syncIncapacity(form: { TypeNom: number; PeriodId: string; TenantId: string }): Observable<ISyncIncapacityOutput> {
+        return this.httpService.post<ISyncIncapacityOutput>('/DayOffs/sync-incapacity', form);
     }
 }

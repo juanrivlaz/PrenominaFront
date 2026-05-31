@@ -63,6 +63,14 @@
 
       <div class="ctn-export">
         <button
+          mat-stroked-button
+          (click)="downloadTemplate()"
+          matTooltip="Descargar plantilla Excel para subir pagos adicionales"
+        >
+          <mat-icon>file_download</mat-icon>
+          Plantilla
+        </button>
+        <button
           class="btn-filter-tn"
           mat-flat-button
           [matMenuTriggerFor]="downloadFile"
@@ -132,13 +140,13 @@
     </ng-container>
     <ng-container matColumnDef="operator">
       <th mat-header-cell *matHeaderCellDef>Operador</th>
-      <td mat-cell *matCellDef="let row">
-        <mat-icon>{{ row.operator }}</mat-icon>
+      <td mat-cell *matCellDef="let row" class="operator-cell">
+        <span class="operator-symbol">{{ row.operator || '—' }}</span>
       </td>
     </ng-container>
     <ng-container matColumnDef="operationValue">
       <th mat-header-cell *matHeaderCellDef>Valor Operador</th>
-      <td mat-cell *matCellDef="let row">{{ row.operationValue }}</td>
+      <td mat-cell *matCellDef="let row">{{ row.operationValue || '—' }}</td>
     </ng-container>
     <ng-container matColumnDef="total">
       <th mat-header-cell *matHeaderCellDef>Total</th>

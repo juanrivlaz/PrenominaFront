@@ -87,11 +87,12 @@ export const ItemsNavigations: Array<MenuIntemInterface | MenuCollapseInterface 
     },*/
     {
         id: 'settings',
-        title: 'Configuración',
+        title: 'General',
         type: 'item',
         exactMatch: true,
         icon: 'settings',
-        url: '/settings'
+        url: '/settings',
+        isItemConfig: true,
     },
     {
         id: 'roles',
@@ -104,7 +105,7 @@ export const ItemsNavigations: Array<MenuIntemInterface | MenuCollapseInterface 
     },
     {
         id: 'pendingsattendanceincident',
-        title: 'Incidencias Pendientes',
+        title: 'Aprobación de Incidencias',
         type: 'item',
         exactMatch: true,
         icon: 'pending_actions',

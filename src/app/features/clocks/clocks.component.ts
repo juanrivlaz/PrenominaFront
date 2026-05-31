@@ -1,5 +1,5 @@
 import { CommonModule } from "@angular/common";
-import { Component, inject, model, OnInit, ViewEncapsulation } from "@angular/core";
+import { Component, inject, model, OnDestroy, OnInit, signal, ViewEncapsulation, WritableSignal } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
 import { MatListModule } from "@angular/material/list";
 import { MatTooltipModule } from "@angular/material/tooltip";
@@ -12,6 +12,7 @@ import { finalize } from "rxjs";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { ClockUsersComponent } from "./clock-users/clock-users.component";
 import { IClockUsersModal } from "./clock-users/clock-users.interface";
+import dayjs from "dayjs";
 
 @Component({
     selector: 'app-clocks',
@@ -27,16 +28,30 @@ import { IClockUsersModal } from "./clock-users/clock-users.interface";
     styleUrl: './clocks.component.scss',
     encapsulation: ViewEncapsulation.None
 })
-export class ClocksComponent implements OnInit {
+export class ClocksComponent implements OnInit, OnDestroy {
     private readonly _snackBar = inject(MatSnackBar);
     public readonly dialog = inject(MatDialog);
     public listClocks = model<Array<IClock>>([]);
     public loadingClocks = model<Array<string>>([]);
+    public nowTick: WritableSignal<number> = signal(Date.now());
+    private nowInterval?: ReturnType<typeof setInterval>;
 
     constructor(private readonly service: ClocksService) {}
 
     ngOnInit(): void {
         this.getClocks();
+        this.nowInterval = setInterval(() => this.nowTick.set(Date.now()), 30000);
+    }
+
+    ngOnDestroy(): void {
+        if (this.nowInterval) {
+            clearInterval(this.nowInterval);
+        }
+    }
+
+    public formatLastSync(date: string | null, _tick?: number): string {
+        if (!date) return 'Nunca sincronizado';
+        return `${dayjs(date).format('DD/MM/YYYY HH:mm')} (${dayjs(date).fromNow()})`;
     }
 
     public addClock(): void {

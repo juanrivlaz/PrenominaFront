@@ -1,11 +1,28 @@
 import { HttpClient } from "@angular/common/http";
 import { Injectable } from "@angular/core";
 import { ISysConfigReports } from "@core/models/sys-config-reports.interface";
+import { ISignatureItem } from "@core/models/reports/config-signatures.interface";
+import { NameOrder } from "@core/models/reports/config-name-format.interface";
 import { Observable } from "rxjs";
 
 @Injectable()
 export class SettingsService {
     constructor(private readonly httpService: HttpClient) {}
+
+    public updateSignatures(signatures: Array<ISignatureItem>): Observable<boolean> {
+        return this.httpService.put<boolean>('/SystemConfig/signatures', { signatures });
+    }
+
+    public updateNameFormat(order: NameOrder): Observable<boolean> {
+        return this.httpService.put<boolean>('/SystemConfig/name-format', { order });
+    }
+
+    public updateCompactPdfOptions(compactFontSize: number, showDayInitial: boolean): Observable<boolean> {
+        return this.httpService.put<boolean>('/SystemConfig/compact-pdf-options', {
+            compactFontSize,
+            showDayInitial,
+        });
+    }
 
     public getConfigReports(): Observable<ISysConfigReports> {
         return this.httpService.get<ISysConfigReports>('/SystemConfig/config-reports');

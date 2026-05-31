@@ -5,7 +5,8 @@ import { MatDatepickerModule } from "@angular/material/datepicker";
 import { MatDividerModule } from "@angular/material/divider";
 import { MatSelectModule } from "@angular/material/select";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
-import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
+import { MatTooltipModule } from "@angular/material/tooltip";
+import { FormArray, FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { NgxColorsModule } from "ngx-colors";
 import { MaterialModule } from "@shared/modules/material/material.module";
 import { Section } from "./enums/section.enum";
@@ -20,6 +21,8 @@ import { MatSnackBar } from "@angular/material/snack-bar";
 import { TypeDayOffReport } from "@core/models/config-day-off-report.interface";
 import { finalize } from "rxjs";
 import { TypeAttendance } from "@core/models/reports/type-attendance.enum";
+import { NameOrder } from "@core/models/reports/config-name-format.interface";
+import { environment } from "../../../environments/environment";
 
 @Component({
     selector: 'app-settings',
@@ -28,6 +31,7 @@ import { TypeAttendance } from "@core/models/reports/type-attendance.enum";
         MaterialModule,
         MatChipsModule,
         MatDividerModule,
+        MatTooltipModule,
         NgxColorsModule,
         FormsModule,
         MatSelectModule,
@@ -63,6 +67,7 @@ export class SettingsComponent implements OnInit {
     public loadingYear = model<boolean>(false);
     public typeTenantsOptions: Array<{ id: number, label: string }>;
     public timeZoneOptions: Array<{ id: string, label: string }>;
+    public readonly tinymceApiKey = environment.tinymceApiKey;
     public initConfigEditor = {
         plugins: [
             // Core editing features
@@ -115,6 +120,23 @@ export class SettingsComponent implements OnInit {
     public minToOvertimeReport: FormControl;
     public loadingMinToOvertimeReport = model<boolean>(false);
 
+    // Firmas (hasta 4)
+    public signaturesForm: FormGroup;
+    public loadingSignatures = model<boolean>(false);
+
+    // Formato de nombre
+    public nameOrder = model<NameOrder>(NameOrder.FirstNameFirst);
+    public loadingNameFormat = model<boolean>(false);
+    public nameOrderOptions: Array<{ id: NameOrder, label: string, preview: string }> = [
+        { id: NameOrder.FirstNameFirst, label: 'Nombre, Apellido Paterno, Apellido Materno', preview: 'Juan Carlos García López' },
+        { id: NameOrder.LastNameFirst, label: 'Apellido Paterno, Apellido Materno, Nombre', preview: 'García López Juan Carlos' },
+    ];
+
+    // Compact PDF options (tamaño letra + inicial del día)
+    public compactFontSize: FormControl;
+    public showDayInitial = model<boolean>(true);
+    public loadingCompactPdfOptions = model<boolean>(false);
+
     // BioTime Sync
     public bioTimeEnabled = new FormControl(false);
     public bioTimeSyncHour = new FormControl('20:00', [Validators.required]);
@@ -135,7 +157,12 @@ export class SettingsComponent implements OnInit {
         private appConfigService: AppConfigService,
         private authService: AuthService,
         private service: SettingsService,
+        private fb: FormBuilder,
     ) {
+        this.signaturesForm = this.fb.group({
+            signatures: this.fb.array([])
+        });
+        this.compactFontSize = new FormControl(8, [Validators.required, Validators.min(6), Validators.max(20)]);
         const { primaryColor, secondColor, logo } = this.appConfigService.settings;
         this.primaryColor.set(primaryColor);
         this.secondayColor.set(secondColor);
@@ -184,6 +211,20 @@ export class SettingsComponent implements OnInit {
                 this.typeDayOffReport.set(config.configDayOffReport.typeDayOffReport);
                 this.minToOvertimeReport.setValue(config.configOvertimeReport.mins);
                 this.typePrenominaPdfReport.set(config.configAttendanceReport?.typeAttendanceReportPdf || 0);
+                this.compactFontSize.setValue(config.configAttendanceReport?.compactFontSize ?? 8);
+                this.showDayInitial.set(config.configAttendanceReport?.showDayInitial ?? true);
+                this.nameOrder.set(config.configNameFormat?.order ?? NameOrder.FirstNameFirst);
+
+                this.signaturesArray.clear();
+                const list = (config.configSignatures?.signatures ?? []).slice(0, 4);
+                if (list.length === 0) {
+                    // Inicia con una sola firma vacía si no hay configuración previa.
+                    this.signaturesArray.push(this.buildSignatureGroup());
+                } else {
+                    for (const item of list) {
+                        this.signaturesArray.push(this.buildSignatureGroup(item.name, item.position));
+                    }
+                }
             },
             error: (err) => {
                 const message = err.error?.message || 'Ocurrió un error, por favor intentalo más tarde';
@@ -327,6 +368,71 @@ export class SettingsComponent implements OnInit {
                 this.showMessage(message, true, 3000);
             }
         });
+    }
+
+    public get signaturesArray(): FormArray {
+        return this.signaturesForm.get('signatures') as FormArray;
+    }
+
+    public readonly maxSignatures = 4;
+
+    private buildSignatureGroup(name = '', position = '') {
+        return this.fb.group({
+            name: [name],
+            position: [position],
+        });
+    }
+
+    public addSignature(): void {
+        if (this.signaturesArray.length >= this.maxSignatures) return;
+        this.signaturesArray.push(this.buildSignatureGroup());
+    }
+
+    public removeSignature(index: number): void {
+        if (this.signaturesArray.length === 1) {
+            // Si es la última, sólo limpia los campos en lugar de eliminar.
+            this.signaturesArray.at(0).reset({ name: '', position: '' });
+            return;
+        }
+        this.signaturesArray.removeAt(index);
+    }
+
+    public handleSaveSignatures(): void {
+        const raw = this.signaturesArray.value as Array<{ name: string, position: string }>;
+        const cleaned = raw
+            .map((s) => ({ name: (s.name || '').trim(), position: (s.position || '').trim() }))
+            .filter((s) => s.name.length > 0 || s.position.length > 0);
+
+        this.loadingSignatures.set(true);
+        this.service.updateSignatures(cleaned).pipe(finalize(() => {
+            this.loadingSignatures.set(false);
+        })).subscribe({
+            next: () => this.showMessage('Firmas guardadas', false, 1500),
+            error: (err) => this.showMessage(err.error?.message || 'Error al guardar', true, 3000),
+        });
+    }
+
+    public handleSaveNameFormat(): void {
+        this.loadingNameFormat.set(true);
+        this.service.updateNameFormat(this.nameOrder()).pipe(finalize(() => {
+            this.loadingNameFormat.set(false);
+        })).subscribe({
+            next: () => this.showMessage('Formato de nombre guardado', false, 1500),
+            error: (err) => this.showMessage(err.error?.message || 'Error al guardar', true, 3000),
+        });
+    }
+
+    public handleSaveCompactPdfOptions(): void {
+        if (this.compactFontSize.invalid) {
+            return;
+        }
+        this.loadingCompactPdfOptions.set(true);
+        this.service.updateCompactPdfOptions(this.compactFontSize.value, this.showDayInitial())
+            .pipe(finalize(() => this.loadingCompactPdfOptions.set(false)))
+            .subscribe({
+                next: () => this.showMessage('Opciones del PDF compacto guardadas', false, 1500),
+                error: (err) => this.showMessage(err.error?.message || 'Error al guardar', true, 3000),
+            });
     }
 
     public handleSaveTypePrenominaPdfReport(event: Event): void {

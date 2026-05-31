@@ -1,4 +1,40 @@
 app-reports {
+    .report-context {
+        display: flex;
+        gap: 18px;
+        padding: 6px 12px;
+        background: #f4f7fa;
+        border-radius: 6px;
+        font-size: 12px;
+        color: #43464d;
+        margin-bottom: 16px;
+
+        strong {
+            color: #1f384c;
+            margin-right: 4px;
+        }
+    }
+
+    .attendance-extra-filters {
+        padding: 8px 0;
+
+        .without-checkout-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: #43464d;
+            cursor: pointer;
+            user-select: none;
+
+            input[type="checkbox"] {
+                width: 16px;
+                height: 16px;
+                cursor: pointer;
+            }
+        }
+    }
+
     .ctn-steps {
         h3 {
             margin: 0;

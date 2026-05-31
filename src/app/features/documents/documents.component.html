@@ -1,3 +1,54 @@
 <div class="container module-container">
+    <div class="header-row">
+        <h2 class="page-title">Documentos</h2>
+        <button mat-flat-button color="primary" (click)="openCreate()">
+            <mat-icon>add</mat-icon> Nueva plantilla
+        </button>
+    </div>
 
+    <table mat-table [dataSource]="documents" class="documents-table">
+        <ng-container matColumnDef="name">
+            <th mat-header-cell *matHeaderCellDef> Nombre </th>
+            <td mat-cell *matCellDef="let row"> {{ row.name }} </td>
+        </ng-container>
+
+        <ng-container matColumnDef="module">
+            <th mat-header-cell *matHeaderCellDef> Módulo </th>
+            <td mat-cell *matCellDef="let row"> {{ getModuleLabel(row.module) }} </td>
+        </ng-container>
+
+        <ng-container matColumnDef="keyParams">
+            <th mat-header-cell *matHeaderCellDef> Parámetros </th>
+            <td mat-cell *matCellDef="let row" class="params-cell">
+                @for (kp of row.keyParams; track kp) {
+                    <span class="param-chip">{{ kp }}</span>
+                }
+                @if (!row.keyParams || row.keyParams.length === 0) {
+                    <span class="empty">—</span>
+                }
+            </td>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef> Acciones </th>
+            <td mat-cell *matCellDef="let row">
+                <button mat-icon-button matTooltip="Editar" (click)="openEdit(row)">
+                    <mat-icon>edit</mat-icon>
+                </button>
+                <button mat-icon-button matTooltip="Eliminar" (click)="confirmDelete(row)">
+                    <mat-icon>delete_outline</mat-icon>
+                </button>
+            </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="columns"></tr>
+        <tr mat-row *matRowDef="let row; columns: columns;"></tr>
+    </table>
+
+    @if (documents.data.length === 0) {
+        <div class="empty-state">
+            <mat-icon>description</mat-icon>
+            <p>No hay plantillas. Crea una para comenzar.</p>
+        </div>
+    }
 </div>

@@ -16,6 +16,7 @@ import { ChangeStatusComponent } from "./change-status/change-status.component";
 import { MaterialModule } from "../../shared/modules/material/material.module";
 import { IChangeStatusOutput } from "./change-status/change-status-output.interface";
 import { IChangeStatus } from "./change-status/change-status.interface";
+import { EditPeriodComponent, IEditPeriodData } from "./edit-period/edit-period.component";
 
 @Component({
     selector: 'app-period',
@@ -47,7 +48,8 @@ export class PeriodComponent implements OnInit {
         'start',
         'close',
         'pay',
-        'status'
+        'status',
+        'actions'
     ];
 
     constructor(
@@ -66,7 +68,7 @@ export class PeriodComponent implements OnInit {
     public setPayroll(id: number): void {
         this.activePayroll = id;
         this.getPeriods();
-        window.sessionStorage.setItem(SysKey.ActiveTypeNom, id.toString());
+        window.localStorage.setItem(SysKey.ActiveTypeNom, id.toString());
     }
 
     public onFileSelected(event: Event) {
@@ -75,6 +77,24 @@ export class PeriodComponent implements OnInit {
             const file = input.files[0];
             this.storePeriodByFile(file);
         }
+    }
+
+    public editPeriod(period: IPrenominaPeriod): void {
+        const dialogRef = this.dialog.open<EditPeriodComponent, IEditPeriodData, boolean>(EditPeriodComponent, {
+            data: { period }
+        });
+
+        dialogRef.afterClosed().subscribe((updated) => {
+            if (updated) {
+                this._snackBar.open('Periodo actualizado correctamente', '✅', {
+                    horizontalPosition: 'center',
+                    verticalPosition: 'top',
+                    panelClass: 'alert-success',
+                    duration: 2000
+                });
+                this.getPeriods();
+            }
+        });
     }
 
     public changeStatusPeriod(period: IPrenominaPeriod): void {
@@ -113,7 +133,7 @@ export class PeriodComponent implements OnInit {
         this.service.getPayrolls().pipe(finalize(() => {
             this.configService.setLoading(false);
 
-            const storageTypeNom = window.sessionStorage.getItem(SysKey.ActiveTypeNom);
+            const storageTypeNom = window.localStorage.getItem(SysKey.ActiveTypeNom);
             if (storageTypeNom) {
                 this.setPayroll(parseInt(storageTypeNom, 10));
             }

@@ -18,6 +18,8 @@ import { BehaviorSubject, combineLatest, debounceTime, finalize, forkJoin, Subje
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { MatProgressBarModule } from "@angular/material/progress-bar";
 import { AuthService } from "@core/services/auth/auth.service";
+import { buildReportFileName } from "@core/utils/file-name";
+import { RoleCode } from "@core/models/enum/role-code";
 import { IPayroll } from "@core/models/payroll.interface";
 import { IEmployeeAttendance } from "@core/models/employee-attendances.interface";
 import { IAttendance } from "@core/models/attendance.interface";
@@ -226,12 +228,12 @@ export class AttendaceComponent implements OnInit, OnDestroy {
                 this.searchTrigger$.next(value || '');
             });
 
-        const storageTypeNom = window.sessionStorage.getItem(SysKey.ActiveTypeNom);
+        const storageTypeNom = window.localStorage.getItem(SysKey.ActiveTypeNom);
         if (storageTypeNom) {
             this.setPayroll(parseInt(storageTypeNom, 10));
         }
 
-        const storageNumPeriod = window.sessionStorage.getItem(SysKey.ActiveNumPeriod);
+        const storageNumPeriod = window.localStorage.getItem(SysKey.ActiveNumPeriod);
         if (storageNumPeriod) {
             // Usar timer de RxJS en lugar de setTimeout para cleanup automático
             timer(800)
@@ -327,6 +329,39 @@ export class AttendaceComponent implements OnInit, OnDestroy {
         return this.dayOffsCache.has(dateKey);
     }
 
+    public get isAdmin(): boolean {
+        return this.authService.role === RoleCode.Sudo;
+    }
+
+    public syncIncapacity(): void {
+        if (!this.payroll) {
+            this.showError('Selecciona un tipo de nómina');
+            return;
+        }
+        if (!this.period) {
+            this.showError('Selecciona un periodo');
+            return;
+        }
+
+        this.configService.setLoading(true);
+        this.service.syncIncapacity({
+            TypeNom: this.payroll.typeNom,
+            PeriodId: this.period.id,
+            TenantId: this.authService.activeTenant.value
+        }).pipe(
+            finalize(() => this.configService.setLoading(false)),
+            takeUntil(this.destroy$)
+        ).subscribe({
+            next: (result) => {
+                this.showSuccess(`Sincronizadas ${result.totalIncapacities} incapacidades y ${result.totalVacations} vacaciones`);
+                this.searchTrigger$.next(this.searchControl.value || '');
+            },
+            error: (err) => {
+                this.showError(err.error?.message || 'Error al sincronizar');
+            }
+        });
+    }
+
     public get closedPeriod(): boolean {
         if (!this.payroll || !this.period) {
             return false;
@@ -372,7 +407,7 @@ export class AttendaceComponent implements OnInit, OnDestroy {
     public setPayroll(id: number): void {
         this.activePayroll = id;
         this.activePayroll$.next(id);
-        window.sessionStorage.setItem(SysKey.ActiveTypeNom, id.toString());
+        window.localStorage.setItem(SysKey.ActiveTypeNom, id.toString());
     }
 
     public get period(): IPrenominaPeriod | undefined {
@@ -382,7 +417,7 @@ export class AttendaceComponent implements OnInit, OnDestroy {
     public setPeriod(id: number): void {
         this.activePeriod = id;
         this.activePeriod$.next(id);
-        window.sessionStorage.setItem(SysKey.ActiveNumPeriod, id.toString());
+        window.localStorage.setItem(SysKey.ActiveNumPeriod, id.toString());
     }
 
     public get listPeriods(): Array<IPrenominaPeriod> {
@@ -651,7 +686,11 @@ export class AttendaceComponent implements OnInit, OnDestroy {
                     const link = document.createElement('a');
                     link.href = urlBlob;
                     const type = typeFileDownload === TypeFileDownload.XLSX ? 'xlsx' : 'pdf';
-                    link.download = `tarjeta_asistencia.${type}`;
+                    link.download = buildReportFileName('tarjeta_asistencia', {
+                        tenant: this.authService.getActiveTenantName(),
+                        period: this.period?.numPeriod,
+                        year: this.authService.year.value
+                    }, type);
                     link.click();
 
                     // Revocar URL después de un pequeño delay para asegurar descarga
@@ -747,6 +786,11 @@ export class AttendaceComponent implements OnInit, OnDestroy {
     }
 
     public handleChangeAttendance(employee: IEmployeeAttendance, attendance: IAttendance): void {
+        if (this.closedPeriod) {
+            this.showError('El periodo está cerrado. No se pueden modificar las checadas.');
+            return;
+        }
+
         const dialogRef = this.dialog.open<ChangeAttendanceComponent, IChangeAttendance, IChangeAttendanceResponse>(ChangeAttendanceComponent, {
             data: {
                 date: attendance.date,

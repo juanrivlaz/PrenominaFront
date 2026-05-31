@@ -23,6 +23,7 @@ import { TypeFileDownload } from "@core/models/enum/type-file-download";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { MatDialog } from "@angular/material/dialog";
 import { AuthService } from "@core/services/auth/auth.service";
+import { buildReportFileName } from "@core/utils/file-name";
 import { combineLatest, debounceTime, finalize, take } from "rxjs";
 import { IAttendanceReport } from "@core/models/reports/attendance.interface";
 import { AttendanceTableComponent } from "./attendance-table/attendance-table.component";
@@ -80,6 +81,8 @@ export class ReportsComponent implements OnInit {
     public attendance: MatTableDataSource<IAttendanceReport> = new MatTableDataSource<IAttendanceReport>([]);
     public totalAttendanceRecords: number = 0;
     public attendancePageSize: number = 1;
+    private allAttendance: Array<IAttendanceReport> = [];
+    public onlyWithoutCheckOut = signal(false);
 
     public incidences: MatTableDataSource<IIncidenceReport> = new MatTableDataSource<IIncidenceReport>([]);
     public totalIncidencesRecords: number = 0;
@@ -110,18 +113,22 @@ export class ReportsComponent implements OnInit {
     ngOnInit(): void {
         combineLatest([this.authService.activeCompany, this.authService.activeTenant]).subscribe(() => {
             this.getInit();
+            // Refrescar la tabla activa al cambiar empresa/departamento sin requerir F5
+            if (this.payroll && this.period) {
+                this.get();
+            }
         });
 
         this.searchControl.valueChanges.pipe(debounceTime(1200)).subscribe((value) => {
             this.get(value ?? '');
         });
 
-        const storageTypeNom = window.sessionStorage.getItem(SysKey.ActiveTypeNom);
+        const storageTypeNom = window.localStorage.getItem(SysKey.ActiveTypeNom);
         if (storageTypeNom) {
             this.setPayroll(parseInt(storageTypeNom, 10));
         }
 
-        const storageNumPeriod = window.sessionStorage.getItem(SysKey.ActiveNumPeriod);
+        const storageNumPeriod = window.localStorage.getItem(SysKey.ActiveNumPeriod);
         if (storageNumPeriod) {
             setTimeout(() => {
                 this.setPeriod(parseInt(storageNumPeriod, 10));
@@ -236,7 +243,7 @@ export class ReportsComponent implements OnInit {
 
     public setPayroll(id: number): void {
         this.activePayroll = id;
-        window.sessionStorage.setItem(SysKey.ActiveTypeNom, id.toString());
+        window.localStorage.setItem(SysKey.ActiveTypeNom, id.toString());
     }
 
     public get listPeriods(): Array<IPrenominaPeriod> {
@@ -285,7 +292,7 @@ export class ReportsComponent implements OnInit {
 
     private applyPeriodChange(id: number): void {
         this.activePeriod = id;
-        window.sessionStorage.setItem(SysKey.ActiveNumPeriod, id.toString());
+        window.localStorage.setItem(SysKey.ActiveNumPeriod, id.toString());
         this.get();
     }
 
@@ -422,7 +429,7 @@ export class ReportsComponent implements OnInit {
                 const urlBlob = window.URL.createObjectURL(new Blob([response.body!]));
                 const link = document.createElement('a');
                 link.href = urlBlob;
-                link.download = this.reportsService.getHttpResponseFileName(response, `report.xlsx`);
+                link.download = this.reportsService.getHttpResponseFileName(response, this.buildReportFileName('xlsx'));
                 link.click();
 
                 window.URL.revokeObjectURL(urlBlob);
@@ -438,6 +445,45 @@ export class ReportsComponent implements OnInit {
                 });
             }
         });
+    }
+
+    public toggleOnlyWithoutCheckOut(): void {
+        this.onlyWithoutCheckOut.set(!this.onlyWithoutCheckOut());
+        this.applyAttendanceFilters();
+    }
+
+    private applyAttendanceFilters(): void {
+        const data = this.onlyWithoutCheckOut()
+            ? this.allAttendance.filter((row) => !row.checkOut || row.checkOut === '--:--' || row.checkOut === 'N/A')
+            : this.allAttendance;
+        this.attendance.data = data;
+        this.totalAttendanceRecords = data.length;
+        this.attendancePageSize = 30;
+    }
+
+    public get activeCompanyName(): string {
+        return this.authService.getActiveCompanyName();
+    }
+
+    public get activeTenantName(): string {
+        return this.authService.getActiveTenantName();
+    }
+
+    private buildReportFileName(extension: string): string {
+        const baseBySection: Record<number, string> = {
+            [Section.Delays]: 'reporte_retardos',
+            [Section.Overtimes]: 'reporte_horas_extras',
+            [Section.HoursWorked]: 'reporte_horas_laboradas',
+            [Section.Attendance]: 'reporte_asistencia',
+            [Section.Incidences]: 'reporte_incidencias',
+            [Section.Abandonment]: 'reporte_abandono',
+        };
+        const base = baseBySection[this.activeSection()] ?? 'reporte';
+        return buildReportFileName(base, {
+            tenant: this.authService.getActiveTenantName(),
+            period: this.period?.numPeriod,
+            year: this.authService.year.value
+        }, extension);
     }
 
     private getDelays(search: string = '', filterDates?: { start: Date; end: Date }): void {
@@ -543,9 +589,8 @@ export class ReportsComponent implements OnInit {
             this.appConfigService.setLoading(false);
         })).subscribe({
             next: (response) => {
-                this.attendance.data = response;
-                this.totalAttendanceRecords = response.length;
-                this.attendancePageSize = 30;
+                this.allAttendance = response;
+                this.applyAttendanceFilters();
             },
             error: (err) => {
                 const message = err.error?.message || 'Ocurrió un error, por favor intentalo más tarde';

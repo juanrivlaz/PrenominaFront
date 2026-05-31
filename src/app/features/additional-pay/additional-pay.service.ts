@@ -41,4 +41,10 @@ export class AdditionalPayService {
       },
     });
   }
+
+  public downloadTemplate(): Observable<Blob> {
+    return this.httpService.get('/attendance/additional-pay/template', {
+      responseType: 'blob',
+    });
+  }
 }

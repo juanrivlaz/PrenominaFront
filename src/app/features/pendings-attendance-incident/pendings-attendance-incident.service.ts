@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { AbsenceRequestStatus } from '@core/models/enum/absence-request-status';
 import { IEmployeeAbsenceRequests } from '@core/models/pendings-attendance-incident/employee-absence-requests.interface';
@@ -16,7 +16,10 @@ export class PendingsAttendanceIncidentService {
     return this.httpService.put<boolean>(`/EmployeeAbsenceRequests/${id}/status`, { status });
   }
 
-  public download(id: string): Observable<Blob> {
-    return this.httpService.get(`/EmployeeAbsenceRequests/${id}/download`, { responseType: 'blob' });
+  public download(id: string): Observable<HttpResponse<Blob>> {
+    return this.httpService.get(`/EmployeeAbsenceRequests/${id}/download`, {
+      responseType: 'blob',
+      observe: 'response'
+    });
   }
 }

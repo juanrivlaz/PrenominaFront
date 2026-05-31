@@ -164,7 +164,31 @@ app-attendace {
                 }
 
                 .entry-checks {
+                    overflow-x: auto;
+                    max-width: 100%;
+
                     .table-card {
+                        // Densidad reducida para nóminas con muchos días (mensual ~30 columnas).
+                        // Mantiene 100% de ancho disponible y permite scroll interno cuando excede.
+                        &.dense {
+                            font-size: 11px;
+
+                            thead th {
+                                padding: 4px 2px !important;
+                            }
+
+                            tbody td {
+                                padding: 4px 2px !important;
+                            }
+
+                            tbody td .ctn-registers .entry,
+                            tbody td .ctn-registers .output {
+                                min-width: 44px !important;
+                                padding: 3px 4px !important;
+                                font-size: 11px;
+                            }
+                        }
+
                         thead {
                             th {
                                 background-color: transparent;

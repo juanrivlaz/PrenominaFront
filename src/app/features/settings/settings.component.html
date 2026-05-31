@@ -4,10 +4,11 @@
         <span class="subtitle mb-24">Configuración general de la app</span>
 
         <mat-chip-set>
-            <mat-chip (click)="handleChangeSection('Application')" [ngClass]="{'active': sectionIsActive('Application')}">Application</mat-chip>
-            <mat-chip (click)="handleChangeSection('Reports')" [ngClass]="{'active': sectionIsActive('Reports')}">Reports</mat-chip>
-            <mat-chip (click)="handleChangeSection('Profile')" [ngClass]="{'active': sectionIsActive('Profile')}">Profile</mat-chip>
-            <mat-chip (click)="handleChangeSection('Security')" [ngClass]="{'active': sectionIsActive('Security')}">Security</mat-chip>
+            <mat-chip (click)="handleChangeSection('Application')" [ngClass]="{'active': sectionIsActive('Application')}">Aplicación</mat-chip>
+            <mat-chip (click)="handleChangeSection('Reports')" [ngClass]="{'active': sectionIsActive('Reports')}">Reportes</mat-chip>
+            <mat-chip (click)="handleChangeSection('Signatures')" [ngClass]="{'active': sectionIsActive('Signatures')}">Firmas</mat-chip>
+            <mat-chip (click)="handleChangeSection('NameFormat')" [ngClass]="{'active': sectionIsActive('NameFormat')}">Formato de Nombre</mat-chip>
+            <mat-chip (click)="handleChangeSection('Profile')" [ngClass]="{'active': sectionIsActive('Profile')}">Perfil</mat-chip>
             <mat-chip (click)="handleChangeSection('Appearance')" [ngClass]="{'active': sectionIsActive('Appearance')}">Apariencia</mat-chip>
             <mat-chip (click)="handleChangeSection('BioTime')" [ngClass]="{'active': sectionIsActive('BioTime')}">BioTime</mat-chip>
         </mat-chip-set>
@@ -17,12 +18,12 @@
         <div class="ctn-item-step content-application" [@fadeInOut]="sectionIsActive('Application') ? '1' : '0'">
             <div class="item-setting ctn-zonetime">
                 <div class="labels">
-                    <p>Time Zone</p>
-                    <span>Select or customize you timezone.</span>
+                    <p>Zona Horaria</p>
+                    <span>Selecciona o personaliza tu zona horaria.</span>
                 </div>
                 <div class="values">
                     <mat-form-field class="mt-12">
-                        <mat-label>Select an option</mat-label>
+                        <mat-label>Selecciona una opción</mat-label>
                         <mat-select [(ngModel)]="timeZone">
                             @for (item of timeZoneOptions; track item.id) {
                                 <mat-option [value]="item.id">{{ item.label }}</mat-option>
@@ -82,12 +83,12 @@
         <div class="ctn-item-step content-reports" [@fadeInOut]="sectionIsActive('Reports') ? '1' : '0'">
             <div class="item-setting ctn-zonetime">
                 <div class="labels">
-                    <p>Template Días Trabajados Excel</p>
-                    <span>Tipo de platilla excel a descargar.</span>
+                    <p>Plantilla Días Trabajados Excel</p>
+                    <span>Tipo de plantilla excel a descargar.</span>
                 </div>
                 <div class="values">
                     <mat-form-field class="mt-12">
-                        <mat-label>Select an option</mat-label>
+                        <mat-label>Selecciona una opción</mat-label>
                         <mat-select [(ngModel)]="typeDayOffReport">
                             @for (item of typeDayOffReportOptions; track $index) {
                                 <mat-option [value]="item.id">{{ item.label }}</mat-option>
@@ -99,12 +100,12 @@
             </div>
             <div class="item-setting ctn-zonetime">
                 <div class="labels">
-                    <p>Template Prenomina PDF</p>
-                    <span>Tipo de platilla pdf a descargar.</span>
+                    <p>Plantilla Prenómina PDF</p>
+                    <span>Tipo de plantilla pdf a descargar.</span>
                 </div>
                 <div class="values">
                     <mat-form-field class="mt-12">
-                        <mat-label>Select an option</mat-label>
+                        <mat-label>Selecciona una opción</mat-label>
                         <mat-select [(ngModel)]="typePrenominaPdfReport">
                             @for (item of typePrenominaPdfReportOptions; track $index) {
                                 <mat-option [value]="item.id">{{ item.label }}</mat-option>
@@ -121,25 +122,167 @@
                 </div>
                 <div class="values">
                     <mat-form-field class="mt-12">
-                        <mat-label>Select an option</mat-label>
+                        <mat-label>Selecciona una opción</mat-label>
                         <input matInput type="number" min="1" step="1" placeholder="ejem: 10" [formControl]="minToOvertimeReport">
                         <button [disabled]="loadingMinToOvertimeReport()" mat-icon-button matSuffix (click)="handleSaveMinToOvertimeReport()"><mat-icon>save</mat-icon></button>
                     </mat-form-field>
                 </div>
             </div>
+            <mat-divider class="divider"></mat-divider>
+            <section class="compact-pdf-card">
+                <header class="compact-pdf-card__header">
+                    <div class="compact-pdf-card__icon">
+                        <mat-icon>picture_as_pdf</mat-icon>
+                    </div>
+                    <div class="compact-pdf-card__title">
+                        <p>PDF Compacto</p>
+                        <span>Configura la presentación del reporte de asistencia compacto.</span>
+                    </div>
+                </header>
+
+                <div class="compact-pdf-card__body">
+                    <div class="compact-pdf-card__field">
+                        <div class="compact-pdf-card__field-label">
+                            <p>Tamaño de letra</p>
+                            <span>Tamaño de fuente del reporte. Valores entre 6 y 20.</span>
+                        </div>
+                        <mat-form-field appearance="outline" class="compact-pdf-card__field-control">
+                            <mat-label>Tamaño en pt</mat-label>
+                            <input matInput type="number" min="6" max="20" step="1" placeholder="ej: 8" [formControl]="compactFontSize">
+                            <span matTextSuffix>pt</span>
+                        </mat-form-field>
+                    </div>
+
+                    <div class="compact-pdf-card__field">
+                        <div class="compact-pdf-card__field-label">
+                            <p>Mostrar inicial del día</p>
+                            <span>Agrega la inicial del día junto a la fecha (L, M, X, J, V, S, D).</span>
+                        </div>
+                        <div class="compact-pdf-card__toggle">
+                            <mat-slide-toggle [(ngModel)]="showDayInitial">{{ showDayInitial() ? 'Activado' : 'Desactivado' }}</mat-slide-toggle>
+                        </div>
+                    </div>
+                </div>
+
+                <footer class="compact-pdf-card__footer">
+                    <button mat-flat-button color="primary" [disabled]="loadingCompactPdfOptions()" (click)="handleSaveCompactPdfOptions()">
+                        <mat-icon>save</mat-icon>
+                        @if (loadingCompactPdfOptions()) { Guardando... } @else { Guardar cambios }
+                    </button>
+                </footer>
+            </section>
+        </div>
+        <div class="ctn-item-step content-signatures" [@fadeInOut]="sectionIsActive('Signatures') ? '1' : '0'">
+            <div class="item-setting">
+                <div class="labels">
+                    <p>Firmas para Reportes</p>
+                    <span>Agrega entre 1 y 4 firmantes. Aparecerán al pie de los reportes PDF generados.</span>
+                </div>
+                <div class="values signatures-actions">
+                    <span class="signatures-counter">{{ signaturesArray.length }} / {{ maxSignatures }}</span>
+                    <button mat-stroked-button
+                            color="primary"
+                            [disabled]="signaturesArray.length >= maxSignatures"
+                            (click)="addSignature()"
+                            matTooltip="Agregar firmante (máx. {{ maxSignatures }})">
+                        <mat-icon>person_add</mat-icon>
+                        Agregar firmante
+                    </button>
+                </div>
+            </div>
+
+            <form [formGroup]="signaturesForm" class="signatures-form">
+                <div formArrayName="signatures" class="signatures-grid">
+                    @for (signature of signaturesArray.controls; track $index; let i = $index) {
+                        <div [formGroupName]="i" class="signature-card">
+                            <div class="signature-card-header">
+                                <span class="signature-badge">{{ i + 1 }}</span>
+                                <span class="signature-title">Firmante {{ i + 1 }}</span>
+                                <button mat-icon-button
+                                        type="button"
+                                        class="signature-remove"
+                                        (click)="removeSignature(i)"
+                                        [matTooltip]="signaturesArray.length === 1 ? 'Limpiar campos' : 'Quitar firmante'">
+                                    <mat-icon>{{ signaturesArray.length === 1 ? 'cleaning_services' : 'delete_outline' }}</mat-icon>
+                                </button>
+                            </div>
+                            <div class="signature-card-body">
+                                <mat-form-field appearance="outline">
+                                    <mat-label>Nombre completo</mat-label>
+                                    <mat-icon matPrefix>person</mat-icon>
+                                    <input matInput formControlName="name" placeholder="Ej. Juan Pérez García">
+                                </mat-form-field>
+                                <mat-form-field appearance="outline">
+                                    <mat-label>Puesto / Cargo</mat-label>
+                                    <mat-icon matPrefix>badge</mat-icon>
+                                    <input matInput formControlName="position" placeholder="Ej. Jefe de Departamento">
+                                </mat-form-field>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </form>
+
+            <div class="signatures-footer">
+                <span class="signatures-hint">
+                    <mat-icon>info_outline</mat-icon>
+                    Los firmantes con todos los campos vacíos no se incluirán al guardar.
+                </span>
+                <button mat-flat-button color="primary"
+                        [disabled]="loadingSignatures()"
+                        (click)="handleSaveSignatures()">
+                    <mat-icon>save</mat-icon>
+                    {{ loadingSignatures() ? 'Guardando...' : 'Guardar firmas' }}
+                </button>
+            </div>
+        </div>
+        <div class="ctn-item-step content-name-format" [@fadeInOut]="sectionIsActive('NameFormat') ? '1' : '0'">
+            <section class="name-format-card">
+                <header class="name-format-card__header">
+                    <div class="name-format-card__icon">
+                        <mat-icon>badge</mat-icon>
+                    </div>
+                    <div class="name-format-card__title">
+                        <p>Orden del nombre completo</p>
+                        <span>Determina cómo se mostrará el nombre en vistas, reportes y PDFs.</span>
+                    </div>
+                </header>
+
+                <div class="name-format-card__body">
+                    @for (item of nameOrderOptions; track item.id) {
+                        <button type="button"
+                                class="name-format-option"
+                                [class.is-selected]="nameOrder() === item.id"
+                                (click)="nameOrder.set(item.id)">
+                            <div class="name-format-option__radio">
+                                <span class="dot"></span>
+                            </div>
+                            <div class="name-format-option__content">
+                                <span class="name-format-option__label">{{ item.label }}</span>
+                                <span class="name-format-option__preview">{{ item.preview }}</span>
+                            </div>
+                            <mat-icon class="name-format-option__check">check_circle</mat-icon>
+                        </button>
+                    }
+                </div>
+
+                <footer class="name-format-card__footer">
+                    <button mat-flat-button color="primary" [disabled]="loadingNameFormat()" (click)="handleSaveNameFormat()">
+                        <mat-icon>save</mat-icon>
+                        {{ loadingNameFormat() ? 'Guardando...' : 'Guardar formato' }}
+                    </button>
+                </footer>
+            </section>
         </div>
         <div class="ctn-item-step content-profile" [@fadeInOut]="sectionIsActive('Profile') ? '1' : '0'">
-            <editor [init]="initConfigEditor" apiKey="xytfj3h4rcrw729f3lyufzobzqhexl3eerdgs133my63rjko" [(ngModel)]="contentDocument"></editor>
+            <editor [init]="initConfigEditor" [apiKey]="tinymceApiKey" [(ngModel)]="contentDocument"></editor>
             <button mat-button (click)="saveDoc()">Save</button>
-        </div>
-        <div class="ctn-item-step content-security" [@fadeInOut]="sectionIsActive('Security') ? '1' : '0'">
-            <p>security</p>
         </div>
         <div class="ctn-item-step content-appearence" [@fadeInOut]="sectionIsActive('Appearance') ? '1' : '0'">
             <div class="item-setting ctn-primary-color">
                 <div class="labels">
-                    <p>Primary color</p>
-                    <span>Select or customize you primary color.</span>
+                    <p>Color primario</p>
+                    <span>Selecciona o personaliza tu color primario.</span>
                 </div>
                 <div class="values">
                     <ngx-colors ngx-colors-trigger [(ngModel)]="primaryColor"></ngx-colors>
@@ -149,8 +292,8 @@
             <mat-divider class="divider"></mat-divider>
             <div class="item-setting ctn-secondary-color">
                 <div class="labels">
-                    <p>Secondary color</p>
-                    <span>Select or customize you secondary color.</span>
+                    <p>Color secundario</p>
+                    <span>Selecciona o personaliza tu color secundario.</span>
                 </div>
                 <div class="values">
                     <ngx-colors ngx-colors-trigger [(ngModel)]="secondayColor"></ngx-colors>
@@ -161,7 +304,7 @@
             <div class="item-setting ctn-logo">
                 <div class="labels">
                     <p>Logo</p>
-                    <span>Upload your logo.</span>
+                    <span>Sube tu logo.</span>
                 </div>
                 <div class="values">
                     <button mat-mini-fab (click)="inputLogo.click()">

@@ -14,15 +14,17 @@ export class TimeOffManagerService {
         private readonly httpService: HttpClient,
     ) {}
 
-    public getEmployeeByPayroll(typeNom: number, page: number = 1, search: string = ''): Observable<IPagedResult<IEmployessDayOff>> {
-        return this.httpService.get<IPagedResult<IEmployessDayOff>>('/DayOffs/get-employees', {
-            params: {
-                TypeNom: typeNom,
-                Page: page,
-                PageSize: 30,
-                Search: search || ''
-            }
-        });
+    public getEmployeeByPayroll(typeNom: number, page: number = 1, search: string = '', numPeriod: number = 0): Observable<IPagedResult<IEmployessDayOff>> {
+        const params: Record<string, string | number> = {
+            TypeNom: typeNom,
+            Page: page,
+            PageSize: 30,
+            Search: search || ''
+        };
+        if (numPeriod > 0) {
+            params['NumPeriod'] = numPeriod;
+        }
+        return this.httpService.get<IPagedResult<IEmployessDayOff>>('/DayOffs/get-employees', { params });
     }
 
     public registerToUser(form: Pick<IAssignTimeOff, 'employeeCode'> & IAssignTimeOffOutput & { dates: Array<string> }): Observable<IEmployessDayOff> {

@@ -1,0 +1,59 @@
+<h2 mat-dialog-title>Editar Periodo {{ data.period.numPeriod }}</h2>
+
+<form [formGroup]="form" (ngSubmit)="submit()">
+    <mat-dialog-content class="form-content">
+        @if (errorMessage()) {
+            <div class="error-banner">{{ errorMessage() }}</div>
+        }
+
+        <div class="row">
+            <mat-form-field appearance="outline">
+                <mat-label>Inicio de Corte</mat-label>
+                <input matInput [matDatepicker]="startPicker" formControlName="startDate">
+                <mat-datepicker-toggle matIconSuffix [for]="startPicker"></mat-datepicker-toggle>
+                <mat-datepicker #startPicker></mat-datepicker>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+                <mat-label>Cierre de Corte</mat-label>
+                <input matInput [matDatepicker]="closingPicker" formControlName="closingDate">
+                <mat-datepicker-toggle matIconSuffix [for]="closingPicker"></mat-datepicker-toggle>
+                <mat-datepicker #closingPicker></mat-datepicker>
+            </mat-form-field>
+        </div>
+
+        <div class="row">
+            <mat-form-field appearance="outline">
+                <mat-label>Inicio Admin</mat-label>
+                <input matInput [matDatepicker]="startAdminPicker" formControlName="startAdminDate">
+                <mat-datepicker-toggle matIconSuffix [for]="startAdminPicker"></mat-datepicker-toggle>
+                <mat-datepicker #startAdminPicker></mat-datepicker>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+                <mat-label>Cierre Admin</mat-label>
+                <input matInput [matDatepicker]="closingAdminPicker" formControlName="closingAdminDate">
+                <mat-datepicker-toggle matIconSuffix [for]="closingAdminPicker"></mat-datepicker-toggle>
+                <mat-datepicker #closingAdminPicker></mat-datepicker>
+            </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline">
+            <mat-label>Fecha de Pago</mat-label>
+            <input matInput [matDatepicker]="paymentPicker" formControlName="datePayment">
+            <mat-datepicker-toggle matIconSuffix [for]="paymentPicker"></mat-datepicker-toggle>
+            <mat-datepicker #paymentPicker></mat-datepicker>
+        </mat-form-field>
+
+        <p class="hint">
+            Si las fechas se solapan con otro periodo del mismo tipo de nómina, se mostrará un error y no se guardarán los cambios.
+        </p>
+    </mat-dialog-content>
+
+    <mat-dialog-actions align="end">
+        <button type="button" mat-button mat-dialog-close [disabled]="loading()">Cancelar</button>
+        <button type="submit" mat-flat-button color="primary" [disabled]="loading()">
+            @if (loading()) { Guardando... } @else { Guardar }
+        </button>
+    </mat-dialog-actions>
+</form>

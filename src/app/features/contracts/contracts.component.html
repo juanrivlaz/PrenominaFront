@@ -73,6 +73,14 @@
             <th mat-header-cell *matHeaderCellDef> Días para termino </th>
             <td mat-cell *matCellDef="let row"> {{row.expireInDays}} </td>
         </ng-container>
+        <ng-container matColumnDef="isActive">
+            <th mat-header-cell *matHeaderCellDef> Estado </th>
+            <td mat-cell *matCellDef="let row">
+                <span class="contract-status" [ngClass]="isContractActive(row) ? 'active' : 'expired'">
+                    {{ isContractActive(row) ? 'Activo' : 'Vencido' }}
+                </span>
+            </td>
+        </ng-container>
         <ng-container matColumnDef="generateContract">
             <th mat-header-cell *matHeaderCellDef> Generar Contrato? </th>
             <td mat-cell *matCellDef="let row">

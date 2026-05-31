@@ -186,6 +186,45 @@ app-time-off-manager {
     }
 }
 
+.quick-periods {
+    display: flex;
+    gap: 8px;
+    padding: 8px 16px 0;
+    flex-wrap: wrap;
+
+    .quick-period-chip {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        padding: 6px 14px;
+        border-radius: 18px;
+        border: 1px solid #d9dde1;
+        background: #f4f5f7;
+        color: #686f7c;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 600;
+        transition: all 0.18s ease;
+
+        small {
+            font-size: 10px;
+            font-weight: 500;
+            opacity: 0.85;
+        }
+
+        &.active {
+            background: var(--primary-color, #1976d2);
+            border-color: transparent;
+            color: white;
+        }
+
+        &:hover:not(.active) {
+            background: #e9ecf1;
+        }
+    }
+}
+
 .help-menu {
     .help-content {
         padding: 8px 16px;

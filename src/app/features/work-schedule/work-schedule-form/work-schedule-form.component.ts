@@ -33,6 +33,17 @@ export class WorkScheduleFormComponent {
     public readonly loading = signal(false);
     public readonly form: FormGroup;
 
+    // Bit 0 = Lunes ... Bit 6 = Domingo
+    public readonly weekDays: Array<{ label: string, bit: number }> = [
+        { label: 'L', bit: 0 },
+        { label: 'M', bit: 1 },
+        { label: 'X', bit: 2 },
+        { label: 'J', bit: 3 },
+        { label: 'V', bit: 4 },
+        { label: 'S', bit: 5 },
+        { label: 'D', bit: 6 },
+    ];
+
     constructor(private readonly service: WorkScheduleService) {
         this.dialogRef.disableClose = true;
 
@@ -44,8 +55,24 @@ export class WorkScheduleFormComponent {
             workHours: new FormControl(sched?.workHours ?? 8, [Validators.required, Validators.min(0)]),
             isNightShift: new FormControl(sched?.isNightShift ?? false),
             breakStart: new FormControl(sched?.breakStart?.substring(0, 5) ?? ''),
-            breakEnd: new FormControl(sched?.breakEnd?.substring(0, 5) ?? '')
+            breakEnd: new FormControl(sched?.breakEnd?.substring(0, 5) ?? ''),
+            workDays: new FormControl(sched?.workDays ?? 127)
         });
+    }
+
+    public isDaySelected(bit: number): boolean {
+        const value = this.form.get('workDays')?.value ?? 127;
+        return (value & (1 << bit)) !== 0;
+    }
+
+    public toggleDay(bit: number): void {
+        const ctrl = this.form.get('workDays');
+        if (!ctrl) return;
+        const current = ctrl.value ?? 127;
+        const updated = (current & (1 << bit)) !== 0
+            ? current & ~(1 << bit)
+            : current | (1 << bit);
+        ctrl.setValue(updated);
     }
 
     public submit(): void {
@@ -62,7 +89,8 @@ export class WorkScheduleFormComponent {
             workHours: Number(value.workHours),
             isNightShift: !!value.isNightShift,
             breakStart: value.breakStart ? this.toApiTime(value.breakStart) : null,
-            breakEnd: value.breakEnd ? this.toApiTime(value.breakEnd) : null
+            breakEnd: value.breakEnd ? this.toApiTime(value.breakEnd) : null,
+            workDays: Number(value.workDays ?? 127)
         };
 
         this.loading.set(true);

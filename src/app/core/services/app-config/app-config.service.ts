@@ -1,9 +1,16 @@
 import { Injectable } from "@angular/core";
 import { AppConfigInterface } from "./app-config.interface";
-import { BehaviorSubject } from "rxjs";
+import { BehaviorSubject, Observable } from "rxjs";
 import { NavigationStart, Router } from "@angular/router";
 import { SysKey } from "@core/models/enum/sys-key";
 import { AuthService } from "../auth/auth.service";
+import { HttpClient } from "@angular/common/http";
+
+interface ISysAppearance {
+    primaryColor: string;
+    secondColor: string;
+    logo: string;
+}
 
 @Injectable({
     providedIn: 'root'
@@ -18,11 +25,14 @@ export class AppConfigService {
     public onSettingsObserver: BehaviorSubject<AppConfigInterface>;
     public helpPage: BehaviorSubject<boolean>;
     public lastRoute: string = '';
+    private readonly DEFAULT_LOGO = 'assets/icons/zoom-app.svg';
 
     constructor(
         private readonly router: Router,
-        private readonly authService: AuthService
+        private readonly authService: AuthService,
+        private readonly http: HttpClient,
     ) {
+        // Cache local para arranque inmediato; se sobreescribe con la versión del backend.
         const primaryColorValue = window.localStorage.getItem(SysKey.PrimaryColor) || '#5a6acf';
         const secondColorValue = window.localStorage.getItem(SysKey.SecondColor) || '#2196f3';
         const logo = window.localStorage.getItem(SysKey.Logo);
@@ -35,7 +45,7 @@ export class AppConfigService {
                 footer: 'none',
                 mode: 'fullwidth',
             },
-            logo: logo || 'assets/icons/zoom-app.svg',
+            logo: logo || this.DEFAULT_LOGO,
             primaryColor: primaryColorValue,
             secondColor: secondColorValue,
             loading: false
@@ -63,16 +73,55 @@ export class AppConfigService {
         );
 
         this.authService.getMe();
+
+        // Cargar apariencia compartida desde el backend (afecta a todos los usuarios).
+        this.loadAppearanceFromServer();
+    }
+
+    public loadAppearanceFromServer(): void {
+        this.http.get<ISysAppearance>('/SystemConfig/appearance').subscribe({
+            next: (appearance) => {
+                if (!appearance) return;
+                if (appearance.primaryColor) {
+                    this.applyPrimaryColor(appearance.primaryColor);
+                }
+                if (appearance.secondColor) {
+                    this.applySecondColor(appearance.secondColor);
+                }
+                if (appearance.logo !== undefined && appearance.logo !== null) {
+                    this.applyLogo(appearance.logo || this.DEFAULT_LOGO);
+                }
+            },
+            error: () => {
+                // Si falla, mantenemos el cache local. No bloqueante.
+            }
+        });
+    }
+
+    public saveAppearanceToServer(payload: Partial<ISysAppearance>): Observable<boolean> {
+        return this.http.put<boolean>('/SystemConfig/appearance', payload);
+    }
+
+    private applyLogo(logo: string): void {
+        window.localStorage.setItem(SysKey.Logo, logo);
+        this.setSettings({ ...this.settings, logo });
+    }
+
+    private applyPrimaryColor(color: string): void {
+        window.localStorage.setItem(SysKey.PrimaryColor, color);
+        document.documentElement.style.setProperty(SysKey.StylePrimaryColor, color);
+        this.setSettings({ ...this.settings, primaryColor: color });
+    }
+
+    private applySecondColor(color: string): void {
+        window.localStorage.setItem(SysKey.SecondColor, color);
+        document.documentElement.style.setProperty(SysKey.StyleSecondColor, color);
+        this.setSettings({ ...this.settings, secondColor: color });
     }
 
     public setLogo(logo: string): void {
-        window.localStorage.setItem(SysKey.Logo, logo);
-        const updateSetting = {
-            ...this.settings,
-            logo,
-        };
-
-        this.setSettings(updateSetting);
+        this.applyLogo(logo);
+        this.saveAppearanceToServer({ logo }).subscribe();
     }
 
     public setLoading(loading: boolean): void {
@@ -85,25 +134,13 @@ export class AppConfigService {
     }
 
     public setPrimaryColor(color: string): void {
-        window.localStorage.setItem(SysKey.PrimaryColor, color);
-        document.documentElement.style.setProperty(SysKey.StylePrimaryColor, color);
-        const updateSetting = {
-            ...this.settings,
-            primaryColor: color,
-        };
-
-        this.setSettings(updateSetting);
+        this.applyPrimaryColor(color);
+        this.saveAppearanceToServer({ primaryColor: color }).subscribe();
     }
 
     public setSecondColor(color: string): void {
-        window.localStorage.setItem(SysKey.SecondColor, color);
-        document.documentElement.style.setProperty(SysKey.StyleSecondColor, color);
-        const updateSetting = {
-            ...this.settings,
-            secondColor: color,
-        };
-
-        this.setSettings(updateSetting);
+        this.applySecondColor(color);
+        this.saveAppearanceToServer({ secondColor: color }).subscribe();
     }
 
     private setSettings(settings: AppConfigInterface) {

@@ -50,6 +50,24 @@
                 Activa este interruptor cuando la salida ocurre el día siguiente al de la entrada
             </span>
         </div>
+
+        <div class="work-days-section">
+            <p class="work-days-label">Días laborables</p>
+            <span class="hint">
+                Los días no seleccionados se marcarán automáticamente como Descanso (D) en la asistencia.
+            </span>
+            <div class="work-days-chips">
+                @for (day of weekDays; track day.bit) {
+                    <button
+                        type="button"
+                        class="work-day-chip"
+                        [class.selected]="isDaySelected(day.bit)"
+                        (click)="toggleDay(day.bit)">
+                        {{ day.label }}
+                    </button>
+                }
+            </div>
+        </div>
     </mat-dialog-content>
 
     <mat-dialog-actions align="end">

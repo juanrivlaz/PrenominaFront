@@ -62,12 +62,12 @@ export class SundayBonusComponent implements OnInit {
     ngOnInit(): void {
         this.getPayrolls();
 
-        const storageTypeNom = window.sessionStorage.getItem(SysKey.ActiveTypeNom);
+        const storageTypeNom = window.localStorage.getItem(SysKey.ActiveTypeNom);
         if (storageTypeNom) {
             this.setPayroll(parseInt(storageTypeNom, 10));
         }
 
-        const storageNumPeriod = window.sessionStorage.getItem(SysKey.ActiveNumPeriod);
+        const storageNumPeriod = window.localStorage.getItem(SysKey.ActiveNumPeriod);
         if (storageNumPeriod) {
             setTimeout(() => {
                 this.setPeriod(parseInt(storageNumPeriod, 10));
@@ -96,7 +96,7 @@ export class SundayBonusComponent implements OnInit {
         this.listDates.set([]);
         this.setPeriod(0, true);
         this.getPeriods(id);
-        window.sessionStorage.setItem(SysKey.ActiveTypeNom, id.toString());
+        window.localStorage.setItem(SysKey.ActiveTypeNom, id.toString());
     }
 
     public setPeriod(id: number, noAlert = false): void {
@@ -115,7 +115,7 @@ export class SundayBonusComponent implements OnInit {
             return;
         }
 
-        window.sessionStorage.setItem(SysKey.ActiveNumPeriod, id.toString());
+        window.localStorage.setItem(SysKey.ActiveNumPeriod, id.toString());
         this.listDates.set(this.dateService.generateFechas(this.period.startDate, this.period.closingDate));
         this.getWorkedSundays();
     }

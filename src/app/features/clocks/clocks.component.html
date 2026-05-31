@@ -32,7 +32,7 @@
                     </mat-list-item>
                     <mat-list-item>
                         <mat-icon matListItemIcon>event_repeat</mat-icon>
-                        <div matListItemTitle>2025-04-01 03:08:01</div>
+                        <div matListItemTitle>{{ formatLastSync(clock.lastSyncAt, nowTick()) }}</div>
                         <div matListItemLine>Últ. Sincronización</div>
                     </mat-list-item>
                 </mat-list>

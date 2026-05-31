@@ -1,5 +1,5 @@
 import { CommonModule } from "@angular/common";
-import { Component, inject, OnInit, signal, ViewEncapsulation, WritableSignal } from "@angular/core";
+import { Component, inject, OnDestroy, OnInit, signal, ViewEncapsulation, WritableSignal } from "@angular/core";
 import { AvatarComponent } from "../../shared/components/avatar/avatar.component";
 import { MaterialModule } from "../../shared/modules/material/material.module";
 import { MatDialog } from "@angular/material/dialog";
@@ -36,7 +36,7 @@ import dayjs from "dayjs";
     styleUrl: './users.component.scss',
     encapsulation: ViewEncapsulation.None
 })
-export class UsersComponent implements OnInit {
+export class UsersComponent implements OnInit, OnDestroy {
     private readonly _snackBar = inject(MatSnackBar);
     public readonly dialog = inject(MatDialog);
     public centers: WritableSignal<Array<Center>> = signal([]);
@@ -44,6 +44,8 @@ export class UsersComponent implements OnInit {
     public roles: WritableSignal<Array<Role>> = signal([]);
     public supervisors: WritableSignal<Array<Supervisor>> = signal([]);
     public users: MatTableDataSource<IUserWithDetails> = new MatTableDataSource<IUserWithDetails>([]);
+    public nowTick: WritableSignal<number> = signal(Date.now());
+    private nowInterval?: ReturnType<typeof setInterval>;
     public columns: Array<string> = [
         'name',
         'email',
@@ -62,6 +64,13 @@ export class UsersComponent implements OnInit {
 
     ngOnInit(): void {
         this.getInit();
+        this.nowInterval = setInterval(() => this.nowTick.set(Date.now()), 60000);
+    }
+
+    ngOnDestroy(): void {
+        if (this.nowInterval) {
+            clearInterval(this.nowInterval);
+        }
     }
 
     public handleChangeSearch(event: Event): void {
@@ -69,7 +78,7 @@ export class UsersComponent implements OnInit {
         this.users.filter = filterValue.trim().toLowerCase();
     }
 
-    public formatLastConnection(date?: string | null): string {
+    public formatLastConnection(date?: string | null, _tick?: number): string {
         return date ? dayjs(date).fromNow() : 'Nunca';
     }
 

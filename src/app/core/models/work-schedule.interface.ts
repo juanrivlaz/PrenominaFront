@@ -7,6 +7,7 @@ export interface IWorkSchedule {
     breakEnd?: string | null;
     workHours: number;
     isNightShift: boolean;
+    workDays?: number;
 }
 
 export interface IWorkScheduleInput {
@@ -17,6 +18,7 @@ export interface IWorkScheduleInput {
     breakEnd?: string | null;
     workHours: number;
     isNightShift: boolean;
+    workDays: number;
 }
 
 export interface IEmployeeScheduleAssignment {
