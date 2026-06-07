@@ -5,7 +5,8 @@ export enum OvertimeMovementType {
     ManualAdjustment = 4,
     Cancellation = 5,
     HourBank = 6,
-    ExternalEntry = 7
+    ExternalEntry = 7,
+    UsedForTimeOff = 8
 }
 
 export enum OvertimeDayStatus {

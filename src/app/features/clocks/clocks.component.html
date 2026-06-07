@@ -17,38 +17,82 @@
     </div>
     <div class="ctn-items">
         @for (clock of listClocks(); track clock.id) {
-            <div class="item">
-                <p>{{ clock.label }}</p>
-                <mat-list>
-                    <mat-list-item>
-                        <mat-icon matListItemIcon>dns</mat-icon>
-                        <div matListItemTitle>{{ clock.ip }}</div>
-                        <div matListItemLine>Dirección IP</div>
-                    </mat-list-item>
-                    <mat-list-item>
-                        <mat-icon matListItemIcon>input</mat-icon>
-                        <div matListItemTitle>{{ clock.port }}</div>
-                        <div matListItemLine>Puerto</div>
-                    </mat-list-item>
-                    <mat-list-item>
-                        <mat-icon matListItemIcon>event_repeat</mat-icon>
-                        <div matListItemTitle>{{ formatLastSync(clock.lastSyncAt, nowTick()) }}</div>
-                        <div matListItemLine>Últ. Sincronización</div>
-                    </mat-list-item>
-                </mat-list>
+            <div class="item" [class.is-loading]="isLoading(clock)">
+                <div class="item-header">
+                    <div class="device-icon">
+                        <mat-icon>schedule</mat-icon>
+                    </div>
+                    <div class="device-title">
+                        <span class="name">{{ clock.label }}</span>
+                        <span class="subtitle">Reloj checador</span>
+                    </div>
+                    @if (isSudo) {
+                        <button mat-icon-button class="more-btn" [matMenuTriggerFor]="manageMenu" matTooltip="Administrar">
+                            <mat-icon>more_vert</mat-icon>
+                        </button>
+                        <mat-menu #manageMenu="matMenu">
+                            <button mat-menu-item (click)="editClock(clock)">
+                                <mat-icon>edit</mat-icon>
+                                <span>Editar reloj</span>
+                            </button>
+                            <button mat-menu-item class="warn-action" (click)="deleteClock(clock)">
+                                <mat-icon>delete</mat-icon>
+                                <span>Eliminar reloj</span>
+                            </button>
+                        </mat-menu>
+                    }
+                </div>
+
+                <div class="item-info">
+                    <div class="info-row">
+                        <mat-icon>dns</mat-icon>
+                        <div class="info-text">
+                            <span class="label">Dirección IP</span>
+                            <span class="value">{{ clock.ip }}</span>
+                        </div>
+                    </div>
+                    <div class="info-row">
+                        <mat-icon>input</mat-icon>
+                        <div class="info-text">
+                            <span class="label">Puerto</span>
+                            <span class="value">{{ clock.port }}</span>
+                        </div>
+                    </div>
+                    <div class="info-row">
+                        <mat-icon>event_repeat</mat-icon>
+                        <div class="info-text">
+                            <span class="label">Última sincronización</span>
+                            <span class="value">{{ formatLastSync(clock.lastSyncAt, nowTick()) }}</span>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="actions">
                     @if (isLoading(clock)) {
-                        <mat-spinner diameter="30"></mat-spinner>
-                    }
-                    @if (!isLoading(clock)) {
-                        <button mat-button (click)="sendPing(clock)">Ping</button>
-                        <button mat-button (click)="showClockUsers(clock)" matTooltip="Ver usuarios">
-                            <mat-icon>visibility</mat-icon>
-                            usuarios
+                        <div class="loading-state">
+                            <mat-spinner diameter="28"></mat-spinner>
+                            <span>Procesando…</span>
+                        </div>
+                    } @else {
+                        <button mat-stroked-button class="action-btn" (click)="sendPing(clock)" matTooltip="Comprobar conexión">
+                            <mat-icon>wifi_tethering</mat-icon>
+                            Ping
                         </button>
-                        <button mat-button (click)="syncAttendace(clock.id)" matTooltip="Sincronizar checadas">
+                        <button mat-stroked-button class="action-btn" (click)="showClockUsers(clock)" matTooltip="Ver usuarios del reloj">
+                            <mat-icon>visibility</mat-icon>
+                            Usuarios
+                        </button>
+                        <button mat-stroked-button class="action-btn" (click)="syncAttendace(clock.id)" matTooltip="Sincronizar checadas">
                             <mat-icon>sync</mat-icon>
-                            checadas
+                            Checadas
+                        </button>
+                        <button mat-stroked-button class="action-btn" (click)="syncUsersFromDb(clock)" matTooltip="Sincronizar usuarios desde la base de datos al reloj">
+                            <mat-icon>cloud_upload</mat-icon>
+                            Usuarios BD
+                        </button>
+                        <button mat-stroked-button class="action-btn full-width" (click)="copyUsersToClock(clock)" matTooltip="Copiar usuarios de este reloj a otro" [disabled]="otherClocks(clock).length === 0">
+                            <mat-icon>content_copy</mat-icon>
+                            Copiar usuarios a otro reloj
                         </button>
                     }
                 </div>

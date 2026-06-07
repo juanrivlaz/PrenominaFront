@@ -29,7 +29,12 @@ app-navbar {
             justify-content: center;
 
             .logo-text {
-                width: 30px;
+                // Mantener proporción: altura fija y ancho automático (con tope) para
+                // que logos no cuadrados no se deformen ni queden diminutos.
+                height: 32px;
+                width: auto;
+                max-width: 160px;
+                object-fit: contain;
             }
         }
     }

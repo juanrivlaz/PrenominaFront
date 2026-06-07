@@ -23,6 +23,7 @@ import { OvertimeHistoryDialogComponent, OvertimeHistoryDialogData } from "./ove
 import { OvertimeManualEntryDialogComponent, OvertimeManualEntryDialogData } from "./overtime-manual-entry-dialog/overtime-manual-entry-dialog.component";
 import { OvertimeBatchNotesDialogComponent, BatchNotesDialogData, BatchNotesDialogResult } from "./overtime-batch-notes-dialog/overtime-batch-notes-dialog.component";
 import { appAnimations } from "@core/animations";
+import dayjs from "dayjs";
 
 @Component({
     selector: 'app-overtimes-table',
@@ -54,6 +55,11 @@ export class OvertimesTableComponent implements OnInit, OnDestroy {
     public readonly typeNomina = input<number>(0);
     public readonly numPeriod = input<number>(0);
     public readonly searchTerm = input<string>('');
+    // Departamento/supervisor activo. Cambiarlo fuerza recargar el resumen (filtrado por tenant en el backend).
+    public readonly tenant = input<string>('');
+    // Rango de fechas para filtrar los días con tiempo extra mostrados.
+    public readonly startDate = input<Date | null>(null);
+    public readonly endDate = input<Date | null>(null);
 
     // Outputs usando signal-based API
     public readonly onPageChange = output<PageEvent>();
@@ -102,6 +108,8 @@ export class OvertimesTableComponent implements OnInit, OnDestroy {
         let data = this.summaryData();
         const search = this.searchTerm()?.toLowerCase().trim();
         const filter = this.statusFilter();
+        const start = this.startDate();
+        const end = this.endDate();
 
         if (search) {
             data = data.filter(item =>
@@ -109,6 +117,35 @@ export class OvertimesTableComponent implements OnInit, OnDestroy {
                 item.fullName.toLowerCase().includes(search) ||
                 item.department.toLowerCase().includes(search)
             );
+        }
+
+        // Filtro por rango de fechas: se acotan los días con tiempo extra al rango y se
+        // recalculan los totales por empleado; se descartan empleados sin días en el rango.
+        if (start && end) {
+            const startStr = dayjs(start).format('YYYY-MM-DD');
+            const endStr = dayjs(end).format('YYYY-MM-DD');
+
+            data = data
+                .map(item => {
+                    const dayDetails = item.dayDetails.filter(d => {
+                        const dateStr = dayjs(d.date).format('YYYY-MM-DD');
+                        return dateStr >= startStr && dateStr <= endStr;
+                    });
+
+                    const totalOvertimeMinutes = dayDetails.reduce((sum, d) => sum + d.overtimeMinutes, 0);
+                    const pendingMinutes = dayDetails
+                        .filter(d => d.status === OvertimeDayStatus.Pending || d.status === OvertimeDayStatus.Cancelled)
+                        .reduce((sum, d) => sum + d.overtimeMinutes, 0);
+
+                    return {
+                        ...item,
+                        dayDetails,
+                        totalOvertimeMinutes,
+                        totalOvertimeFormatted: this.formatToTime(totalOvertimeMinutes),
+                        pendingMinutes,
+                    };
+                })
+                .filter(item => item.dayDetails.length > 0);
         }
 
         if (filter === 'pending') {
@@ -124,6 +161,8 @@ export class OvertimesTableComponent implements OnInit, OnDestroy {
         effect(() => {
             const type = this.typeNomina();
             const period = this.numPeriod();
+            // Leer el tenant lo registra como dependencia: al cambiar de departamento se recarga.
+            this.tenant();
             if (type && period) {
                 untracked(() => this.loadSummaryData());
             }

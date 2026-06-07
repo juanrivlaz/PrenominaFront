@@ -234,10 +234,13 @@ export class AuthService {
     public getMe(): void {
         this.httpService.get<ILoginResponse>('/User/me').subscribe({
             next: (response) => {
+                // update=true so a default company/tenant is auto-selected when the session has
+                // none (it still restores the previous selection when present), avoiding the
+                // empty "Seleccione empresa" state on refresh.
                 this.login({
                     ...response,
                     token: this._token || '',
-                }, false);
+                }, true);
             },
             error: () => {
                 // Error silencioso - no exponer información en consola

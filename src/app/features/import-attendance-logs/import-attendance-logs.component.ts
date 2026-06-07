@@ -25,6 +25,29 @@ export class ImportAttendaceLogComponent {
       private readonly service: ImportAttendaceLogsService
     ) {}
 
+    // Genera y descarga una plantilla CSV de ejemplo con el formato esperado por la
+    // importación: Código de empleado, Hora de checada (HH:mm:ss) y Fecha (YYYY-MM-DD).
+    // El backend omite la primera fila (encabezado) y lee las columnas en ese orden.
+    public downloadTemplate(): void {
+      const rows: Array<Array<string>> = [
+        ['Codigo de empleado', 'Hora de checada (HH:mm:ss)', 'Fecha (AAAA-MM-DD)'],
+        ['4018', '06:00:00', '2026-03-26'],
+        ['4018', '22:54:00', '2026-03-26'],
+        ['4018', '05:58:00', '2026-03-27'],
+        ['4018', '23:01:00', '2026-03-27'],
+      ];
+
+      const csv = rows.map((row) => row.join(',')).join('\r\n');
+      // BOM para que Excel respete los acentos del encabezado.
+      const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'plantilla-carga-checadas.csv';
+      link.click();
+      window.URL.revokeObjectURL(url);
+    }
+
     public onFileSelected(event: Event): void {
       const input = event.target as HTMLInputElement;
       if (input.files && input.files.length > 0) {

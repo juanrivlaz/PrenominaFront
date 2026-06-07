@@ -76,6 +76,11 @@ export class AttendaceComponent implements OnInit, OnDestroy {
     private readonly activePayroll$ = new BehaviorSubject<number>(0);
     private readonly activePeriod$ = new BehaviorSubject<number>(0);
 
+    // Indica que getInit() ya trajo los catálogos (payrolls, periodos, etc.).
+    // Evita disparar la carga (y el falso error "Selecciona un tipo de nómina")
+    // mientras las listas todavía están vacías.
+    private readonly dataLoaded$ = new BehaviorSubject<boolean>(false);
+
     private readonly _listPeriods: WritableSignal<Array<IPrenominaPeriod>> = signal([]);
 
     // Cache para evitar recálculos
@@ -149,25 +154,38 @@ export class AttendaceComponent implements OnInit, OnDestroy {
     ) {}
 
     ngOnInit(): void {
-        // Solo getInit cuando cambia activeCompany
+        // Only call getInit when activeCompany changes and the company is valid.
+        // Avoids firing the request with company "0" (no selection), which the backend
+        // rejects with "El identificador de empresa no es válido".
         this.authService.activeCompany
             .pipe(takeUntil(this.destroy$))
-            .subscribe(() => {
-                this.getInit();
+            .subscribe((company) => {
+                if (this.isValidCompany(company)) {
+                    this.getInit();
+                } else {
+                    // No valid company yet: stop the loading indicator so the page doesn't
+                    // stay stuck on the progress bar while waiting for a company selection.
+                    this.loading.set(false);
+                }
             });
 
-        // Llamar service.get cuando cambia cualquiera de los 4 valores
-        // Si todos tienen valor → cargar datos, si no → limpiar tabla
+        // Cargar datos cuando cambia cualquiera de los 4 valores (empresa, departamento,
+        // tipo de nómina, periodo) Y los catálogos ya están cargados (dataLoaded$).
+        // Se valida contra los objetos resueltos (this.payroll / this.period) y no contra
+        // los números crudos, para no disparar la carga antes de que getInit() traiga las
+        // listas (lo que provocaba el falso error "Selecciona un tipo de nómina").
         combineLatest([
             this.authService.activeCompany,
             this.authService.activeTenant,
             this.activePayroll$,
-            this.activePeriod$
+            this.activePeriod$,
+            this.dataLoaded$
         ]).pipe(
             takeUntil(this.destroy$)
-        ).subscribe(([company, tenant, payroll, period]) => {
-            if (company && tenant && payroll && period) {
-                this.get();
+        ).subscribe(([company, tenant, , , loaded]) => {
+            if (loaded && company && tenant && this.payroll && this.period) {
+                this.listDates.set(this.generarFechas(this.period.startDate, this.period.closingDate));
+                this.searchTrigger$.next(this.searchControl.value || '');
             } else {
                 this.listEmployeeAttendance.set([]);
                 this.listDates.set([]);
@@ -228,19 +246,23 @@ export class AttendaceComponent implements OnInit, OnDestroy {
                 this.searchTrigger$.next(value || '');
             });
 
+        // Restaurar selección previa. getInit() revalida estos valores contra los
+        // catálogos cargados y selecciona el primer elemento si ya no existen, así que
+        // basta con fijarlos aquí (la carga real espera a dataLoaded$).
         const storageTypeNom = window.localStorage.getItem(SysKey.ActiveTypeNom);
         if (storageTypeNom) {
-            this.setPayroll(parseInt(storageTypeNom, 10));
+            const parsedTypeNom = parseInt(storageTypeNom, 10);
+            if (!isNaN(parsedTypeNom)) {
+                this.activePayroll = parsedTypeNom;
+            }
         }
 
         const storageNumPeriod = window.localStorage.getItem(SysKey.ActiveNumPeriod);
         if (storageNumPeriod) {
-            // Usar timer de RxJS en lugar de setTimeout para cleanup automático
-            timer(800)
-                .pipe(takeUntil(this.destroy$))
-                .subscribe(() => {
-                    this.setPeriod(parseInt(storageNumPeriod, 10));
-                });
+            const parsedNumPeriod = parseInt(storageNumPeriod, 10);
+            if (!isNaN(parsedNumPeriod)) {
+                this.activePeriod = parsedNumPeriod;
+            }
         }
 
         this.authService.sectionsForAccess
@@ -260,12 +282,21 @@ export class AttendaceComponent implements OnInit, OnDestroy {
         this.destroy$.complete();
         this.activePayroll$.complete();
         this.activePeriod$.complete();
+        this.dataLoaded$.complete();
         // Limpiar cache
         this.dayOffsCache.clear();
     }
 
+    // A company is valid when it is the superuser sentinel (-999) or a positive id.
+    private isValidCompany(company: number): boolean {
+        return company === -999 || company > 0;
+    }
+
     public getInit(): void {
         this.loading.set(true);
+        // Mientras se recargan los catálogos, marcar como no cargado para no disparar
+        // una búsqueda con listas obsoletas/vacías.
+        this.dataLoaded$.next(false);
         forkJoin([this.service.getDayOffs(), this.service.getInit()])
             .pipe(
                 finalize(() => this.loading.set(false)),
@@ -282,26 +313,24 @@ export class AttendaceComponent implements OnInit, OnDestroy {
                     // Precalcular cache de días festivos
                     this.buildDayOffsCache();
 
-                    // Revalidar activePayroll: si existe en la nueva lista dejarlo, si no seleccionar el primero
+                    // Revalidar activePayroll: si existe en la nueva lista dejarlo, si no
+                    // seleccionar el primer tipo de nómina disponible.
                     const payrolls = response[1].payrolls;
                     const payrollExists = payrolls.some((p) => p.typeNom === this.activePayroll);
                     if (!payrollExists) {
                         this.setPayroll(payrolls[0]?.typeNom || 0);
                     }
 
-                    // Revalidar activePeriod: si existe en los periodos filtrados dejarlo, si no seleccionar el más cercano a hoy
+                    // Revalidar activePeriod: dejarlo si existe en los periodos del tipo de
+                    // nómina seleccionado; si no, seleccionar el primer periodo de corte.
                     const periods = this._listPeriods().filter((p) => p.typePayroll === this.activePayroll);
                     const periodExists = periods.some((p) => p.numPeriod === this.activePeriod);
                     if (!periodExists) {
-                        const today = dayjs();
-                        const closest = periods.reduce<IPrenominaPeriod | null>((best, p) => {
-                            if (!best) return p;
-                            const bestDiff = Math.abs(dayjs(best.startDate).diff(today));
-                            const currDiff = Math.abs(dayjs(p.startDate).diff(today));
-                            return currDiff < bestDiff ? p : best;
-                        }, null);
-                        this.setPeriod(closest?.numPeriod || 0);
+                        this.setPeriod(periods[0]?.numPeriod || 0);
                     }
+
+                    // Catálogos listos: habilita la carga reactiva de datos.
+                    this.dataLoaded$.next(true);
                 },
                 error: (err) => {
                     const message = err.error?.message || 'Ocurrió un error, por favor intentalo más tarde';
@@ -408,6 +437,13 @@ export class AttendaceComponent implements OnInit, OnDestroy {
         this.activePayroll = id;
         this.activePayroll$.next(id);
         window.localStorage.setItem(SysKey.ActiveTypeNom, id.toString());
+
+        // Al cambiar el tipo de nómina, asegurar que el periodo seleccionado pertenezca a
+        // esa nómina; si no, seleccionar el primer periodo de corte disponible.
+        const periods = this.listPeriods;
+        if (periods.length && !periods.some((p) => p.numPeriod === this.activePeriod)) {
+            this.setPeriod(periods[0].numPeriod);
+        }
     }
 
     public get period(): IPrenominaPeriod | undefined {
@@ -461,6 +497,12 @@ export class AttendaceComponent implements OnInit, OnDestroy {
         });
     }
 
+    // El turno nocturno se define en el horario asignado al empleado y el backend lo
+    // refleja igual en todos los días; basta con detectar cualquier día marcado.
+    public isNightShiftEmployee(employee: IEmployeeAttendance): boolean {
+        return employee.attendances?.some((attendance) => attendance.isNightShift) ?? false;
+    }
+
     public setIncidencia(incidentCode: string, employeeCode: number, company: number, attendance: IAttendance, customValue?: number, notes?: string): void {
         const identifyIncident = `${employeeCode}${company}${attendance.date}`;
 
@@ -486,37 +528,45 @@ export class AttendaceComponent implements OnInit, OnDestroy {
                 next: (response) => {
                     const { assistanceIncidents } = attendance;
 
-                    if (!response.itemIncidentCode.isAdditional) {
-                        attendance.incidentCode = incidentCode;
-                        attendance.assistanceIncidents = assistanceIncidents
-                            ? assistanceIncidents.map((item) => {
-                                if (!item.isAdditional) {
-                                    return {
-                                        ...item,
-                                        incidentCode: response.incidentCode,
-                                        label: response.itemIncidentCode.label,
-                                        isAdditional: response.itemIncidentCode.isAdditional,
-                                    };
+                    // Las incidencias que requieren aprobación quedan pendientes y NO deben mostrarse
+                    // en asistencia (ni en la celda ni en el detalle del día) hasta ser aprobadas.
+                    if (response.approved) {
+                        if (!response.itemIncidentCode.isAdditional) {
+                            attendance.incidentCode = incidentCode;
+                            attendance.assistanceIncidents = assistanceIncidents
+                                ? assistanceIncidents.map((item) => {
+                                    if (!item.isAdditional) {
+                                        return {
+                                            ...item,
+                                            incidentCode: response.incidentCode,
+                                            label: response.itemIncidentCode.label,
+                                            isAdditional: response.itemIncidentCode.isAdditional,
+                                        };
+                                    }
+                                    return item;
+                                })
+                                : [{
+                                    ...response,
+                                    label: response.itemIncidentCode.label,
+                                    isAdditional: response.itemIncidentCode.isAdditional,
+                                }];
+                        } else {
+                            attendance.assistanceIncidents = [
+                                ...(assistanceIncidents || []),
+                                {
+                                    ...response,
+                                    label: response.itemIncidentCode.label,
+                                    isAdditional: response.itemIncidentCode.isAdditional,
                                 }
-                                return item;
-                            })
-                            : [{
-                                ...response,
-                                label: response.itemIncidentCode.label,
-                                isAdditional: response.itemIncidentCode.isAdditional,
-                            }];
-                    } else {
-                        attendance.assistanceIncidents = [
-                            ...(assistanceIncidents || []),
-                            {
-                                ...response,
-                                label: response.itemIncidentCode.label,
-                                isAdditional: response.itemIncidentCode.isAdditional,
-                            }
-                        ];
+                            ];
+                        }
                     }
 
-                    this.showSuccess('Incidencia registrada');
+                    this.showSuccess(
+                        response.approved
+                            ? 'Incidencia registrada'
+                            : 'Incidencia registrada, pendiente de aprobación'
+                    );
                 },
                 error: (err) => {
                     const message = err.error?.message || 'Ocurrió un error, por favor intentalo más tarde';

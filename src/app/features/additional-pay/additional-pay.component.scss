@@ -1,4 +1,22 @@
 app-additional-pay {
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 48px 0;
+    color: #9aa0ac;
+    font-size: 14px;
+
+    mat-icon {
+      font-size: 44px;
+      width: 44px;
+      height: 44px;
+      color: #c5cad3;
+    }
+  }
+
   .ctn-filter {
     display: flex;
     justify-content: space-between;

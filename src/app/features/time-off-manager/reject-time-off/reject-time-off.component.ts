@@ -24,8 +24,13 @@ export class RejectTimeOffComponent {
     readonly data = inject<IRejectTimeOff>(MAT_DIALOG_DATA);
 
     public rejectForm = new FormGroup({
-        comment: new FormControl('', { validators: [Validators.required] }),
+        // El motivo sólo es obligatorio al rechazar un permiso aprobado; al eliminar uno pendiente no aplica.
+        comment: new FormControl('', { validators: this.data.mode === 'reject' ? [Validators.required] : [] }),
     });
+
+    public get isDelete(): boolean {
+        return this.data.mode === 'delete';
+    }
 
     public get isGroup(): boolean {
         return this.data.groupDates.length > 1;

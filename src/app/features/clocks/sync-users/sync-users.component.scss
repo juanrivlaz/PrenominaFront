@@ -1,0 +1,192 @@
+app-sync-users {
+    mat-dialog-content {
+        min-width: 480px;
+        max-width: 640px;
+    }
+
+    .dialog-hint {
+        margin: 0 0 14px;
+        font-size: 13px;
+        color: #686f7c;
+
+        strong {
+            color: var(--second-color);
+        }
+    }
+
+    .route-info {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 16px;
+        padding: 12px 14px;
+        background-color: #f6f8fb;
+        border: 1px solid #e4e8ef;
+        border-radius: 10px;
+
+        .route-clock {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+
+            mat-icon {
+                flex-shrink: 0;
+                color: var(--second-color);
+            }
+
+            .route-text {
+                display: flex;
+                flex-direction: column;
+                min-width: 0;
+
+                .role {
+                    font-size: 11px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.4px;
+                    color: #9aa0ac;
+                }
+
+                .name {
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: #2c3140;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+            }
+        }
+
+        .route-arrow {
+            flex-shrink: 0;
+            color: #b3b8c2;
+        }
+
+        .route-select {
+            flex: 1;
+            min-width: 0;
+        }
+    }
+
+    .ctn-search {
+        margin-bottom: 12px;
+
+        .input-search {
+            position: relative;
+
+            input {
+                width: 100%;
+                padding: 8px 11px;
+                padding-right: 32px;
+                border-radius: 8px;
+                border: 1px solid #a6aab2;
+                color: #1f384c;
+
+                &:disabled {
+                    background-color: #f3f5f7;
+                }
+            }
+
+            mat-icon {
+                position: absolute;
+                top: 6px;
+                right: 7px;
+                color: #a6aab2;
+            }
+        }
+    }
+
+    .state-message {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        padding: 36px 0;
+        color: #9aa0ac;
+        font-size: 14px;
+
+        &.empty mat-icon {
+            font-size: 40px;
+            width: 40px;
+            height: 40px;
+            color: #c5cad3;
+        }
+    }
+
+    .table-wrapper {
+        max-height: 48vh;
+        overflow: auto;
+        border: 1px solid #e4e8ef;
+        border-radius: 10px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+
+        thead th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            font-weight: 500;
+            padding: 10px 11px;
+            text-align: left;
+            background-color: #ecf0f3 !important;
+            color: #686f7c !important;
+        }
+
+        tbody tr {
+            cursor: pointer;
+            background-color: white !important;
+
+            &:nth-child(even) {
+                background-color: #f9fbfc !important;
+            }
+
+            &:hover {
+                background-color: #e8edff !important;
+            }
+
+            td {
+                padding: 6px 11px;
+                border-bottom: 1px solid #e4e8ef !important;
+
+                &.enabled {
+                    text-align: center;
+                }
+            }
+        }
+    }
+
+    mat-dialog-actions {
+        gap: 10px;
+        padding: 12px 24px;
+
+        .selection-count {
+            margin-right: auto;
+            font-size: 13px;
+            color: #9aa0ac;
+        }
+
+        .sync-btn {
+            background-color: var(--second-color);
+            color: white;
+
+            mat-spinner {
+                display: inline-block;
+                margin-right: 6px;
+
+                circle {
+                    stroke: white;
+                }
+            }
+
+            &[disabled] {
+                background-color: #c5cad3;
+                color: white;
+            }
+        }
+    }
+}

@@ -4,11 +4,6 @@
         <h3>Reportes</h3>
         <span class="subtitle mb-24">Generación de reportes varios</span>
 
-        <div class="report-context">
-            <span><strong>Empresa:</strong> {{ activeCompanyName || '—' }}</span>
-            <span><strong>Departamento:</strong> {{ activeTenantName }}</span>
-        </div>
-
         <div class="ctn-filter">
             <div class="ctn-period">
                 <button class="btn-filter-tn" mat-flat-button [matMenuTriggerFor]="menuTypeNom" matTooltip="Tipo De Nómina">
@@ -73,6 +68,10 @@
                             <img src="assets/icons/xls.png" alt="xlsx" class="mr-12" width="25px">
                             EXCEL
                         </button>
+                        <button mat-menu-item (click)="downloadReport(0)">
+                            <img src="assets/icons/pdf.png" alt="pdf" class="mr-12" width="25px">
+                            PDF
+                        </button>
                     </mat-menu>
                 </div>
             </div>
@@ -100,6 +99,9 @@
                 [typeNomina]="activePayroll"
                 [numPeriod]="activePeriod"
                 [searchTerm]="searchControl.value || ''"
+                [tenant]="activeTenantId()"
+                [startDate]="filterStart()"
+                [endDate]="filterEnd()"
                 (onRefresh)="get()">
             </app-overtimes-table>
         </div>

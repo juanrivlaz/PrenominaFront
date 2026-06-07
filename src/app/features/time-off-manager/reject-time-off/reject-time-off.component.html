@@ -1,34 +1,44 @@
-<h2 mat-dialog-title>Rechazar Permiso</h2>
+<h2 mat-dialog-title>{{ isDelete ? 'Eliminar Permiso' : 'Rechazar Permiso' }}</h2>
 <mat-dialog-content>
     <form [formGroup]="rejectForm">
         @if (isGroup) {
-            <p>Se rechazará el grupo de permisos <b>{{ data.incidentCode }}</b> de <b>{{ data.employeeName }}</b> de los siguientes días:</p>
+            <p>Se {{ isDelete ? 'eliminará' : 'rechazará' }} el grupo de permisos <b>{{ data.incidentCode }}</b> de <b>{{ data.employeeName }}</b> de los siguientes días:</p>
             <ul>
                 @for (date of datesFormatted; track $index) {
                     <li>{{ date }}</li>
                 }
             </ul>
         } @else {
-            <p>Se rechazará el permiso <b>{{ data.incidentCode }}</b> de <b>{{ data.employeeName }}</b> del día:</p>
+            <p>Se {{ isDelete ? 'eliminará' : 'rechazará' }} el permiso <b>{{ data.incidentCode }}</b> de <b>{{ data.employeeName }}</b> del día:</p>
             <p><b>{{ datesFormatted[0] }}</b></p>
         }
 
-        <mat-form-field class="mt-12">
-            <mat-label>Motivo del rechazo</mat-label>
-            <textarea matInput formControlName="comment" rows="3" placeholder="Ingrese el motivo del rechazo"></textarea>
-            @if (rejectForm.controls.comment.hasError('required')) {
-                <mat-error>El motivo es requerido</mat-error>
-            }
-        </mat-form-field>
+        @if (!isDelete) {
+            <mat-form-field class="mt-12">
+                <mat-label>Motivo del rechazo</mat-label>
+                <textarea matInput formControlName="comment" rows="3" placeholder="Ingrese el motivo del rechazo"></textarea>
+                @if (rejectForm.controls.comment.hasError('required')) {
+                    <mat-error>El motivo es requerido</mat-error>
+                }
+            </mat-form-field>
+        }
     </form>
 </mat-dialog-content>
 <mat-dialog-actions>
     <button mat-button (click)="onCancel()">Cancelar</button>
     <button mat-flat-button color="warn" [disabled]="rejectForm.invalid" (click)="submit()">
-        @if (isGroup) {
-            Rechazar {{ data.groupDates.length }} permisos
+        @if (isDelete) {
+            @if (isGroup) {
+                Eliminar {{ data.groupDates.length }} permisos
+            } @else {
+                Eliminar
+            }
         } @else {
-            Rechazar
+            @if (isGroup) {
+                Rechazar {{ data.groupDates.length }} permisos
+            } @else {
+                Rechazar
+            }
         }
     </button>
 </mat-dialog-actions>

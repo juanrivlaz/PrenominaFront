@@ -1,6 +1,12 @@
 import { AbsenceRequestStatus } from '../enum/absence-request-status';
 
-export interface IEmployeeAbsenceRequests {
+export interface IAbsenceRequestDayDetail {
+  date: Date;
+  overtimeMinutes: number;
+  overtimeFormatted: string;
+}
+
+export interface IEmployeeAbsenceRequestDetail {
   id: string;
   employeeName: string;
   employeeCode: number;
@@ -9,15 +15,15 @@ export interface IEmployeeAbsenceRequests {
   incidentDescription: string;
   startDate: Date;
   endDate: Date;
-  status: AbsenceRequestStatus;
-  statusLabel: string;
-  createdAt: Date;
   notes?: string;
-  sortNote?: string;
-  // Multi-approval flow: if the code has approvers, all of them must approve.
+  status: AbsenceRequestStatus;
+  createdAt: Date;
   requiresApproval: boolean;
   totalApprovers: number;
   approvedCount: number;
-  alreadyApprovedByMe: boolean;
-  canApprove: boolean;
+  daysCount: number;
+  usedOvertime: boolean;
+  totalOvertimeMinutes: number;
+  totalOvertimeFormatted: string;
+  days: Array<IAbsenceRequestDayDetail>;
 }

@@ -107,6 +107,8 @@ export class OvertimeHistoryDialogComponent implements OnInit, OnDestroy {
                 return 'type-hour-bank';
             case OvertimeMovementType.ExternalEntry:
                 return 'type-external';
+            case OvertimeMovementType.UsedForTimeOff:
+                return 'type-time-off';
             default:
                 return '';
         }

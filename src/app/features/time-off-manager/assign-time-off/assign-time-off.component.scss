@@ -2,4 +2,242 @@ app-assign-time-off {
     form, mat-form-field {
         width: 100%;
     }
+
+    .overtime-card {
+        margin: 16px 0;
+        padding: 16px;
+        border: 1px solid #e3e6f0;
+        border-radius: 14px;
+        background: linear-gradient(180deg, #f7f8ff 0%, #ffffff 100%);
+        transition: border-color .2s ease, background .2s ease;
+
+        &__balance {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        &__badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            flex: 0 0 auto;
+            border-radius: 50%;
+            background: rgba(91, 107, 255, .12);
+
+            mat-icon {
+                color: #5b6bff;
+            }
+        }
+
+        &__info {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            flex: 1;
+        }
+
+        &__title {
+            font-size: 13px;
+            color: #6b7280;
+            line-height: 1.2;
+        }
+
+        &__value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1f2430;
+            line-height: 1.3;
+        }
+
+        &__chip {
+            flex: 0 0 auto;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #3949c4;
+            background: rgba(91, 107, 255, .12);
+        }
+
+        &__toggle {
+            display: block;
+            margin-top: 12px;
+        }
+
+        &__hint {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin: 12px 0 0;
+            font-size: 13px;
+            color: #6b7280;
+
+            mat-icon {
+                font-size: 18px;
+                width: 18px;
+                height: 18px;
+                color: #9aa1ad;
+            }
+        }
+
+        &--empty {
+            background: #f9fafb;
+            border-color: #e5e7eb;
+
+            .overtime-card__badge {
+                background: #eceef2;
+
+                mat-icon {
+                    color: #9aa1ad;
+                }
+            }
+
+            .overtime-card__value {
+                color: #6b7280;
+            }
+
+            .overtime-card__chip {
+                color: #6b7280;
+                background: #eceef2;
+            }
+        }
+    }
+
+    .overtime-days {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin: 16px 0;
+
+        .overtime-day {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            border: 1px solid #e8eaf0;
+            border-radius: 12px;
+            background: #fbfbfe;
+            transition: border-color .2s ease, box-shadow .2s ease;
+
+            &:hover {
+                border-color: #c7ccff;
+                box-shadow: 0 2px 8px rgba(91, 107, 255, .08);
+            }
+
+            &__index {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 26px;
+                height: 26px;
+                flex: 0 0 auto;
+                border-radius: 50%;
+                background: rgba(91, 107, 255, .12);
+                color: #3949c4;
+                font-size: 13px;
+                font-weight: 600;
+            }
+
+            &__label {
+                flex: 1;
+                min-width: 0;
+                font-size: 14px;
+                text-transform: capitalize;
+            }
+
+            &__time {
+                display: flex;
+                gap: 8px;
+                flex: 0 0 auto;
+
+                mat-form-field {
+                    width: 84px;
+                }
+
+                input {
+                    text-align: center;
+                }
+            }
+        }
+    }
+
+    .overtime-summary {
+        display: flex;
+        align-items: stretch;
+        margin: 16px 0 8px;
+        padding: 14px 16px;
+        border-radius: 12px;
+        background: rgba(91, 107, 255, .07);
+
+        &__item {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            flex: 1;
+
+            &--right {
+                align-items: flex-end;
+                text-align: right;
+            }
+        }
+
+        &__label {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        &__value {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1f2430;
+        }
+
+        &__divider {
+            width: 1px;
+            margin: 0 16px;
+            background: rgba(91, 107, 255, .2);
+        }
+
+        &--error {
+            background: rgba(211, 47, 47, .08);
+
+            .overtime-summary__value {
+                color: #d32f2f;
+            }
+        }
+    }
+
+    .overtime-error {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: #d32f2f;
+        font-size: 13px;
+        margin: 0 0 8px;
+
+        mat-icon {
+            font-size: 18px;
+            width: 18px;
+            height: 18px;
+        }
+    }
+
+    .absence-hint {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin: 4px 0 8px 32px;
+        font-size: 13px;
+        color: #6b7280;
+
+        mat-icon {
+            font-size: 18px;
+            width: 18px;
+            height: 18px;
+            color: #5b6bff;
+        }
+    }
 }

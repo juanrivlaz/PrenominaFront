@@ -64,3 +64,35 @@ ngOnDestroy() { this.destroy$.next(); this.destroy$.complete(); }
 
 ## Contexto Detallado
 Ver @CLAUDE_CONTEXT.md para documentación completa del proyecto.
+
+# UI/UX Requirements
+
+For every task involving:
+- UI design
+- UX improvements
+- Frontend development
+- React components
+- Vue components
+- Angular components
+- Tailwind CSS
+- Mobile interfaces
+- Responsive layouts
+
+Always apply the frontend-design skill before generating code.
+
+Requirements:
+- Modern SaaS design
+- Mobile-first
+- WCAG AA accessibility
+- Responsive design
+- Consistent spacing using 8px grid
+- Clear visual hierarchy
+- Loading states
+- Empty states
+- Error states
+- Dark mode support
+- Use shadcn/ui components when possible
+- Use Tailwind CSS best practices
+
+Never generate generic UI.
+Always explain UX decisions when significant layout changes are made.

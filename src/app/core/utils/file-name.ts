@@ -14,7 +14,7 @@ export function buildReportFileName(
 ): string {
     const segments = [base];
     if (parts.tenant) segments.push(sanitizeForFileName(parts.tenant));
-    if (parts.period !== undefined && parts.period !== null) segments.push(`p${parts.period}`);
+    if (parts.period !== undefined && parts.period !== null) segments.push(String(parts.period));
     if (parts.year !== undefined && parts.year !== null) segments.push(String(parts.year));
     return `${segments.join('_')}.${extension}`;
 }

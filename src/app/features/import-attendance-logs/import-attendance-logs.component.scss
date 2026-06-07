@@ -1,6 +1,48 @@
 @use '../../core/scss/app';
 
 app-import-attendance-logs {
+    .ctn-template {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+        max-width: 450px;
+        margin: 36px auto 0;
+        padding: 16px;
+        border: 1px solid #e3e6f0;
+        border-radius: 12px;
+        background: #f7f8ff;
+
+        &__info {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            flex: 1;
+            min-width: 220px;
+
+            mat-icon {
+                flex: 0 0 auto;
+                color: var(--primary-color);
+            }
+
+            p {
+                margin: 0 0 2px;
+                font-weight: 600;
+                font-size: 14px;
+            }
+
+            span {
+                font-size: 12px;
+                color: #6b7280;
+            }
+        }
+
+        button {
+            flex: 0 0 auto;
+        }
+    }
+
     .ctn-input-upload {
         padding: 30px;
         border: 2px dashed #d2d2d2;

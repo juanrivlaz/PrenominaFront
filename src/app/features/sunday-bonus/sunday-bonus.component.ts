@@ -14,6 +14,8 @@ import { IWorkedDayOffs } from "@core/models/worked-day-offs.interface";
 import { TypeFileDownload } from "@core/models/enum/type-file-download";
 import { SysKey } from "@core/models/enum/sys-key";
 import { AppConfigService } from "@core/services/app-config/app-config.service";
+import { AuthService } from "@core/services/auth/auth.service";
+import { buildReportFileName } from "@core/utils/file-name";
 
 @Component({
     selector: 'app-sunday-bonus',
@@ -56,7 +58,8 @@ export class SundayBonusComponent implements OnInit {
     constructor(
         private readonly dateService: DatesService,
         private readonly service: SundayBonusService,
-        private readonly configService: AppConfigService
+        private readonly configService: AppConfigService,
+        private readonly authService: AuthService
     ) {}
 
     ngOnInit(): void {
@@ -135,7 +138,11 @@ export class SundayBonusComponent implements OnInit {
                 const link = document.createElement('a');
                 link.href = urlBlob;
                 var type = typeFileDownload === TypeFileDownload.XLSX ? 'xlsx' : 'pdf';
-                link.download = `worked-sunday.${type}`;
+                link.download = buildReportFileName('reporte_prima_dominical', {
+                    tenant: this.authService.getActiveTenantName(),
+                    period: this.period?.numPeriod,
+                    year: this.authService.year.value
+                }, type);
                 link.click();
 
                 window.URL.revokeObjectURL(urlBlob);

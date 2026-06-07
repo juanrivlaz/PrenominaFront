@@ -13,6 +13,17 @@ app-auth-login {
       width: fit-content;
       text-align: center;
 
+      .ctn-icon {
+        img.logo {
+          // Mantener proporción del logo: altura fija y ancho automático (con tope),
+          // para que imágenes no cuadradas no se vean deformadas ni diminutas.
+          height: 48px;
+          width: auto;
+          max-width: 240px;
+          object-fit: contain;
+        }
+      }
+
       form {
         padding: 36px;
         background-color: white;

@@ -1,9 +1,23 @@
 <div class="container module-container">
+    <div class="ctn-template">
+        <div class="ctn-template__info">
+            <mat-icon>help_outline</mat-icon>
+            <div>
+                <p>¿No sabes cómo llenar el archivo?</p>
+                <span>Descarga la plantilla de ejemplo con el formato requerido: <b>Código de empleado</b>, <b>Hora de checada</b> y <b>Fecha</b>.</span>
+            </div>
+        </div>
+        <button mat-stroked-button color="primary" type="button" (click)="downloadTemplate()">
+            <mat-icon>download</mat-icon>
+            Descargar plantilla
+        </button>
+    </div>
+
     <div class="ctn-input-upload">
         <mat-icon>upload_file</mat-icon>
         <p>Arrastre o seleccione un archivo</p>
-        <span>Formatos permitidos: .txt, .xls</span>
-        <input class="file-input" type="file" (change)="onFileSelected($event)">
+        <span>Formatos permitidos: .csv, .xlsx</span>
+        <input class="file-input" type="file" accept=".csv,.xlsx" (change)="onFileSelected($event)">
     </div>
 
     <div class="ctn-process-files">

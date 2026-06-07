@@ -98,6 +98,15 @@
             />
             EXCEL
           </button>
+          <button mat-menu-item (click)="downloadReport(2)">
+            <img
+              src="assets/icons/xls.png"
+              alt="apsi"
+              class="mr-12"
+              width="25px"
+            />
+            APSI
+          </button>
         </mat-menu>
       </div>
     </div>
@@ -162,4 +171,11 @@
     <tr mat-header-row *matHeaderRowDef="columns"></tr>
     <tr mat-row *matRowDef="let row; columns: columns"></tr>
   </table>
+
+  @if (dataSource.data.length === 0) {
+    <div class="empty-state">
+      <mat-icon>inbox</mat-icon>
+      <span>No hay registros para el periodo seleccionado.</span>
+    </div>
+  }
 </div>

@@ -204,6 +204,11 @@ export class AdditionalPayComponent implements OnInit {
       return;
     }
 
+    if (this.dataSource.data.length === 0) {
+      this.showMessage('No hay registros para exportar en este periodo', true);
+      return;
+    }
+
     this.configService.setLoading(true);
     this.additionalPayService.downloadAdditionalPays(this.payroll.typeNom, this.period.numPeriod, typeFileDownload).pipe(finalize(() => {
       this.configService.setLoading(false);
@@ -212,8 +217,9 @@ export class AdditionalPayComponent implements OnInit {
         const urlBlob = window.URL.createObjectURL(new Blob([response]));
         const link = document.createElement('a');
         link.href = urlBlob;
-        var type = typeFileDownload === TypeFileDownload.XLSX ? 'xlsx' : 'pdf';
-        link.download = `pagos_adicionales.${type}`;
+        const extension = typeFileDownload === TypeFileDownload.PDF ? 'pdf' : 'xlsx';
+        const suffix = typeFileDownload === TypeFileDownload.APSI ? '_apsi' : '';
+        link.download = `pagos_adicionales${suffix}.${extension}`;
         link.click();
 
         window.URL.revokeObjectURL(urlBlob);

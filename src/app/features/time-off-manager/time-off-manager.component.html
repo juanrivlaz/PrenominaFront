@@ -54,8 +54,8 @@
                     <div class="help-content" (click)="$event.stopPropagation()">
                         <h4>Asignar permisos</h4>
                         <p>Click en un dia para seleccionar inicio, luego click en otro dia para seleccionar fin. Se abrira un dialogo para elegir el codigo de incidencia.</p>
-                        <h4>Rechazar permisos</h4>
-                        <p>Click derecho sobre una celda con permiso asignado (verde) para rechazarlo. Si el permiso fue asignado en grupo, se rechazaran todos los dias del grupo.</p>
+                        <h4>Rechazar o eliminar permisos</h4>
+                        <p>Click derecho sobre una celda con permiso asignado (verde). Si el permiso ya fue aprobado se rechazara (pidiendo un motivo); si aun esta pendiente se eliminara. Si el permiso fue asignado en grupo, la accion aplica a todos los dias del grupo.</p>
                         <h4>Ver motivo de rechazo</h4>
                         <p>Pase el cursor sobre una celda rechazada (roja) para ver el motivo, o haga click derecho.</p>
                         <h4>Editar permiso rechazado</h4>
@@ -100,7 +100,7 @@
                     [matTooltip]="isRejected(employee.codigo, date.date)
                         ? 'Rechazado: ' + getRejectionComment(employee.codigo, date.date)
                         : getIncidentForDate(employee.codigo, date.date)
-                            ? 'Click derecho para rechazar'
+                            ? (isApproved(employee.codigo, date.date) ? 'Click derecho para rechazar' : 'Click derecho para eliminar')
                             : ''"
                     class="day d-{{ date.key }}"
                 >

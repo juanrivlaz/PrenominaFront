@@ -98,6 +98,12 @@
                 <div class="head">
                     <div class="name">
                         <p>Cod. {{ employee.codigo }} | {{ employee.name }} {{ employee.lastName }} {{ employee.mLastName }} | {{ employee.activity }}</p>
+                        @if (isNightShiftEmployee(employee)) {
+                            <span class="night-shift-badge" matTooltip="Este empleado tiene horario nocturno">
+                                <mat-icon>nightlight</mat-icon>
+                                Nocturno
+                            </span>
+                        }
                     </div>
                     <div class="actions">
                         <button [disabled]="closedPeriod" matTooltip="Asignar incidencias especiales" mat-button (click)="asignIncident(employee)">Asig. Incidencia</button>

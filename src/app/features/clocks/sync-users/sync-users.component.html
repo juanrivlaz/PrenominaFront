@@ -1,0 +1,100 @@
+<h2 mat-dialog-title>{{ title() }}</h2>
+<mat-dialog-content>
+    @if (data.mode === 'clock') {
+        <div class="route-info">
+            <div class="route-clock origin">
+                <mat-icon>dns</mat-icon>
+                <div class="route-text">
+                    <span class="role">Origen</span>
+                    <span class="name">{{ data.clock.label }}</span>
+                </div>
+            </div>
+            <mat-icon class="route-arrow">arrow_forward</mat-icon>
+            <mat-form-field appearance="outline" class="route-select" subscriptSizing="dynamic">
+                <mat-label>Reloj destino</mat-label>
+                <mat-select [value]="selectedTarget()" (selectionChange)="selectedTarget.set($event.value)">
+                    @for (target of targets; track target.id) {
+                        <mat-option [value]="target">{{ target.label }}</mat-option>
+                    }
+                </mat-select>
+            </mat-form-field>
+        </div>
+    } @else {
+        <p class="dialog-hint">
+            Selecciona los registros que deseas sincronizar hacia el reloj
+            <strong>{{ data.clock.label }}</strong>.
+        </p>
+    }
+
+    <div class="ctn-search">
+        <div class="input-search">
+            <input type="search" name="search" placeholder="Buscar por número o nombre" (keyup)="handleChangeSearch($event)" [disabled]="loading()">
+            <mat-icon>search</mat-icon>
+        </div>
+    </div>
+
+    @if (loading()) {
+        <div class="state-message">
+            <mat-spinner diameter="32"></mat-spinner>
+            <span>Cargando usuarios…</span>
+        </div>
+    } @else {
+        @if (dataSource.data.length === 0) {
+            <div class="state-message empty">
+                <mat-icon>group_off</mat-icon>
+                <span>No hay usuarios disponibles para sincronizar.</span>
+            </div>
+        } @else {
+            <div class="table-wrapper">
+                <table mat-table [dataSource]="dataSource">
+                    <ng-container matColumnDef="select">
+                        <th mat-header-cell *matHeaderCellDef class="pl-0 pr-0">
+                            <mat-checkbox (change)="toggleAllRows()"
+                                          [checked]="selection.hasValue() && isAllSelected()"
+                                          [indeterminate]="selection.hasValue() && !isAllSelected()">
+                            </mat-checkbox>
+                        </th>
+                        <td mat-cell *matCellDef="let row">
+                            <mat-checkbox (click)="$event.stopPropagation()"
+                                          (change)="toggleRow(row)"
+                                          [checked]="selection.isSelected(row)">
+                            </mat-checkbox>
+                        </td>
+                    </ng-container>
+
+                    <ng-container matColumnDef="employeeNumber">
+                        <th mat-header-cell *matHeaderCellDef> Número Empleado </th>
+                        <td mat-cell *matCellDef="let row"> {{ row.enrollNumber }} </td>
+                    </ng-container>
+                    <ng-container matColumnDef="name">
+                        <th mat-header-cell *matHeaderCellDef> Nombre </th>
+                        <td mat-cell *matCellDef="let row"> {{ row.name }} </td>
+                    </ng-container>
+                    <ng-container matColumnDef="privilege">
+                        <th mat-header-cell *matHeaderCellDef> Privilegios </th>
+                        <td mat-cell *matCellDef="let row"> {{ row.privilege }} </td>
+                    </ng-container>
+                    <ng-container matColumnDef="enable">
+                        <th mat-header-cell *matHeaderCellDef> Habilitado </th>
+                        <td mat-cell *matCellDef="let row" class="enabled"> {{ row.enabled ? '✅' : '❌' }} </td>
+                    </ng-container>
+
+                    <tr mat-header-row *matHeaderRowDef="columnTable"></tr>
+                    <tr mat-row *matRowDef="let row; columns: columnTable;" (click)="toggleRow(row)"></tr>
+                </table>
+            </div>
+        }
+    }
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+    <span class="selection-count">{{ selectedCount() }} seleccionado(s)</span>
+    <button mat-button mat-dialog-close [disabled]="syncing()">Cancelar</button>
+    <button mat-flat-button class="sync-btn" (click)="sync()" [disabled]="!canSync()">
+        @if (syncing()) {
+            <mat-spinner diameter="18"></mat-spinner>
+            Sincronizando…
+        } @else {
+            <ng-container>Sincronizar ({{ selectedCount() }})</ng-container>
+        }
+    </button>
+</mat-dialog-actions>

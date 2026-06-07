@@ -7,6 +7,7 @@ import { IAssignTimeOff } from "./assign-time-off/assign-time-off.interface";
 import { ISyncIncapacityOutput } from "@core/models/sync-incapacity-output.interface";
 import { IAssignTimeOffOutput } from "./assign-time-off/assign-time-off-output.interface";
 import { IAssistanceIncident } from "@core/models/assistance-incident.interface";
+import { IOvertimeBalance } from "@core/models/overtime-balance.interface";
 
 @Injectable()
 export class TimeOffManagerService {
@@ -31,12 +32,23 @@ export class TimeOffManagerService {
         return this.httpService.post<IEmployessDayOff>('/DayOffs/register-to-user', form);
     }
 
+    public getOvertimeBalance(employeeCode: number): Observable<IOvertimeBalance> {
+        return this.httpService.get<IOvertimeBalance>(`/OvertimeAccumulation/balance/${employeeCode}`);
+    }
+
     public rejectDayOff(form: {
         employeeCode: number;
         date: string;
         comment: string;
     }): Observable<Array<IAssistanceIncident>> {
         return this.httpService.post<Array<IAssistanceIncident>>('/DayOffs/reject', form);
+    }
+
+    public deletePermission(form: {
+        employeeCode: number;
+        date: string;
+    }): Observable<Array<IAssistanceIncident>> {
+        return this.httpService.post<Array<IAssistanceIncident>>('/DayOffs/delete-permission', form);
     }
 
     public syncIncapacity(form: {

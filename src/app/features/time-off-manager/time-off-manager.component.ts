@@ -16,6 +16,7 @@ import { IPrenominaPeriod } from "@core/models/prenomina-period.interface";
 import { IIncidentCode } from "@core/models/incident-code.interface";
 import dayjs from "dayjs";
 import { IEmployee } from "@core/models/employee.interface";
+import { IEmployessDayOff } from "@core/models/employees-day-off.interface";
 import { TimeOffManagerService } from "./time-off-manager.service";
 import { AppConfigService } from "@core/services/app-config/app-config.service";
 import { FormControl, ReactiveFormsModule } from "@angular/forms";
@@ -63,7 +64,7 @@ export class TimeOffManagerComponent implements OnInit, OnDestroy {
     public listIncidentCodesAditional: WritableSignal<Array<IIncidentCode>> = signal([]);
     public activePayroll: WritableSignal<number> = signal(0);
     public activePeriod: WritableSignal<number> = signal(0);
-    public listEmployees: WritableSignal<Array<IEmployee>> = signal([]);
+    public listEmployees: WritableSignal<Array<IEmployessDayOff>> = signal([]);
     public listDates: WritableSignal<Array<{
         day: string,
         date: string,
@@ -72,6 +73,7 @@ export class TimeOffManagerComponent implements OnInit, OnDestroy {
     }>> = signal([]);
     public attendancesIncidents: Map<string, string> = new Map<string, string>();
     public rejectedIncidents: Map<string, string> = new Map<string, string>();
+    public approvedIncidents: Map<string, boolean> = new Map<string, boolean>();
     public incidentGroups: Map<string, Array<string>> = new Map<string, Array<string>>();
     public searchControl = new FormControl();
     public paginatorDetails: WritableSignal<{
@@ -128,12 +130,14 @@ export class TimeOffManagerComponent implements OnInit, OnDestroy {
                                 key: `${employee.codigo}:${ai.date}`,
                                 code: ai.incidentCode,
                                 rejected: ai.rejected,
+                                approved: ai.approved,
                                 requestGroupId: ai.requestGroupId,
                                 date: String(ai.date),
                                 employeeCode: employee.codigo,
                             })))
                             .flat();
                         this.attendancesIncidents = new Map(listAttendaceIncidents.map((item) => [item.key, item.code]));
+                        this.approvedIncidents = new Map(listAttendaceIncidents.map((item) => [item.key, item.approved]));
                         this.rejectedIncidents = new Map<string, string>();
                         for (const item of listAttendaceIncidents) {
                             if (item.rejected) {
@@ -220,8 +224,7 @@ export class TimeOffManagerComponent implements OnInit, OnDestroy {
                     // incapacidades, etc.) se manejan en otros flujos.
                     this.listIncidentCodes.set(response.incidentCodes.filter((item) =>
                         !item.isAdditional &&
-                        item.availableForTimeOff &&
-                        (item.label || '').toLowerCase().includes('permiso')
+                        item.availableForTimeOff
                     ));
                     this.listIncidentCodesAditional.set(response.incidentCodes.filter((item) => item.isAdditional && item.availableForTimeOff));
                 },
@@ -270,7 +273,29 @@ export class TimeOffManagerComponent implements OnInit, OnDestroy {
         return this.itemsTouches.indexOf(id) >= 0;
     }
 
-    public assignTimeOff(assignTimeOff: IAssignTimeOff): void {
+    public assignTimeOff(assignTimeOff: Omit<IAssignTimeOff, 'availableOvertimeMinutes' | 'availableOvertimeFormatted'>): void {
+        this.configService.setLoading(true);
+
+        this.service.getOvertimeBalance(assignTimeOff.employeeCode)
+            .pipe(
+                finalize(() => this.configService.setLoading(false)),
+                takeUntil(this.destroy$)
+            )
+            .subscribe({
+                next: (balance) => this.openAssignTimeOffDialog({
+                    ...assignTimeOff,
+                    availableOvertimeMinutes: balance.availableMinutes,
+                    availableOvertimeFormatted: balance.availableFormatted,
+                }),
+                error: () => this.openAssignTimeOffDialog({
+                    ...assignTimeOff,
+                    availableOvertimeMinutes: 0,
+                    availableOvertimeFormatted: '0 hrs 00 min',
+                }),
+            });
+    }
+
+    private openAssignTimeOffDialog(assignTimeOff: IAssignTimeOff): void {
         const dialogRef = this.dialog.open<AssignTimeOffComponent, IAssignTimeOff, IAssignTimeOffOutput>(AssignTimeOffComponent, {
             data: assignTimeOff,
         });
@@ -291,6 +316,7 @@ export class TimeOffManagerComponent implements OnInit, OnDestroy {
                         incidentCode: result.incidentCode,
                         notes: result.notes,
                         requireAbsenceRequest: result.requireAbsenceRequest,
+                        overtimeUsages: result.overtimeUsages,
                     })
                     .pipe(
                         finalize(() => this.configService.setLoading(false)),
@@ -310,6 +336,7 @@ export class TimeOffManagerComponent implements OnInit, OnDestroy {
                             resultData.attendancesIncident.forEach((item) => {
                                 const key = `${resultData.codigo}:${item.date}`;
                                 this.attendancesIncidents.set(key, item.incidentCode);
+                                this.approvedIncidents.set(key, item.approved);
                                 this.rejectedIncidents.delete(key);
                             });
                         },
@@ -352,7 +379,7 @@ export class TimeOffManagerComponent implements OnInit, OnDestroy {
         }
 
         window.localStorage.setItem(SysKey.ActiveNumPeriod, id.toString());
-        this.listDates.set(this.generarFechas(this.period.startAdminDate, this.period.closingAdminDate));
+        this.listDates.set(this.generarFechas(this.period.startDate, this.period.closingDate));
         this.getEmployee();
     }
 
@@ -380,6 +407,10 @@ export class TimeOffManagerComponent implements OnInit, OnDestroy {
 
     public isRejected(employeeCode: number, date: string): boolean {
         return this.rejectedIncidents.has(`${employeeCode}:${date}`);
+    }
+
+    public isApproved(employeeCode: number, date: string): boolean {
+        return this.approvedIncidents.get(`${employeeCode}:${date}`) === true;
     }
 
     public getRejectionComment(employeeCode: number, date: string): string {
@@ -417,12 +448,16 @@ export class TimeOffManagerComponent implements OnInit, OnDestroy {
         const key = `${employeeCode}:${date}`;
         const groupDates = this.incidentGroups.get(key) || [date];
 
+        // Si el permiso ya fue aprobado se rechaza (con motivo); si sigue pendiente se elimina.
+        const mode: 'reject' | 'delete' = this.isApproved(employeeCode, date) ? 'reject' : 'delete';
+
         const data: IRejectTimeOff = {
             employeeCode,
             employeeName: `${employee.name} ${employee.lastName} ${employee.mLastName}`,
             date,
             incidentCode,
             groupDates,
+            mode,
         };
 
         const dialogRef = this.dialog.open<RejectTimeOffComponent, IRejectTimeOff, IRejectTimeOffOutput>(RejectTimeOffComponent, {
@@ -433,38 +468,96 @@ export class TimeOffManagerComponent implements OnInit, OnDestroy {
         dialogRef.afterClosed()
             .pipe(takeUntil(this.destroy$))
             .subscribe(result => {
-                if (result) {
-                    this.configService.setLoading(true);
-                    this.service.rejectDayOff({
-                        employeeCode,
-                        date,
-                        comment: result.comment,
-                    })
-                    .pipe(
-                        finalize(() => this.configService.setLoading(false)),
-                        takeUntil(this.destroy$)
-                    )
-                    .subscribe({
-                        next: (rejectedItems) => {
-                            rejectedItems.forEach((item) => {
-                                this.rejectedIncidents.set(`${employeeCode}:${item.date}`, result.comment);
-                            });
-                            const count = rejectedItems.length;
-                            this._snackBar.open(
-                                count > 1 ? `${count} permisos rechazados correctamente` : 'Permiso rechazado correctamente',
-                                '✅',
-                                {
-                                    horizontalPosition: 'center',
-                                    verticalPosition: 'top',
-                                    panelClass: 'alert-success',
-                                    duration: 3000
-                                }
-                            );
-                        },
-                        error: (err) => {
-                            this.showError(err.error?.message || 'Error al rechazar el permiso');
-                        }
+                if (!result) {
+                    return;
+                }
+
+                if (mode === 'delete') {
+                    this.deletePermission(employeeCode, date);
+                    return;
+                }
+
+                this.configService.setLoading(true);
+                this.service.rejectDayOff({
+                    employeeCode,
+                    date,
+                    comment: result.comment,
+                })
+                .pipe(
+                    finalize(() => this.configService.setLoading(false)),
+                    takeUntil(this.destroy$)
+                )
+                .subscribe({
+                    next: (rejectedItems) => {
+                        rejectedItems.forEach((item) => {
+                            this.rejectedIncidents.set(`${employeeCode}:${item.date}`, result.comment);
+                            this.approvedIncidents.set(`${employeeCode}:${item.date}`, false);
+                        });
+                        const count = rejectedItems.length;
+                        this._snackBar.open(
+                            count > 1 ? `${count} permisos rechazados correctamente` : 'Permiso rechazado correctamente',
+                            '✅',
+                            {
+                                horizontalPosition: 'center',
+                                verticalPosition: 'top',
+                                panelClass: 'alert-success',
+                                duration: 3000
+                            }
+                        );
+                    },
+                    error: (err) => {
+                        this.showError(err.error?.message || 'Error al rechazar el permiso');
+                    }
+                });
+            });
+    }
+
+    private deletePermission(employeeCode: number, date: string): void {
+        this.configService.setLoading(true);
+        this.service.deletePermission({ employeeCode, date })
+            .pipe(
+                finalize(() => this.configService.setLoading(false)),
+                takeUntil(this.destroy$)
+            )
+            .subscribe({
+                next: (deletedItems) => {
+                    const deletedDates = deletedItems.map((item) => String(item.date));
+
+                    // Limpiar las celdas eliminadas de los mapas y de la lista de empleados.
+                    deletedItems.forEach((item) => {
+                        const key = `${employeeCode}:${item.date}`;
+                        this.attendancesIncidents.delete(key);
+                        this.approvedIncidents.delete(key);
+                        this.rejectedIncidents.delete(key);
+                        this.incidentGroups.delete(key);
                     });
+
+                    this.listEmployees.update((employees) => employees.map((employee) => {
+                        if (employee.codigo !== employeeCode) {
+                            return employee;
+                        }
+                        return {
+                            ...employee,
+                            attendancesIncident: employee.attendancesIncident.filter(
+                                (ai) => !deletedDates.includes(String(ai.date))
+                            ),
+                        };
+                    }));
+
+                    const count = deletedItems.length;
+                    this._snackBar.open(
+                        count > 1 ? `${count} permisos eliminados correctamente` : 'Permiso eliminado correctamente',
+                        '✅',
+                        {
+                            horizontalPosition: 'center',
+                            verticalPosition: 'top',
+                            panelClass: 'alert-success',
+                            duration: 3000
+                        }
+                    );
+                },
+                error: (err) => {
+                    this.showError(err.error?.message || 'Error al eliminar el permiso');
                 }
             });
     }

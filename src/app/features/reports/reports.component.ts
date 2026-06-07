@@ -24,7 +24,9 @@ import { MatSnackBar } from "@angular/material/snack-bar";
 import { MatDialog } from "@angular/material/dialog";
 import { AuthService } from "@core/services/auth/auth.service";
 import { buildReportFileName } from "@core/utils/file-name";
-import { combineLatest, debounceTime, finalize, take } from "rxjs";
+import { combineLatest, debounceTime, finalize, Observable, take } from "rxjs";
+import { HttpResponse } from "@angular/common/http";
+import { IFilterReports } from "@core/models/reports/filter.interface";
 import { IAttendanceReport } from "@core/models/reports/attendance.interface";
 import { AttendanceTableComponent } from "./attendance-table/attendance-table.component";
 import { MatDatepicker, MatDatepickerModule } from "@angular/material/datepicker";
@@ -103,6 +105,12 @@ export class ReportsComponent implements OnInit {
         start: new FormControl<Date | null>(null),
         end: new FormControl<Date | null>(null),
     });
+
+    // Señales para alimentar de forma reactiva la tabla de horas extras (que carga su propio
+    // resumen): tenant activo y rango de fechas seleccionado.
+    public readonly activeTenantId = signal<string>('');
+    public readonly filterStart = signal<Date | null>(null);
+    public readonly filterEnd = signal<Date | null>(null);
     
     public constructor(
         private readonly appConfigService: AppConfigService,
@@ -112,6 +120,7 @@ export class ReportsComponent implements OnInit {
 
     ngOnInit(): void {
         combineLatest([this.authService.activeCompany, this.authService.activeTenant]).subscribe(() => {
+            this.activeTenantId.set(this.authService.activeTenant.value);
             this.getInit();
             // Refrescar la tabla activa al cambiar empresa/departamento sin requerir F5
             if (this.payroll && this.period) {
@@ -136,6 +145,10 @@ export class ReportsComponent implements OnInit {
         }
 
         this.filterForDates.valueChanges.subscribe((value) => {
+            // Mantener las señales sincronizadas para la tabla de horas extras (filtrado en cliente).
+            this.filterStart.set(value.start ?? null);
+            this.filterEnd.set(value.end ?? null);
+
             if (!value.start && !value.end) {
                 this.get();
             } else if (value.start && value.end) {
@@ -144,7 +157,7 @@ export class ReportsComponent implements OnInit {
                 end: value.end,
             });
             }
-            
+
         });
     }
 
@@ -297,10 +310,6 @@ export class ReportsComponent implements OnInit {
     }
 
     public downloadReport(typeFileDownload: TypeFileDownload): void {
-        if (typeFileDownload === 0) {
-            return;
-        }
-
         if (!this.payroll) {
             this._snackBar.open('Selecciona un tipo de nómina', undefined, {
                 horizontalPosition: 'center',
@@ -323,113 +332,57 @@ export class ReportsComponent implements OnInit {
             return;
         }
 
-        this.appConfigService.setLoading(true);
-        var service;
-        if (this.activeSection() === Section.Delays) {
-            service = this.reportsService.downloadExcelDelays(
-            {
-                page: 1,
-                pageSize: 30,
-                payroll: this.payroll?.typeNom || undefined,
-                numPeriod: this.period?.numPeriod,
-                search: this.searchControl.value || '',
-                ...(this.filterForDates.value.start && this.filterForDates.value.end ? {
-                    filterDates: {
-                        start: this.filterForDates.value.start!,
-                        end: this.filterForDates.value.end!,
-                    }
-                } : {})
-            });
-        } else if (this.activeSection() === Section.Overtimes) {
-            service = this.reportsService.downloadExcelOvertimes(
-            {
-                page: 1,
-                pageSize: 30,
-                payroll: this.payroll?.typeNom || undefined,
-                numPeriod: this.period?.numPeriod,
-                search: this.searchControl.value || '',
-                ...(this.filterForDates.value.start && this.filterForDates.value.end ? {
-                    filterDates: {
-                        start: this.filterForDates.value.start!,
-                        end: this.filterForDates.value.end!,
-                    }
-                } : {})
-            });
-        } else if (this.activeSection() === Section.HoursWorked) {
-            service = this.reportsService.downloadExcelHoursWorked(
-            {
-                page: 1,
-                pageSize: 30,
-                payroll: this.payroll?.typeNom || undefined,
-                numPeriod: this.period?.numPeriod,
-                search: this.searchControl.value || '',
-                ...(this.filterForDates.value.start && this.filterForDates.value.end ? {
-                    filterDates: {
-                        start: this.filterForDates.value.start!,
-                        end: this.filterForDates.value.end!,
-                    }
-                } : {})
-            });
-        } else if (this.activeSection() === Section.Attendance) {
-            service = this.reportsService.downloadExcelAttendance(
-            {
-                page: 1,
-                pageSize: 30,
-                payroll: this.payroll?.typeNom || undefined,
-                numPeriod: this.period?.numPeriod,
-                search: this.searchControl.value || '',
-                ...(this.filterForDates.value.start && this.filterForDates.value.end ? {
-                    filterDates: {
-                        start: this.filterForDates.value.start!,
-                        end: this.filterForDates.value.end!,
-                    }
-                } : {})
-            });
-        } else if (this.activeSection() === Section.Incidences) {
-            service = this.reportsService.downloadExcelIncidences(
-            {
-                page: 1,
-                pageSize: 30,
-                payroll: this.payroll?.typeNom || undefined,
-                numPeriod: this.period?.numPeriod,
-                search: this.searchControl.value || '',
-                ...(this.filterForDates.value.start && this.filterForDates.value.end ? {
-                    filterDates: {
-                        start: this.filterForDates.value.start!,
-                        end: this.filterForDates.value.end!,
-                    }
-                } : {})
-            });
-        } else if (this.activeSection() === Section.Abandonment) {
-            service = this.reportsService.downloadExcelAbandonment(
-            {
-                page: 1,
-                pageSize: 30,
-                payroll: this.payroll?.typeNom || undefined,
-                numPeriod: this.period?.numPeriod,
-                search: this.searchControl.value || '',
-                ...(this.filterForDates.value.start && this.filterForDates.value.end ? {
-                    filterDates: {
-                        start: this.filterForDates.value.start!,
-                        end: this.filterForDates.value.end!,
-                    }
-                } : {})
-            });
-        }
+        const filter: IFilterReports = {
+            page: 1,
+            pageSize: 30,
+            payroll: this.payroll?.typeNom || undefined,
+            numPeriod: this.period?.numPeriod,
+            search: this.searchControl.value || '',
+            ...(this.filterForDates.value.start && this.filterForDates.value.end ? {
+                filterDates: {
+                    start: this.filterForDates.value.start!,
+                    end: this.filterForDates.value.end!,
+                }
+            } : {})
+        };
 
-        if (!service) {
-            this.appConfigService.setLoading(false);
+        const isPdf = typeFileDownload === TypeFileDownload.PDF;
+        const extension = isPdf ? 'pdf' : 'xlsx';
+
+        const serviceBySection: Record<number, () => Observable<HttpResponse<Blob>>> = isPdf
+            ? {
+                [Section.Delays]: () => this.reportsService.downloadPdfDelays(filter),
+                [Section.Overtimes]: () => this.reportsService.downloadPdfOvertimes(filter),
+                [Section.HoursWorked]: () => this.reportsService.downloadPdfHoursWorked(filter),
+                [Section.Attendance]: () => this.reportsService.downloadPdfAttendance(filter),
+                [Section.Incidences]: () => this.reportsService.downloadPdfIncidences(filter),
+                [Section.Abandonment]: () => this.reportsService.downloadPdfAbandonment(filter),
+            }
+            : {
+                [Section.Delays]: () => this.reportsService.downloadExcelDelays(filter),
+                [Section.Overtimes]: () => this.reportsService.downloadExcelOvertimes(filter),
+                [Section.HoursWorked]: () => this.reportsService.downloadExcelHoursWorked(filter),
+                [Section.Attendance]: () => this.reportsService.downloadExcelAttendance(filter),
+                [Section.Incidences]: () => this.reportsService.downloadExcelIncidences(filter),
+                [Section.Abandonment]: () => this.reportsService.downloadExcelAbandonment(filter),
+            };
+
+        const buildService = serviceBySection[this.activeSection()];
+
+        if (!buildService) {
             return;
         }
 
-        service.pipe(finalize(() => {
+        this.appConfigService.setLoading(true);
+
+        buildService().pipe(finalize(() => {
             this.appConfigService.setLoading(false);
         })).subscribe({
             next: (response) => {
                 const urlBlob = window.URL.createObjectURL(new Blob([response.body!]));
                 const link = document.createElement('a');
                 link.href = urlBlob;
-                link.download = this.reportsService.getHttpResponseFileName(response, this.buildReportFileName('xlsx'));
+                link.download = this.buildReportFileName(extension);
                 link.click();
 
                 window.URL.revokeObjectURL(urlBlob);

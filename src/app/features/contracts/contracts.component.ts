@@ -172,7 +172,10 @@ export class ContractsComponent implements OnInit, OnDestroy {
             this.configService.setLoading(false);
         })).subscribe({
             next: (response) => {
-                this.listContract = new MatTableDataSource(response);
+                // Excluir empleados con contrato de planta (días = 9999). Sólo se listan
+                // contratos con fecha de término (vencido = 'F' y dias != 9999).
+                const activeContracts = response.filter((item) => item.days !== 9999);
+                this.listContract = new MatTableDataSource(activeContracts);
                 this.listContract.filterPredicate = (data: Contract, filter: string) => {
                     const filtros = JSON.parse(filter);
 
@@ -188,7 +191,7 @@ export class ContractsComponent implements OnInit, OnDestroy {
                     data.codigo.toString().includes(find) ||
                     (data.activity || '').toLowerCase().includes(find) || (data.ocupation || '').toString().includes(find);
 
-                    return conditionExpired && conditionalFilter;
+                    return conditionExpired && conditionalFilter && data.days !== 9999;
                 }
             },
             error: (err) => {

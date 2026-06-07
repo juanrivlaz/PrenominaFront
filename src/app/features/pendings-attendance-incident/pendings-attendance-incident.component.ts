@@ -5,9 +5,12 @@ import { AvatarComponent } from '@shared/components/avatar/avatar.component';
 import { MaterialModule } from '@shared/modules/material/material.module';
 import { ConfirmActionComponent } from './confirm-action/confirm-action.component';
 import { IConfirmAction } from './confirm-action/confirm-action.interface';
+import { AbsenceRequestDetailComponent } from './absence-request-detail/absence-request-detail.component';
+import { IEmployeeAbsenceRequestDetail } from '@core/models/pendings-attendance-incident/employee-absence-request-detail.interface';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { IEmployeeAbsenceRequests } from '@core/models/pendings-attendance-incident/employee-absence-requests.interface';
+import { IPendingIncidenceApproval, IPendingIncidenceRow } from '@core/models/pendings-attendance-incident/pending-incidence-approval.interface';
 import { PendingsAttendanceIncidentService } from './pendings-attendance-incident.service';
 import { AppConfigService } from '@core/services/app-config/app-config.service';
 import { finalize } from 'rxjs';
@@ -47,7 +50,25 @@ export class PendingsAttendanceIncidentComponent implements OnInit {
     'startDate',
     'endDate',
     'notes',
+    'approvals',
     'status',
+    'createdAt',
+    'actions',
+  ];
+
+  // Active view: absence requests (permits) or incidences to approve.
+  public view: WritableSignal<'requests' | 'incidences'> = signal('requests');
+  public incidencesDataSource: MatTableDataSource<IPendingIncidenceRow> =
+    new MatTableDataSource<IPendingIncidenceRow>([]);
+  // Status filter for the "Incidences to approve" tab (Pending by default).
+  public incidenceStatusFilter: WritableSignal<AbsenceRequestStatus | -1> = signal(AbsenceRequestStatus.Pending);
+  public incidenceColumns: Array<string> = [
+    'expand',
+    'employee',
+    'incidentCode',
+    'date',
+    'notes',
+    'progress',
     'createdAt',
     'actions',
   ];
@@ -61,6 +82,248 @@ export class PendingsAttendanceIncidentComponent implements OnInit {
     this.get();
     this.dateRange.valueChanges.subscribe(() => this.applyFilters());
     this.searchControl.valueChanges.subscribe(() => this.applyFilters());
+  }
+
+  public setView(view: 'requests' | 'incidences'): void {
+    this.view.set(view);
+    // Always refresh when opening the tab to avoid showing a cached list
+    // (e.g. when a new incidence was registered after the first load).
+    if (view === 'incidences') {
+      this.getPendingIncidences();
+    }
+  }
+
+  public setIncidenceStatusFilter(status: AbsenceRequestStatus | -1): void {
+    this.incidenceStatusFilter.set(status);
+    this.getPendingIncidences();
+  }
+
+  private getPendingIncidences(): void {
+    this.configService.setLoading(true);
+    this.service.getPendingIncidences(this.incidenceStatusFilter()).pipe(finalize(() => {
+      this.configService.setLoading(false);
+    })).subscribe({
+      next: (data) => {
+        this.incidencesDataSource.data = this.buildIncidenceRows(data);
+      },
+      error: (err) => {
+        const message = err?.error?.message || 'Error al obtener las incidencias por aprobar';
+        this.snackBar.open(message, '❌', {
+          horizontalPosition: 'center',
+          verticalPosition: 'top',
+          panelClass: 'alert-error',
+          duration: 3000,
+        });
+      },
+    });
+  }
+
+  public handleIncidenceAction(approve: boolean, item: IPendingIncidenceApproval): void {
+    const dialogRef = this.dialog.open<ConfirmActionComponent, IConfirmAction>(
+      ConfirmActionComponent,
+      {
+        data: {
+          type: approve ? 'Aprobar' : 'Rechazar',
+          name: item.employeeName,
+          incident: `${item.incidentCode} | ${item.incidentDescription}`,
+          date: dayjs(item.date).format('DD/MM/YYYY'),
+          note: item.notes || 'Sin notas',
+        },
+      },
+    );
+
+    dialogRef.afterClosed().subscribe((result) => {
+      if (!result) {
+        return;
+      }
+
+      this.configService.setLoading(true);
+      const request$ = approve
+        ? this.service.approveIncidence(item.id)
+        : this.service.rejectIncidence(item.id);
+
+      request$.pipe(finalize(() => {
+        this.configService.setLoading(false);
+      })).subscribe({
+        next: () => {
+          this.snackBar.open(
+            `Incidencia ${approve ? 'aprobada' : 'rechazada'} correctamente`,
+            '✅',
+            {
+              horizontalPosition: 'center',
+              verticalPosition: 'top',
+              panelClass: 'alert-success',
+              duration: 3000,
+            },
+          );
+          this.getPendingIncidences();
+        },
+        error: (err) => {
+          const message = err?.error?.message || `Error al ${approve ? 'aprobar' : 'rechazar'} la incidencia`;
+          this.snackBar.open(message, '❌', {
+            horizontalPosition: 'center',
+            verticalPosition: 'top',
+            panelClass: 'alert-error',
+            duration: 3000,
+          });
+        },
+      });
+    });
+  }
+
+  // Groups incidences by requestGroupId (multi-day permits registered together
+  // from the permits menu) so they can be approved/rejected as a group.
+  private buildIncidenceRows(items: Array<IPendingIncidenceApproval>): Array<IPendingIncidenceRow> {
+    const groups = new Map<string, Array<IPendingIncidenceApproval>>();
+    const rows: Array<IPendingIncidenceRow> = [];
+
+    for (const item of items) {
+      if (item.requestGroupId) {
+        const arr = groups.get(item.requestGroupId) ?? [];
+        arr.push(item);
+        groups.set(item.requestGroupId, arr);
+      } else {
+        rows.push(this.toSingleRow(item));
+      }
+    }
+
+    // A group with a single remaining day is shown as an individual row.
+    for (const [groupId, arr] of groups) {
+      rows.push(arr.length > 1 ? this.toGroupRow(groupId, arr) : this.toSingleRow(arr[0]));
+    }
+
+    return rows.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+  }
+
+  private toSingleRow(item: IPendingIncidenceApproval): IPendingIncidenceRow {
+    return {
+      key: item.id,
+      isGroup: false,
+      requestGroupId: item.requestGroupId,
+      employeeCode: item.employeeCode,
+      employeeName: item.employeeName,
+      incidentCode: item.incidentCode,
+      incidentDescription: item.incidentDescription,
+      notes: item.notes,
+      createdAt: item.createdAt,
+      startDate: item.date,
+      endDate: item.date,
+      daysCount: 1,
+      totalApprovers: item.totalApprovers,
+      approvedCount: item.approvedCount,
+      alreadyApprovedByMe: item.alreadyApprovedByMe,
+      approved: item.approved,
+      rejected: item.rejected,
+      items: [item],
+      expanded: false,
+    };
+  }
+
+  private toGroupRow(groupId: string, items: Array<IPendingIncidenceApproval>): IPendingIncidenceRow {
+    const sorted = [...items].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const first = sorted[0];
+
+    return {
+      key: groupId,
+      isGroup: true,
+      requestGroupId: groupId,
+      employeeCode: first.employeeCode,
+      employeeName: first.employeeName,
+      incidentCode: first.incidentCode,
+      incidentDescription: first.incidentDescription,
+      notes: first.notes,
+      createdAt: first.createdAt,
+      startDate: sorted[0].date,
+      endDate: sorted[sorted.length - 1].date,
+      daysCount: sorted.length,
+      // Representative progress: the minimum approvals of the group over the required total.
+      totalApprovers: first.totalApprovers,
+      approvedCount: Math.min(...sorted.map((i) => i.approvedCount)),
+      alreadyApprovedByMe: sorted.every((i) => i.alreadyApprovedByMe || i.approved),
+      approved: sorted.every((i) => i.approved),
+      rejected: sorted.some((i) => i.rejected),
+      items: sorted,
+      expanded: false,
+    };
+  }
+
+  public toggleIncidenceExpand(row: IPendingIncidenceRow): void {
+    row.expanded = !row.expanded;
+  }
+
+  // Approves or rejects a row. If it's a group (multi-day permit) it acts on the whole
+  // group; if it's individual it delegates to the single-incidence flow.
+  public handleIncidenceRowAction(approve: boolean, row: IPendingIncidenceRow): void {
+    if (!row.isGroup || !row.requestGroupId) {
+      this.handleIncidenceAction(approve, row.items[0]);
+      return;
+    }
+
+    const dialogRef = this.dialog.open<ConfirmActionComponent, IConfirmAction>(
+      ConfirmActionComponent,
+      {
+        data: {
+          type: approve ? 'Aprobar' : 'Rechazar',
+          name: row.employeeName,
+          incident: `${row.incidentCode} | ${row.incidentDescription}`,
+          date: `${dayjs(row.startDate).format('DD/MM/YYYY')} - ${dayjs(row.endDate).format('DD/MM/YYYY')} (${row.daysCount} días)`,
+          note: row.notes || 'Sin notas',
+        },
+      },
+    );
+
+    dialogRef.afterClosed().subscribe((result) => {
+      if (!result) {
+        return;
+      }
+
+      this.configService.setLoading(true);
+      const request$ = approve
+        ? this.service.approveIncidenceGroup(row.requestGroupId!)
+        : this.service.rejectIncidenceGroup(row.requestGroupId!);
+
+      request$.pipe(finalize(() => {
+        this.configService.setLoading(false);
+      })).subscribe({
+        next: () => {
+          this.snackBar.open(
+            `Permiso ${approve ? 'aprobado' : 'rechazado'} correctamente`,
+            '✅',
+            { horizontalPosition: 'center', verticalPosition: 'top', panelClass: 'alert-success', duration: 3000 },
+          );
+          this.getPendingIncidences();
+        },
+        error: (err) => {
+          const message = err?.error?.message || `Error al ${approve ? 'aprobar' : 'rechazar'} el permiso`;
+          this.snackBar.open(message, '❌', { horizontalPosition: 'center', verticalPosition: 'top', panelClass: 'alert-error', duration: 3000 });
+        },
+      });
+    });
+  }
+
+  // Opens a read-only modal with the full request information: days, accumulated
+  // overtime consumed per day, comment and approval progress.
+  public openDetail(request: IEmployeeAbsenceRequests): void {
+    this.configService.setLoading(true);
+    this.service.getDetail(request.id).pipe(finalize(() => {
+      this.configService.setLoading(false);
+    })).subscribe({
+      next: (detail: IEmployeeAbsenceRequestDetail) => {
+        this.dialog.open<AbsenceRequestDetailComponent, IEmployeeAbsenceRequestDetail>(
+          AbsenceRequestDetailComponent,
+          { data: detail, autoFocus: false, maxWidth: '95vw' },
+        );
+      },
+      error: (err) => {
+        const message = err?.error?.message || 'Error al obtener el detalle de la solicitud';
+        this.snackBar.open(message, '❌', {
+          horizontalPosition: 'center',
+          verticalPosition: 'top',
+          panelClass: 'alert-error',
+          duration: 3000,
+        });
+      },
+    });
   }
 
   public setStatusFilter(status: AbsenceRequestStatus | -1): void {
@@ -136,16 +399,18 @@ export class PendingsAttendanceIncidentComponent implements OnInit {
             this.configService.setLoading(false);
         })).subscribe({
           next: () => {
-            this.snackBar.open(
-              `Solicitud ${approve ? 'aprobada' : 'rechazada'} correctamente`,
-              '✅',
-              {
-                horizontalPosition: 'center',
-                verticalPosition: 'top',
-                panelClass: 'alert-success',
-                duration: 3000,
-              },
-            );
+            // With multi-approval, an approval can be partial (other approvers are still pending).
+            const partial = approve && item.requiresApproval && (item.approvedCount + 1) < item.totalApprovers;
+            const message = partial
+              ? 'Tu aprobación se registró. Faltan aprobaciones de otros responsables.'
+              : `Solicitud ${approve ? 'aprobada' : 'rechazada'} correctamente`;
+
+            this.snackBar.open(message, '✅', {
+              horizontalPosition: 'center',
+              verticalPosition: 'top',
+              panelClass: 'alert-success',
+              duration: 3500,
+            });
 
             this.get();
           },

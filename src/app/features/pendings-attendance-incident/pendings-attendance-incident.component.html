@@ -3,6 +3,12 @@
         <h2 class="page-title">Aprobación de Incidencias</h2>
     </div>
 
+    <div class="view-tabs">
+        <button type="button" class="view-tab" [class.active]="view() === 'requests'" (click)="setView('requests')">Solicitudes de ausencia</button>
+        <button type="button" class="view-tab" [class.active]="view() === 'incidences'" (click)="setView('incidences')">Incidencias por aprobar</button>
+    </div>
+
+    @if (view() === 'requests') {
     <div class="ctn-filter">
         <div class="status-chips">
             <button type="button" class="status-chip" [class.active]="statusFilter() === -1" (click)="setStatusFilter(-1)">Todas</button>
@@ -58,9 +64,27 @@
             <th mat-header-cell *matHeaderCellDef> Notas </th>
             <td mat-cell *matCellDef="let row" [matTooltip]="row.notes"> {{row.sortNote}} </td>
         </ng-container>
+        <ng-container matColumnDef="approvals">
+            <th mat-header-cell *matHeaderCellDef> Aprobaciones </th>
+            <td mat-cell *matCellDef="let row">
+                @if (row.requiresApproval) {
+                    {{row.approvedCount}} / {{row.totalApprovers}}
+                } @else {
+                    <span class="muted">—</span>
+                }
+            </td>
+        </ng-container>
         <ng-container matColumnDef="status">
             <th mat-header-cell *matHeaderCellDef> Estado </th>
-            <td mat-cell *matCellDef="let row"> {{row.statusLabel}} </td>
+            <td mat-cell *matCellDef="let row">
+                @if (row.status === statusApproved) {
+                    <span class="status-badge approved"><mat-icon>check_circle</mat-icon>Aprobada</span>
+                } @else if (row.status === statusRejected) {
+                    <span class="status-badge rejected"><mat-icon>cancel</mat-icon>Rechazada</span>
+                } @else {
+                    <span class="status-badge pending"><mat-icon>schedule</mat-icon>Pendiente</span>
+                }
+            </td>
         </ng-container>
         <ng-container matColumnDef="createdAt">
             <th mat-header-cell *matHeaderCellDef> Fecha de Creación </th>
@@ -70,21 +94,149 @@
             <th mat-header-cell *matHeaderCellDef> Acciones </th>
             <td mat-cell *matCellDef="let row">
                 @if (row.status === statusPending) {
-                    <div class="ctn-actions">
-                        <button mat-button (click)="handleClickAction(true, row)"><mat-icon>done</mat-icon>Aprobar</button>
-                        <button mat-button class="warning" (click)="handleClickAction(false, row)"><mat-icon>close</mat-icon>Rechazar</button>
-                    </div>
+                    @if (row.alreadyApprovedByMe) {
+                        <span class="status-label approved">Ya aprobaste</span>
+                    } @else if (row.canApprove) {
+                        <div class="ctn-actions">
+                            <button mat-button (click)="$event.stopPropagation(); handleClickAction(true, row)"><mat-icon>done</mat-icon>Aprobar</button>
+                            <button mat-button class="warning" (click)="$event.stopPropagation(); handleClickAction(false, row)"><mat-icon>close</mat-icon>Rechazar</button>
+                        </div>
+                    } @else {
+                        <span class="status-label pending" [matTooltip]="'Pendiente de aprobación de los responsables'">En revisión</span>
+                    }
                 } @else if (row.status === statusApproved) {
-                    <button mat-button (click)="downloadFile(row.id)" class="btn-download">
+                    <button mat-button (click)="$event.stopPropagation(); downloadFile(row.id)" class="btn-download">
                         <img src="assets/icons/pdf.png" alt="pdf" class="mr-12" width="25px">
                         PDF
                     </button>
                 } @else if (row.status === statusRejected) {
-                    <span>Rechazada</span>
+                    <span class="status-badge rejected"><mat-icon>cancel</mat-icon>Rechazada</span>
                 }
             </td>
         </ng-container>
         <tr mat-header-row *matHeaderRowDef="columns"></tr>
-        <tr mat-row *matRowDef="let row; columns: columns;"></tr>
+        <tr mat-row *matRowDef="let row; columns: columns;" class="clickable-row"
+            [class.row-rejected]="row.status === statusRejected"
+            (click)="openDetail(row)"
+            matTooltip="Ver detalle de la solicitud"></tr>
     </table>
+    }
+
+    @if (view() === 'incidences') {
+    <div class="ctn-filter">
+        <div class="status-chips">
+            <button type="button" class="status-chip" [class.active]="incidenceStatusFilter() === -1" (click)="setIncidenceStatusFilter(-1)">Todas</button>
+            <button type="button" class="status-chip pending" [class.active]="incidenceStatusFilter() === statusPending" (click)="setIncidenceStatusFilter(statusPending)">Pendientes</button>
+            <button type="button" class="status-chip approved" [class.active]="incidenceStatusFilter() === statusApproved" (click)="setIncidenceStatusFilter(statusApproved)">Aprobadas</button>
+            <button type="button" class="status-chip rejected" [class.active]="incidenceStatusFilter() === statusRejected" (click)="setIncidenceStatusFilter(statusRejected)">Rechazadas</button>
+        </div>
+    </div>
+
+    <table mat-table [dataSource]="incidencesDataSource" multiTemplateDataRows>
+        <ng-container matColumnDef="expand">
+            <th mat-header-cell *matHeaderCellDef class="expand-col"></th>
+            <td mat-cell *matCellDef="let row" class="expand-col">
+                @if (row.isGroup) {
+                    <button mat-icon-button (click)="toggleIncidenceExpand(row)" [matTooltip]="row.expanded ? 'Ocultar días' : 'Ver días'">
+                        <mat-icon>{{ row.expanded ? 'expand_less' : 'expand_more' }}</mat-icon>
+                    </button>
+                }
+            </td>
+        </ng-container>
+        <ng-container matColumnDef="employee">
+            <th mat-header-cell *matHeaderCellDef> Empleado </th>
+            <td mat-cell *matCellDef="let row" class="name">
+                <div class="ctn-name">
+                    <app-avatar [name]="row.employeeName" />
+                    <div class="labels">
+                        <p>{{row.employeeName}}</p>
+                        <span>Cod. {{row.employeeCode}}</span>
+                    </div>
+                </div>
+            </td>
+        </ng-container>
+        <ng-container matColumnDef="incidentCode">
+            <th mat-header-cell *matHeaderCellDef> Incidencia </th>
+            <td mat-cell *matCellDef="let row" [matTooltip]="row.incidentDescription"> {{row.incidentCode}} </td>
+        </ng-container>
+        <ng-container matColumnDef="date">
+            <th mat-header-cell *matHeaderCellDef> Fecha </th>
+            <td mat-cell *matCellDef="let row">
+                @if (row.isGroup) {
+                    <div class="date-range">
+                        <span>{{row.startDate | date}} – {{row.endDate | date}}</span>
+                        <span class="days-badge">{{row.daysCount}} días</span>
+                    </div>
+                } @else {
+                    {{row.startDate | date}}
+                }
+            </td>
+        </ng-container>
+        <ng-container matColumnDef="notes">
+            <th mat-header-cell *matHeaderCellDef> Notas </th>
+            <td mat-cell *matCellDef="let row" [matTooltip]="row.notes"> {{ row.notes ? (row.notes | slice:0:20) : '' }} </td>
+        </ng-container>
+        <ng-container matColumnDef="progress">
+            <th mat-header-cell *matHeaderCellDef> Aprobaciones </th>
+            <td mat-cell *matCellDef="let row"> {{row.approvedCount}} / {{row.totalApprovers}} </td>
+        </ng-container>
+        <ng-container matColumnDef="createdAt">
+            <th mat-header-cell *matHeaderCellDef> Fecha de Creación </th>
+            <td mat-cell *matCellDef="let row"> {{row.createdAt | date}} </td>
+        </ng-container>
+        <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef> Acciones </th>
+            <td mat-cell *matCellDef="let row">
+                @if (row.approved) {
+                    <span class="status-badge approved"><mat-icon>check_circle</mat-icon>Aprobada</span>
+                } @else if (row.rejected) {
+                    <span class="status-badge rejected"><mat-icon>cancel</mat-icon>Rechazada</span>
+                } @else if (row.alreadyApprovedByMe) {
+                    <span class="status-badge approved"><mat-icon>check_circle</mat-icon>Ya aprobaste</span>
+                } @else {
+                    <div class="ctn-actions">
+                        <button mat-button (click)="handleIncidenceRowAction(true, row)"><mat-icon>done</mat-icon>Aprobar</button>
+                        <button mat-button class="warning" (click)="handleIncidenceRowAction(false, row)"><mat-icon>close</mat-icon>Rechazar</button>
+                    </div>
+                }
+            </td>
+        </ng-container>
+
+        <!-- Detail row with the group's days -->
+        <ng-container matColumnDef="expandedDetail">
+            <td mat-cell *matCellDef="let row" [attr.colspan]="incidenceColumns.length" class="detail-cell">
+                @if (row.isGroup && row.expanded) {
+                    <div class="group-detail">
+                        @for (item of row.items; track item.id) {
+                            <div class="detail-line">
+                                <mat-icon>event</mat-icon>
+                                <span class="detail-date">{{ item.date | date }}</span>
+                                @if (item.approved) {
+                                    <span class="status-label approved">Aprobada</span>
+                                } @else if (item.rejected) {
+                                    <span class="status-label rejected">Rechazada</span>
+                                } @else if (item.alreadyApprovedByMe) {
+                                    <span class="status-label approved">Ya aprobaste</span>
+                                } @else {
+                                    <span class="status-label pending">Pendiente</span>
+                                }
+                                @if (item.notes) {
+                                    <span class="detail-note" [matTooltip]="item.notes">{{ item.notes | slice:0:30 }}</span>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="incidenceColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: incidenceColumns;" class="group-row" [class.expanded]="row.expanded" [class.row-rejected]="row.rejected"></tr>
+        <tr mat-row *matRowDef="let row; columns: ['expandedDetail']" class="detail-row"></tr>
+    </table>
+
+    @if (incidencesDataSource.data.length === 0) {
+        <p class="empty-incidences">No hay incidencias para mostrar.</p>
+    }
+    }
 </div>

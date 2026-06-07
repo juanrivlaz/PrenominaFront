@@ -230,6 +230,48 @@ export class ReportsService {
         });
     }
 
+    public downloadPdfAbandonment({ page = 1, pageSize = 30, payroll = 1, numPeriod = 1, search = '', filterDates }: IFilterReports): Observable<HttpResponse<Blob>> {
+        return this.downloadPdf('/Reports/abandonment/download-pdf', { page, pageSize, payroll, numPeriod, search, filterDates });
+    }
+
+    public downloadPdfDelays({ page = 1, pageSize = 30, payroll = 1, numPeriod = 1, search = '', filterDates }: IFilterReports): Observable<HttpResponse<Blob>> {
+        return this.downloadPdf('/Reports/delays/download-pdf', { page, pageSize, payroll, numPeriod, search, filterDates });
+    }
+
+    public downloadPdfOvertimes({ page = 1, pageSize = 30, payroll = 1, numPeriod = 1, search = '', filterDates }: IFilterReports): Observable<HttpResponse<Blob>> {
+        return this.downloadPdf('/Reports/overtimes/download-pdf', { page, pageSize, payroll, numPeriod, search, filterDates });
+    }
+
+    public downloadPdfHoursWorked({ page = 1, pageSize = 30, payroll = 1, numPeriod = 1, search = '', filterDates }: IFilterReports): Observable<HttpResponse<Blob>> {
+        return this.downloadPdf('/Reports/hours-worked/download-pdf', { page, pageSize, payroll, numPeriod, search, filterDates });
+    }
+
+    public downloadPdfAttendance({ page = 1, pageSize = 30, payroll = 1, numPeriod = 1, search = '', filterDates }: IFilterReports): Observable<HttpResponse<Blob>> {
+        return this.downloadPdf('/Reports/attendance/download-pdf', { page, pageSize, payroll, numPeriod, search, filterDates });
+    }
+
+    public downloadPdfIncidences({ page = 1, pageSize = 30, payroll = 1, numPeriod = 1, search = '', filterDates }: IFilterReports): Observable<HttpResponse<Blob>> {
+        return this.downloadPdf('/Reports/incidences/download-pdf', { page, pageSize, payroll, numPeriod, search, filterDates });
+    }
+
+    private downloadPdf(url: string, { page = 1, pageSize = 30, payroll = 1, numPeriod = 1, search = '', filterDates }: IFilterReports): Observable<HttpResponse<Blob>> {
+        return this.httpService.get(url, {
+            observe: 'response',
+            responseType: 'blob',
+            params: {
+                'Paginator.Page': page,
+                'Paginator.PageSize': pageSize,
+                TypeNomina: payroll,
+                NumPeriod: numPeriod,
+                Search: search,
+                ...(filterDates && {
+                    'FilterDates.Start': filterDates.start.toISOString(),
+                    'FilterDates.End': filterDates.end.toISOString(),
+                }),
+            }
+        });
+    }
+
     public getHttpResponseFileName(response: HttpResponse<Blob>, defaultName: string): string {
         const contentDisposition = response.headers.get('Content-Disposition');
         if (contentDisposition) {

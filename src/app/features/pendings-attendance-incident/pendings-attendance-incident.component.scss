@@ -9,6 +9,188 @@ app-pendings-attendamce-incident {
         }
     }
 
+    .view-tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 16px;
+        border-bottom: 1px solid #e0e0e0;
+
+        .view-tab {
+            border: none;
+            background: transparent;
+            padding: 10px 16px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #5a6b7b;
+            border-bottom: 2px solid transparent;
+
+            &.active {
+                color: #1f384c;
+                font-weight: 600;
+                border-bottom-color: #1f384c;
+            }
+
+            &:hover:not(.active) {
+                color: #1f384c;
+            }
+        }
+    }
+
+    .empty-incidences {
+        padding: 24px;
+        text-align: center;
+        color: #5a6b7b;
+    }
+
+    .muted {
+        color: #9aa0ac;
+    }
+
+    .status-label {
+        font-size: 12px;
+        font-weight: 600;
+
+        &.approved {
+            color: #2e7d32;
+        }
+
+        &.rejected {
+            color: #c62828;
+        }
+
+        &.pending {
+            color: #f57c00;
+        }
+    }
+
+    // Status badge (more eye-catching than plain text).
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 10px;
+        border-radius: 14px;
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+
+        mat-icon {
+            font-size: 16px;
+            width: 16px;
+            height: 16px;
+        }
+
+        &.approved {
+            color: #2e7d32;
+            background: #e6f4ea;
+        }
+
+        &.rejected {
+            color: #c62828;
+            background: #fdecea;
+        }
+
+        &.pending {
+            color: #b25e00;
+            background: #fff3e0;
+        }
+    }
+
+    // The request rows open a read-only detail modal on click.
+    .clickable-row {
+        cursor: pointer;
+        transition: background-color .15s ease;
+
+        &:hover {
+            background: #f3f4ff;
+        }
+    }
+
+    // Highlights the whole row when the request/incidence was rejected.
+    .row-rejected {
+        background: #fdf3f2 !important;
+        box-shadow: inset 3px 0 0 #d9433a;
+
+        td:first-child {
+            position: relative;
+        }
+    }
+
+    // "Incidences to approve" tab: rows grouped by permit (multiple days).
+    .expand-col {
+        width: 48px;
+        padding: 0 !important;
+        text-align: center;
+    }
+
+    .date-range {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        .days-badge {
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: #eef2ff;
+            color: var(--primary-color, #1976d2);
+            font-size: 11px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+    }
+
+    .group-row.expanded {
+        background: #f7f9ff;
+
+        td {
+            border-bottom: none;
+        }
+    }
+
+    // Empty detail rows (from individual rows) collapse to height 0.
+    .detail-row {
+        height: 0;
+
+        .detail-cell {
+            padding: 0 !important;
+            border-bottom: none;
+        }
+
+        .group-detail {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding: 10px 16px 14px 60px;
+            background: #f7f9ff;
+            border-bottom: 1px solid #e4e8ef;
+
+            .detail-line {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                font-size: 13px;
+                color: #2c3140;
+
+                mat-icon {
+                    font-size: 18px;
+                    width: 18px;
+                    height: 18px;
+                    color: #b3b8c2;
+                }
+
+                .detail-date {
+                    min-width: 110px;
+                    font-weight: 500;
+                }
+
+                .detail-note {
+                    color: #9aa0ac;
+                    font-style: italic;
+                }
+            }
+        }
+    }
+
     .status-chips {
         display: flex;
         gap: 8px;

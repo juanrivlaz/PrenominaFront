@@ -15,16 +15,98 @@
               </mat-error>
             }
         </mat-form-field>
-    
+
         <p>Se le asignarán <b>permisos</b> a <b>{{ data.employeeName }}</b> los siguientes días <br /></p>
-        <ul>
-            @for (item of datesFormat; track $index) {
-                <li>{{ item }}</li>
+
+        <section class="overtime-card" [class.overtime-card--empty]="availableMinutes <= 0">
+            <div class="overtime-card__balance">
+                <span class="overtime-card__badge">
+                    <mat-icon>schedule</mat-icon>
+                </span>
+                <div class="overtime-card__info">
+                    <span class="overtime-card__title">Horas extra acumuladas</span>
+                    <span class="overtime-card__value">{{ data.availableOvertimeFormatted }}</span>
+                </div>
+                <span class="overtime-card__chip">
+                    {{ availableMinutes > 0 ? 'Disponibles' : 'Sin saldo' }}
+                </span>
+            </div>
+
+            @if (availableMinutes > 0) {
+                <mat-checkbox class="overtime-card__toggle" formControlName="useOvertime">
+                    Usar horas extra acumuladas en este permiso
+                </mat-checkbox>
+            } @else {
+                <p class="overtime-card__hint">
+                    <mat-icon>info</mat-icon>
+                    Este empleado no tiene horas extra acumuladas para utilizar.
+                </p>
             }
-        </ul>
+        </section>
+
+        @if (useOvertime) {
+            <div class="overtime-days" formArrayName="overtimeDays">
+                @for (group of overtimeDays.controls; track $index) {
+                    <div class="overtime-day" [formGroupName]="$index">
+                        <span class="overtime-day__index">{{ $index + 1 }}</span>
+                        <span class="overtime-day__label">{{ dayLabels[$index] }}</span>
+                        <div class="overtime-day__time">
+                            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                                <mat-label>Horas</mat-label>
+                                <input matInput type="number" min="0" inputmode="numeric"
+                                    placeholder="0" formControlName="hours" />
+                            </mat-form-field>
+                            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                                <mat-label>Min</mat-label>
+                                <input matInput type="number" min="0" max="59" inputmode="numeric"
+                                    placeholder="00" formControlName="minutes" />
+                            </mat-form-field>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="overtime-summary" [class.overtime-summary--error]="exceedsBalance()">
+                <div class="overtime-summary__item">
+                    <span class="overtime-summary__label">Total a utilizar</span>
+                    <span class="overtime-summary__value">{{ formatMinutes(totalOvertimeMinutes()) }}</span>
+                </div>
+                <div class="overtime-summary__divider"></div>
+                <div class="overtime-summary__item overtime-summary__item--right">
+                    <span class="overtime-summary__label">Restante</span>
+                    <span class="overtime-summary__value">{{ formatMinutes(remainingMinutes()) }}</span>
+                </div>
+            </div>
+
+            @if (exceedsBalance()) {
+                <p class="overtime-error">
+                    <mat-icon>error_outline</mat-icon>
+                    El total a utilizar excede las horas acumuladas disponibles.
+                </p>
+            } @else if (overtimeUsageMissing()) {
+                <p class="overtime-error">
+                    <mat-icon>error_outline</mat-icon>
+                    Debe asignar horas a utilizar en al menos un día.
+                </p>
+            }
+        } @else {
+            <ul>
+                @for (item of dayLabels; track $index) {
+                    <li>{{ item }}</li>
+                }
+            </ul>
+        }
+
         <mat-checkbox formControlName="requireAbsenceRequest">
             ¿Requiere solicitud de ausencia?
         </mat-checkbox>
+
+        @if (useOvertime) {
+            <p class="absence-hint">
+                <mat-icon>info</mat-icon>
+                Al usar horas extra acumuladas se genera la papeleta de ausencia.
+            </p>
+        }
 
         @if (requireAbsenceRequest) {
             <mat-form-field class="mt-12">
@@ -36,5 +118,5 @@
 </mat-dialog-content>
 <mat-dialog-actions>
   <button mat-button (click)="onCancel()">Cancelar</button>
-  <button mat-flat-button [disabled]="timeOffForm.invalid" (click)="submit()">Confirmar</button>
+  <button mat-flat-button [disabled]="!canConfirm" (click)="submit()">Confirmar</button>
 </mat-dialog-actions>
