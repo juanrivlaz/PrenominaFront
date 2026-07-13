@@ -1,11 +1,11 @@
-<h2 mat-dialog-title class="detail-title">Detalle de solicitud</h2>
+<h2 mat-dialog-title class="detail-title">Papeleta de pago de horas extras</h2>
 
 <mat-dialog-content class="detail-content">
     <div class="detail-employee">
         <app-avatar [name]="data.employeeName" />
         <div class="detail-employee__info">
             <p class="detail-employee__name">{{ data.employeeName }}</p>
-            <span class="detail-employee__meta">Cod. {{ data.employeeCode }} | {{ data.employeeActivity }}</span>
+            <span class="detail-employee__meta">Cod. {{ data.employeeCode }}</span>
         </div>
         <span class="status-badge" [ngClass]="statusClass()">
             @if (data.status === statusApproved) {
@@ -21,33 +21,29 @@
 
     <div class="detail-grid">
         <div class="detail-field">
-            <span class="detail-field__label">Incidencia</span>
-            <span class="detail-field__value">{{ data.incidentCode }} — {{ data.incidentDescription }}</span>
-        </div>
-        <div class="detail-field">
-            <span class="detail-field__label">Periodo</span>
-            <span class="detail-field__value">{{ data.startDate | date }} – {{ data.endDate | date }}</span>
-        </div>
-        <div class="detail-field">
-            <span class="detail-field__label">Días solicitados</span>
-            <span class="detail-field__value">{{ data.daysCount }} día{{ data.daysCount === 1 ? '' : 's' }}</span>
+            <span class="detail-field__label">Horas extra a pagar</span>
+            <span class="detail-field__value">{{ data.totalMinutesFormatted }}</span>
         </div>
         <div class="detail-field">
             <span class="detail-field__label">Fecha de creación</span>
             <span class="detail-field__value">{{ data.createdAt | date }}</span>
         </div>
-        @if (data.requiresApproval) {
-            <div class="detail-field">
-                <span class="detail-field__label">Aprobaciones</span>
-                <span class="detail-field__value">{{ data.approvedCount }} / {{ data.totalApprovers }}</span>
+        @if (data.overtimeDates.length) {
+            <div class="detail-field detail-field--full">
+                <span class="detail-field__label">Fechas de las horas extra</span>
+                <div class="detail-field__chips">
+                    @for (date of data.overtimeDates; track date) {
+                        <span class="date-chip">{{ date | date:'dd/MM/yyyy' }}</span>
+                    }
+                </div>
             </div>
         }
     </div>
 
-    @if (data.usedOvertime) {
-        <div class="overtime-banner">
-            <span class="overtime-banner__badge"><mat-icon>schedule</mat-icon></span>
-            <span>Se utilizaron <b>{{ data.totalOvertimeFormatted }}</b> de horas extra acumuladas en este permiso.</span>
+    @if (data.notes) {
+        <div class="detail-section">
+            <span class="detail-section__title"><mat-icon>notes</mat-icon> Comentario</span>
+            <p class="detail-notes">{{ data.notes }}</p>
         </div>
     }
 
@@ -58,17 +54,11 @@
                 @for (step of data.approvalChain; track step.stepOrder) {
                     <li class="signoff-step" [ngClass]="stepClass(step)">
                         <span class="signoff-step__marker">
-                            @if (step.status === 'Approved') {
-                                <mat-icon>check</mat-icon>
-                            } @else if (step.status === 'Rejected') {
-                                <mat-icon>close</mat-icon>
-                            } @else if (step.status === 'Skipped') {
-                                <mat-icon>remove</mat-icon>
-                            } @else if (step.status === 'Blocked') {
-                                <mat-icon>priority_high</mat-icon>
-                            } @else {
-                                {{ step.stepOrder }}
-                            }
+                            @if (step.status === 'Approved') { <mat-icon>check</mat-icon> }
+                            @else if (step.status === 'Rejected') { <mat-icon>close</mat-icon> }
+                            @else if (step.status === 'Skipped') { <mat-icon>remove</mat-icon> }
+                            @else if (step.status === 'Blocked') { <mat-icon>priority_high</mat-icon> }
+                            @else { {{ step.stepOrder }} }
                         </span>
                         <div class="signoff-step__body">
                             <span class="signoff-step__role">{{ step.roleLabel }}</span>
@@ -83,16 +73,11 @@
                                 } @else if (step.status === 'Blocked') {
                                     Sin responsables asignados
                                 } @else if (step.isCurrent) {
-                                    En espera de firma@if (step.daysPending) { · {{ step.daysPending }} día(s) }
+                                    En espera de firma
                                 } @else {
                                     Pendiente
                                 }
                             </span>
-                            @if (step.isOverdue) {
-                                <span class="signoff-step__overdue">
-                                    <mat-icon>warning</mat-icon> Vencido
-                                </span>
-                            }
                             @if (step.status !== 'Approved' && step.status !== 'Rejected' && step.candidateNames?.length) {
                                 <span class="signoff-step__assigned">
                                     <mat-icon>person</mat-icon> Asignado a: {{ step.candidateNames!.join(', ') }}
@@ -107,31 +92,6 @@
             </ol>
         </div>
     }
-
-    <div class="detail-section">
-        <span class="detail-section__title"><mat-icon>notes</mat-icon> Comentario</span>
-        <p class="detail-notes" [class.detail-notes--empty]="!data.notes">
-            {{ data.notes || 'Sin comentarios' }}
-        </p>
-    </div>
-
-    <div class="detail-section">
-        <span class="detail-section__title"><mat-icon>event</mat-icon> Días del permiso</span>
-        <div class="day-list">
-            @for (day of data.days; track day.date) {
-                <div class="day-item" [class.day-item--overtime]="day.overtimeMinutes > 0">
-                    <span class="day-item__date">{{ day.date | date:'EEEE, dd MMM yyyy' }}</span>
-                    @if (day.overtimeMinutes > 0) {
-                        <span class="day-item__badge">
-                            <mat-icon>schedule</mat-icon>{{ day.overtimeFormatted }}
-                        </span>
-                    } @else {
-                        <span class="day-item__muted">Sin horas extra</span>
-                    }
-                </div>
-            }
-        </div>
-    </div>
 </mat-dialog-content>
 
 <mat-dialog-actions>

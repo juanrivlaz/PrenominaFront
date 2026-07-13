@@ -69,6 +69,14 @@ export interface IOvertimeDayDetail {
     status: OvertimeDayStatus;
     statusLabel: string;
     movementId?: number;
+    // Papeleta de pago asociada (solo días pagados que generaron solicitud).
+    paymentRequestId?: string;
+    // True si la papeleta ya fue aprobada por todos: el pago ya no se puede cancelar.
+    paymentRequestApproved?: boolean;
+    // True si el día volvió a pendiente porque su papeleta de pago fue rechazada.
+    wasRejected?: boolean;
+    // Motivo del rechazo (cuando wasRejected): para saber que ya fue rechazado y por qué.
+    rejectionNote?: string;
 }
 
 export interface IOvertimeSummary {

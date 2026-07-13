@@ -14,6 +14,21 @@
         }
     }
 
+    button.already-generated {
+        border-color: #66bb6a;
+        color: #2e7d32;
+
+        .generated-badge {
+            margin-left: 8px;
+            padding: 1px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+    }
+
     .filter-chips {
         margin-left: 8px;
 
@@ -264,6 +279,27 @@
 
 .hour-bank-btn {
     color: #2e7d32 !important;
+}
+
+// Día pendiente que proviene de una papeleta rechazada: se resalta y muestra el motivo.
+.status-cell {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+
+    .rejected-chip {
+        background-color: #ffebee !important;
+        color: #d32f2f !important;
+        border: 1px solid #ef9a9a !important;
+    }
+
+    .rejection-info {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+        color: #d32f2f;
+        cursor: help;
+    }
 }
 
 .empty-state,

@@ -41,6 +41,18 @@ app-detail-day {
             align-self: center !important;
             display: flex !important;
         }
+
+        .approval-locked {
+            align-self: center !important;
+            display: flex !important;
+            color: rgba(0, 0, 0, 0.38);
+
+            mat-icon {
+                font-size: 20px;
+                width: 20px;
+                height: 20px;
+            }
+        }
     }
 
     .confirm-delete {

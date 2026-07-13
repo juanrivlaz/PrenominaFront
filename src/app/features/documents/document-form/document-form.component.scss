@@ -1,3 +1,117 @@
+app-document-form {
+    .tab-body {
+        padding: 20px 4px 4px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .tab-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 18px;
+        height: 18px;
+        padding: 0 5px;
+        margin-left: 8px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 700;
+        color: #fff;
+        background: var(--primary-color, #5b6bff);
+    }
+
+    .chain-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .chain-help {
+        font-size: 13px;
+        color: #6b7280;
+        margin: 0;
+        flex: 1;
+    }
+
+    .chain-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .chain-step {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 12px;
+        border: 1px solid #e3e6f0;
+        border-radius: 12px;
+        background: #fafbff;
+
+        &__order {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 26px;
+            height: 26px;
+            flex: 0 0 auto;
+            margin-top: 6px;
+            border-radius: 50%;
+            background: rgba(91, 107, 255, .12);
+            color: #3949c4;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        &__fields {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px 12px;
+            align-items: center;
+            min-width: 0;
+        }
+
+        &__actions {
+            display: flex;
+            flex-direction: column;
+            flex: 0 0 auto;
+        }
+    }
+
+    .chain-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 2px;
+        padding: 32px 16px;
+        color: #9aa1ad;
+
+        mat-icon {
+            font-size: 40px;
+            width: 40px;
+            height: 40px;
+            margin-bottom: 8px;
+            color: #c7ccff;
+        }
+
+        p {
+            margin: 0;
+            font-weight: 600;
+            color: #6b7280;
+        }
+    }
+
+    @media (max-width: 600px) {
+        .chain-step__fields {
+            grid-template-columns: 1fr;
+        }
+    }
+}
+
 .document-form-dialog {
     .mat-mdc-dialog-container .mdc-dialog__surface {
         max-height: 95vh;
@@ -5,7 +119,12 @@
 
     .mat-mdc-dialog-content {
         max-height: none;
-        overflow: hidden;
+        overflow-y: auto;
+    }
+
+    // Altura cómoda y fija del editor (el scroll lo maneja el contenido del modal).
+    .tox-tinymce {
+        height: 600px !important;
     }
 }
 
@@ -48,7 +167,7 @@ form {
     padding: 14px 20px 6px;
     flex: 1 1 auto;
     min-height: 0;
-    overflow: hidden;
+    overflow-y: auto;   // permite desplazarse por todo el contenido
 }
 
 .form-section {
@@ -145,8 +264,7 @@ form {
     display: flex;
     flex-direction: column;
     gap: 4px;
-    flex: 1 1 auto;
-    min-height: 240px;
+    flex: 0 0 auto;
 
     .section-label {
         font-size: 12px;
@@ -160,13 +278,14 @@ form {
         border-radius: 8px;
         overflow: hidden;
         box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
-        flex: 1 1 auto;
-        min-height: 0;
-        display: flex;
+        display: block;
 
-        editor,
+        editor {
+            display: block;
+            width: 100%;
+        }
+
         :where(.tox-tinymce) {
-            flex: 1 1 auto;
             width: 100%;
             border: 0 !important;
             border-radius: 8px !important;

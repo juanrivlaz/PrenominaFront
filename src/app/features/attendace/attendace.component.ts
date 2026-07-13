@@ -399,12 +399,20 @@ export class AttendaceComponent implements OnInit, OnDestroy {
         const activeTenant = this.authService.activeTenant.value.trim().replace(/\s+/g, '');
         const activeCompany = this.authService.activeCompany.value;
 
-        return this.listPeriodStatus().some(
+        const rows = this.listPeriodStatus().filter(
             (item) => item.typePayroll === this.payroll?.typeNom &&
                 item.numPeriod === this.period?.numPeriod &&
-                (item.tenantId === '-999' || item.tenantId === activeTenant) &&
-                item.companyId === activeCompany
+                item.companyId === activeCompany &&
+                (item.tenantId === '-999' || item.tenantId === activeTenant)
         );
+
+        // Una excepción de apertura para este tenant gana sobre el cierre global.
+        if (rows.some((item) => item.tenantId === activeTenant && item.isOpen)) {
+            return false;
+        }
+
+        // Cerrado si hay un cierre para el tenant o un cierre global ('-999').
+        return rows.some((item) => !item.isOpen);
     }
 
     public get(search: string = ''): void {
@@ -503,6 +511,15 @@ export class AttendaceComponent implements OnInit, OnDestroy {
         return employee.attendances?.some((attendance) => attendance.isNightShift) ?? false;
     }
 
+    // Las incidencias generadas por un flujo de aprobación (solicitudes de ausencia o
+    // incidencias que requieren aprobación) no se pueden editar ni eliminar desde asistencia;
+    // se gestionan desde la bandeja de aprobaciones.
+    public hasApprovalFlowIncident(attendance: IAttendance): boolean {
+        return attendance.assistanceIncidents?.some(
+            (incident) => incident.fromApprovalFlow && !incident.isAdditional
+        ) ?? false;
+    }
+
     public setIncidencia(incidentCode: string, employeeCode: number, company: number, attendance: IAttendance, customValue?: number, notes?: string): void {
         const identifyIncident = `${employeeCode}${company}${attendance.date}`;
 
@@ -528,10 +545,14 @@ export class AttendaceComponent implements OnInit, OnDestroy {
                 next: (response) => {
                     const { assistanceIncidents } = attendance;
 
+                    // El backend debe devolver itemIncidentCode con los metadatos del código;
+                    // si por alguna razón llega vacío usamos el código enviado para no romper la UI.
+                    const itemIncidentCode = response?.itemIncidentCode;
+
                     // Las incidencias que requieren aprobación quedan pendientes y NO deben mostrarse
                     // en asistencia (ni en la celda ni en el detalle del día) hasta ser aprobadas.
-                    if (response.approved) {
-                        if (!response.itemIncidentCode.isAdditional) {
+                    if (response?.approved) {
+                        if (!itemIncidentCode?.isAdditional) {
                             attendance.incidentCode = incidentCode;
                             attendance.assistanceIncidents = assistanceIncidents
                                 ? assistanceIncidents.map((item) => {
@@ -539,31 +560,31 @@ export class AttendaceComponent implements OnInit, OnDestroy {
                                         return {
                                             ...item,
                                             incidentCode: response.incidentCode,
-                                            label: response.itemIncidentCode.label,
-                                            isAdditional: response.itemIncidentCode.isAdditional,
+                                            label: itemIncidentCode?.label,
+                                            isAdditional: itemIncidentCode?.isAdditional ?? false,
                                         };
                                     }
                                     return item;
                                 })
                                 : [{
                                     ...response,
-                                    label: response.itemIncidentCode.label,
-                                    isAdditional: response.itemIncidentCode.isAdditional,
+                                    label: itemIncidentCode?.label,
+                                    isAdditional: itemIncidentCode?.isAdditional ?? false,
                                 }];
                         } else {
                             attendance.assistanceIncidents = [
                                 ...(assistanceIncidents || []),
                                 {
                                     ...response,
-                                    label: response.itemIncidentCode.label,
-                                    isAdditional: response.itemIncidentCode.isAdditional,
+                                    label: itemIncidentCode?.label,
+                                    isAdditional: itemIncidentCode?.isAdditional ?? true,
                                 }
                             ];
                         }
                     }
 
                     this.showSuccess(
-                        response.approved
+                        response?.approved
                             ? 'Incidencia registrada'
                             : 'Incidencia registrada, pendiente de aprobación'
                     );

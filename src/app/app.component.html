@@ -1,18 +1,18 @@
 <mat-sidenav-container>
   <div id="app-main-content">
     <div id="wrapper">
-      @if (appSettings.layout.navigation !== 'none') {
+      @if (appSettings().layout.navigation !== 'none') {
         <app-navbar></app-navbar>
       }
 
       <div class="content-wrapper">
-        @if (appSettings.layout.toolbar !== 'none') {
+        @if (appSettings().layout.toolbar !== 'none') {
           <app-toolbar> </app-toolbar>
         }
 
         <router-outlet></router-outlet>
 
-        <app-splash-screen [@fadeInOut]="appSettings.loading ? '1' : '0'"></app-splash-screen>
+        <app-splash-screen [@fadeInOut]="appSettings().loading ? '1' : '0'"></app-splash-screen>
       </div>
     </div>
   </div>

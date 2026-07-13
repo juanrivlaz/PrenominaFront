@@ -275,7 +275,7 @@
             </section>
         </div>
         <div class="ctn-item-step content-profile" [@fadeInOut]="sectionIsActive('Profile') ? '1' : '0'">
-            <editor [init]="initConfigEditor" [apiKey]="tinymceApiKey" [(ngModel)]="contentDocument"></editor>
+            <editor [init]="initConfigEditor" [(ngModel)]="contentDocument"></editor>
             <button mat-button (click)="saveDoc()">Save</button>
         </div>
         <div class="ctn-item-step content-appearence" [@fadeInOut]="sectionIsActive('Appearance') ? '1' : '0'">

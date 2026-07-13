@@ -17,15 +17,17 @@
             <td mat-cell *matCellDef="let row"> {{ getModuleLabel(row.module) }} </td>
         </ng-container>
 
-        <ng-container matColumnDef="keyParams">
-            <th mat-header-cell *matHeaderCellDef> Parámetros </th>
-            <td mat-cell *matCellDef="let row" class="params-cell">
-                @for (kp of row.keyParams; track kp) {
-                    <span class="param-chip">{{ kp }}</span>
-                }
-                @if (!row.keyParams || row.keyParams.length === 0) {
-                    <span class="empty">—</span>
-                }
+        <ng-container matColumnDef="signers">
+            <th mat-header-cell *matHeaderCellDef> Firmantes </th>
+            <td mat-cell *matCellDef="let row" class="signers-cell">
+                <div class="chip-list">
+                    @for (signer of row.signers; track $index) {
+                        <span class="param-chip">{{ signer }}</span>
+                    }
+                    @if (!row.signers || row.signers.length === 0) {
+                        <span class="empty">Sin cadena de firmas</span>
+                    }
+                </div>
             </td>
         </ng-container>
 

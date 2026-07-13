@@ -241,20 +241,54 @@ app-pendings-attendamce-incident {
         gap: 16px;
         flex-wrap: wrap;
 
-        .date-range {
-            min-width: 240px;
-        }
-
         .ctn-others {
             display: flex;
             gap: 12px;
             align-items: center;
+
+            // Date range (Material outline) compacted to match the search input height
+            // and vertically centered so it aligns with the chips and the search box.
+            .date-range {
+                width: 240px;
+
+                .mat-mdc-text-field-wrapper {
+                    background: #fff;
+                    border-radius: 6px;
+                }
+
+                // Remove the reserved hint/error space below the field.
+                .mat-mdc-form-field-subscript-wrapper {
+                    display: none;
+                }
+
+                .mat-mdc-form-field-flex {
+                    align-items: center;
+                }
+
+                // Fixed height with no vertical padding so the inputs are centered;
+                // the resting label (placeholder) centers on the infix too.
+                .mat-mdc-form-field-infix {
+                    min-height: 40px;
+                    padding-top: 0;
+                    padding-bottom: 0;
+                    display: flex;
+                    align-items: center;
+                }
+
+                // Center the resting (placeholder) label vertically.
+                .mat-mdc-floating-label:not(.mdc-floating-label--float-above) {
+                    top: 50%;
+                    transform: translateY(-50%);
+                }
+            }
 
             .ctn-search {
                 .input-search {
                     position: relative;
 
                     input {
+                        height: 40px;
+                        box-sizing: border-box;
                         padding: 7px 11px;
                         padding-right: 32px;
                         border-radius: 6px;
@@ -264,9 +298,9 @@ app-pendings-attendamce-incident {
 
                     mat-icon {
                         position: absolute;
-                        right: 0px;
-                        top: 5px;
+                        top: 50%;
                         right: 7px;
+                        transform: translateY(-50%);
                         color: #a6aab2;
                     }
                 }

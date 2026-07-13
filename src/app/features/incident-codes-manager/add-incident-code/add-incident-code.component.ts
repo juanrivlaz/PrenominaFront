@@ -39,6 +39,11 @@ export class AddIncidentCodeComponent {
     public isEditMode: boolean = !!this.data.item;
     public loading = false;
 
+    // Documentos/contratos disponibles para asignar (su cadena de firmas se usa en el permiso).
+    // Se excluye el módulo "Pago de horas extras" (4): no va ligado a incidencias.
+    public readonly documents: WritableSignal<Array<{ id: string; name: string }>> = signal([]);
+    private static readonly OVERTIME_PAYMENT_MODULE = 4;
+
     constructor(private readonly service: IncidentCodesManagerService) {
         this.incidentForm = new FormGroup({
             code: new FormControl({
@@ -69,6 +74,14 @@ export class AddIncidentCodeComponent {
             availableForTimeOff: new FormControl<boolean>(this.data.item?.availableForTimeOff ?? false),
             restrictedWithRoles: new FormControl<boolean>(this.data.item?.restrictedWithRoles ?? false),
             allowedRoles: new FormControl<Array<string>>(this.data.item?.incidentCodeAllowedRoles?.map(role => role.roleId) ?? []),
+            documentId: new FormControl<string | null>(this.data.item?.documentId ?? null),
+        });
+
+        this.service.getDocuments().subscribe({
+            next: (docs) => this.documents.set(
+                docs.filter(d => d.module !== AddIncidentCodeComponent.OVERTIME_PAYMENT_MODULE)
+            ),
+            error: () => { /* el contrato es opcional */ },
         });
 
         this.incidentForm.get('withOperation')?.valueChanges.subscribe((value) => {
@@ -166,6 +179,7 @@ export class AddIncidentCodeComponent {
 
     public submit(): void {
         this.incidentForm.markAllAsTouched();
+
         const form = {
             ...this.incidentForm.value,
             incidentApprovers: this.incidentForm.value.incidentApprovers || [],

@@ -1,5 +1,11 @@
 <h2 mat-dialog-title>{{ getTitle() }}</h2>
 <mat-dialog-content>
+    @if (data.warningMessage) {
+        <div class="warning-banner">
+            <mat-icon>warning</mat-icon>
+            <span>{{ data.warningMessage }}</span>
+        </div>
+    }
     <div class="employee-info">
         <p><strong>Empleado:</strong> {{ data.employeeName }} ({{ data.employeeCode }})</p>
         @if (data.sourceDate) {

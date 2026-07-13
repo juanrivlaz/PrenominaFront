@@ -1,0 +1,129 @@
+<h2 mat-dialog-title>
+    <mat-icon>receipt_long</mat-icon>
+    Previsualización de tiempo extra autorizado
+</h2>
+
+<mat-dialog-content class="preview-content">
+    <p class="preview-hint">
+        Renglones a importar (conceptos 11/12/13). El importe se calcula como
+        (sueldo&nbsp;/&nbsp;8)&nbsp;×&nbsp;horas&nbsp;×&nbsp;factor.
+    </p>
+
+    @if (status()?.generated) {
+        <div class="preview-warning" role="alert">
+            <mat-icon>warning</mat-icon>
+            <div class="preview-warning-text">
+                <strong>Este periodo ya fue generado.</strong>
+                <span>
+                    Última generación: {{ status()!.lastGeneratedAt | date:'dd/MM/yyyy HH:mm' }}
+                    @if (status()!.generatedByName) { · por {{ status()!.generatedByName }} }
+                    @if (status()!.generationCount > 1) { · {{ status()!.generationCount }} veces }
+                </span>
+                <span>No vuelvas a subir el archivo a la aplicación externa para no pagar dos veces.</span>
+            </div>
+        </div>
+    }
+
+    @if (!loading() && lines().length > 0) {
+        <mat-form-field appearance="outline" class="preview-search">
+            <mat-label>Filtrar por código, nombre o puesto</mat-label>
+            <mat-icon matPrefix>search</mat-icon>
+            <input matInput [value]="search()" (input)="search.set($any($event.target).value)"
+                placeholder="Buscar empleado...">
+            @if (search()) {
+                <button matSuffix mat-icon-button (click)="search.set('')" aria-label="Limpiar">
+                    <mat-icon>close</mat-icon>
+                </button>
+            }
+        </mat-form-field>
+    }
+
+    @if (loading()) {
+        <div class="preview-state">
+            <mat-spinner diameter="40"></mat-spinner>
+            <span>Calculando renglones...</span>
+        </div>
+    } @else if (lines().length === 0) {
+        <div class="preview-state">
+            <mat-icon>inbox</mat-icon>
+            <span>No hay tiempo extra autorizado en este periodo.</span>
+        </div>
+    } @else if (filteredLines().length === 0) {
+        <div class="preview-state">
+            <mat-icon>search_off</mat-icon>
+            <span>Ningún empleado coincide con "{{ search() }}".</span>
+        </div>
+    } @else {
+        <div class="preview-table-wrapper">
+            <table mat-table [dataSource]="filteredLines()" class="preview-table">
+                <ng-container matColumnDef="employeeCode">
+                    <th mat-header-cell *matHeaderCellDef>Código</th>
+                    <td mat-cell *matCellDef="let row">{{ row.employeeCode }}</td>
+                    <td mat-footer-cell *matFooterCellDef>Totales</td>
+                </ng-container>
+
+                <ng-container matColumnDef="fullName">
+                    <th mat-header-cell *matHeaderCellDef>Nombre</th>
+                    <td mat-cell *matCellDef="let row">{{ row.fullName }}</td>
+                    <td mat-footer-cell *matFooterCellDef></td>
+                </ng-container>
+
+                <ng-container matColumnDef="jobPosition">
+                    <th mat-header-cell *matHeaderCellDef>Puesto</th>
+                    <td mat-cell *matCellDef="let row">{{ row.jobPosition || '—' }}</td>
+                    <td mat-footer-cell *matFooterCellDef></td>
+                </ng-container>
+
+                <ng-container matColumnDef="concept">
+                    <th mat-header-cell *matHeaderCellDef>Concepto</th>
+                    <td mat-cell *matCellDef="let row">{{ conceptLabel(row.concept) }}</td>
+                    <td mat-footer-cell *matFooterCellDef></td>
+                </ng-container>
+
+                <ng-container matColumnDef="importe">
+                    <th mat-header-cell *matHeaderCellDef class="num">Importe</th>
+                    <td mat-cell *matCellDef="let row" class="num">{{ row.amount | currency:'MXN':'symbol-narrow':'1.2-2' }}</td>
+                    <td mat-footer-cell *matFooterCellDef class="num">{{ totalAmount() | currency:'MXN':'symbol-narrow':'1.2-2' }}</td>
+                </ng-container>
+
+                <ng-container matColumnDef="date">
+                    <th mat-header-cell *matHeaderCellDef>Fecha</th>
+                    <td mat-cell *matCellDef="let row">{{ row.date | date:'dd/MM/yyyy' }}</td>
+                    <td mat-footer-cell *matFooterCellDef></td>
+                </ng-container>
+
+                <ng-container matColumnDef="hours">
+                    <th mat-header-cell *matHeaderCellDef class="num">Horas</th>
+                    <td mat-cell *matCellDef="let row" class="num">{{ row.hours | number:'1.2-2' }}</td>
+                    <td mat-footer-cell *matFooterCellDef class="num">{{ totalHours() | number:'1.2-2' }}</td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="columns"></tr>
+                <tr mat-row *matRowDef="let row; columns: columns;"></tr>
+                <tr mat-footer-row *matFooterRowDef="columns"></tr>
+            </table>
+        </div>
+    }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+    @if (awaitingConfirm()) {
+        <span class="confirm-hint">¿Volver a generar? Ya se generó antes.</span>
+        <button mat-button (click)="awaitingConfirm.set(false)">Cancelar</button>
+    } @else {
+        <button mat-button mat-dialog-close>Cerrar</button>
+    }
+    <button mat-flat-button [color]="awaitingConfirm() ? 'warn' : 'primary'" (click)="download()"
+        [disabled]="loading() || downloading() || lines().length === 0">
+        <mat-icon>{{ awaitingConfirm() ? 'warning' : 'download' }}</mat-icon>
+        @if (downloading()) {
+            Generando...
+        } @else if (awaitingConfirm()) {
+            Confirmar regeneración
+        } @else if (status()?.generated) {
+            Volver a generar
+        } @else {
+            Descargar XLSX
+        }
+    </button>
+</mat-dialog-actions>

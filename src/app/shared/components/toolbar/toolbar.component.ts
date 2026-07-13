@@ -63,16 +63,14 @@ export class AppToolbar {
                 label: s.name || '-',
                 company: s.company,
             }));
-
-            if (this.authService.role === 'sudo') {
-                this._tenants.unshift({
-                    id: '-999',
-                    label: 'TODOS',
-                    company: -999
-                });
-            }
         });
     }
+
+    // Opción "TODOS" del filtro de centro/supervisor.
+    // - sudo: siempre disponible (sin restricción de centro en el backend).
+    // - no-sudo: solo cuando tiene más de un centro/supervisor asignado en la empresa activa;
+    //   el backend limita "-999" a sus centros/supervisores asignados.
+    private readonly allTenantsOption = { id: '-999', label: 'TODOS', company: -999 };
 
     public get company(): string {
         const company = this.companies().find((item) => item.id === this.activeCompany());
@@ -95,7 +93,10 @@ export class AppToolbar {
     }
 
     public get tenants(): Array<{ id: string, label: string, company: number }> {
-        return this._tenants.filter((item) => item.company === this.activeCompany() || item.company === -999);
+        const tenantsForCompany = this._tenants.filter((item) => item.company === this.activeCompany());
+        const showAllOption = this.authService.role === 'sudo' || tenantsForCompany.length > 1;
+
+        return showAllOption ? [this.allTenantsOption, ...tenantsForCompany] : tenantsForCompany;
     }
 
     public get userName(): string {
@@ -108,7 +109,7 @@ export class AppToolbar {
 
     public selectCompany(id: number): void {
         this.authService.setActiveCompany(id);
-        const firstTenant = this._tenants.filter((item) => item.company === id || item.company === -999)[0];
+        const firstTenant = this._tenants.filter((item) => item.company === id)[0];
         this.selectTenant(firstTenant?.id || '0');
     }
 

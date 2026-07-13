@@ -4,10 +4,11 @@ import { MAT_DIALOG_DATA, MatDialogActions, MatDialogClose, MatDialogContent, Ma
 import { MaterialModule } from "@shared/modules/material/material.module";
 import { AvatarComponent } from "@shared/components/avatar/avatar.component";
 import { AbsenceRequestStatus } from "@core/models/enum/absence-request-status";
-import { IAbsenceRequestApprovalStep, IEmployeeAbsenceRequestDetail } from "@core/models/pendings-attendance-incident/employee-absence-request-detail.interface";
+import { IAbsenceRequestApprovalStep } from "@core/models/pendings-attendance-incident/employee-absence-request-detail.interface";
+import { IOvertimePaymentRequestDetail } from "@core/models/pendings-attendance-incident/overtime-payment-request.interface";
 
 @Component({
-    selector: 'app-absence-request-detail',
+    selector: 'app-overtime-payment-detail',
     imports: [
         CommonModule,
         MaterialModule,
@@ -17,24 +18,18 @@ import { IAbsenceRequestApprovalStep, IEmployeeAbsenceRequestDetail } from "@cor
         MatDialogClose,
         MatDialogTitle,
     ],
-    templateUrl: './absence-request-detail.component.html',
-    styleUrl: './absence-request-detail.component.scss',
+    templateUrl: './overtime-payment-detail.component.html',
+    styleUrl: './overtime-payment-detail.component.scss',
     encapsulation: ViewEncapsulation.None,
 })
-export class AbsenceRequestDetailComponent {
-    public readonly data = inject<IEmployeeAbsenceRequestDetail>(MAT_DIALOG_DATA);
-    private readonly dialogRef = inject(MatDialogRef<AbsenceRequestDetailComponent>);
+export class OvertimePaymentDetailComponent {
+    public readonly data = inject<IOvertimePaymentRequestDetail>(MAT_DIALOG_DATA);
+    private readonly dialogRef = inject(MatDialogRef<OvertimePaymentDetailComponent>);
 
-    // Hay niveles sin responsables resolubles -> ofrecer re-resolver la cadena.
-    public readonly hasBlocked = (this.data.approvalChain ?? []).some(s => s.status === 'Blocked');
-
-    public requestReResolve(): void {
-        this.dialogRef.close('reresolve');
-    }
-
-    public readonly statusPending = AbsenceRequestStatus.Pending;
     public readonly statusApproved = AbsenceRequestStatus.Approved;
     public readonly statusRejected = AbsenceRequestStatus.Rejected;
+
+    public readonly hasBlocked = (this.data.approvalChain ?? []).some(s => s.status === 'Blocked');
 
     public readonly statusLabel = computed(() => {
         switch (this.data.status) {
@@ -60,5 +55,9 @@ export class AbsenceRequestDetailComponent {
             case 'Blocked': return 'is-blocked';
             default: return step.isCurrent ? 'is-current' : 'is-pending';
         }
+    }
+
+    public requestReResolve(): void {
+        this.dialogRef.close('reresolve');
     }
 }

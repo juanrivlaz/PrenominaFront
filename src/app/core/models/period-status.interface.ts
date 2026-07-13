@@ -5,4 +5,6 @@ export interface IPeriodStatus {
     year: number;
     companyId: number;
     tenantId: string;
+    // false = cierre; true = excepción de apertura para el tenant (override sobre '-999').
+    isOpen: boolean;
 }

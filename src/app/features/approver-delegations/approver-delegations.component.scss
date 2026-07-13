@@ -1,0 +1,55 @@
+app-approver-delegations {
+    .subtitle {
+        color: #6b7280;
+        font-size: 14px;
+        margin: 4px 0 20px;
+    }
+
+    .delegation-form {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 24px;
+
+        mat-form-field {
+            min-width: 200px;
+            flex: 1;
+        }
+
+        button {
+            flex: 0 0 auto;
+        }
+    }
+
+    .delegation-table {
+        width: 100%;
+        background: #fff;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    .badge {
+        padding: 3px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+
+        &.active {
+            color: #2e7d32;
+            background: #e8f5e9;
+        }
+
+        &.inactive {
+            color: #6b7280;
+            background: #eceef2;
+        }
+    }
+
+    .empty {
+        text-align: center;
+        color: #9aa1ad;
+        font-style: italic;
+        padding: 24px;
+    }
+}

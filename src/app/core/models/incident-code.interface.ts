@@ -17,4 +17,5 @@ export interface IIncidentCode {
     incidentApprovers: Array<IIncidentApprover>;
     incidentCodeMetadata?: IIncidentCodeMetadata;
     incidentCodeAllowedRoles?: Array<IIncidentCodeAllowedRoles>;
+    documentId?: string;
 }

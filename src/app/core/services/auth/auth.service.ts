@@ -124,7 +124,9 @@ export class AuthService {
                 const existTenant = loginResponse.userDetails.centers.find(item => item.id.trim() === activeTenantValue?.trim());
                 const firstCenter = existTenant || loginResponse.userDetails.centers[0];
 
-                if (activeTenantValue === "-999" && loginResponse.userDetails.role.code === 'sudo') {
+                // "-999" = TODOS. Para sudo es global; para no-sudo el backend lo limita a sus
+                // centros asignados, por eso se restaura para cualquier rol.
+                if (activeTenantValue === "-999") {
                     this.setActiveTenant('-999');
                 } else {
                     this.setActiveTenant(firstCenter.id.trim());
@@ -133,7 +135,9 @@ export class AuthService {
                 const existTenant = loginResponse.userDetails.supervisors.find(item => item.id === parseInt(activeTenantValue || '-1', 10));
                 const firstSupervisor = existTenant || loginResponse.userDetails.supervisors[0];
 
-                if (activeTenantValue === "-999" && loginResponse.userDetails.role.code === 'sudo') {
+                // "-999" = TODOS. Para sudo es global; para no-sudo el backend lo limita a sus
+                // supervisores asignados, por eso se restaura para cualquier rol.
+                if (activeTenantValue === "-999") {
                     this.setActiveTenant('-999');
                 } else {
                     this.setActiveTenant(firstSupervisor.id.toString());
@@ -167,7 +171,8 @@ export class AuthService {
             findFirst = (existTenant?.id || this.supervisors.value?.[0]?.id).toString();
         }
 
-        if (this.role === 'sudo' && activeTenantValue === '-999') {
+        // "-999" = TODOS; el backend lo limita a los centros/supervisores asignados del no-sudo.
+        if (activeTenantValue === '-999') {
             findFirst = '-999';
         }
 

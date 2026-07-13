@@ -15,50 +15,128 @@
             <div class="error-banner">{{ errorMessage() }}</div>
         }
 
-        <section class="form-section">
-            <div class="row">
-                <mat-form-field appearance="outline">
-                    <mat-label>Nombre</mat-label>
-                    <input matInput formControlName="name" placeholder="Ej. Contrato indefinido">
-                </mat-form-field>
+        <mat-tab-group animationDuration="0ms" mat-stretch-tabs="false">
+            <!-- ============ Pestaña: Plantilla ============ -->
+            <mat-tab label="Plantilla">
+                <div class="tab-body">
+                    <section class="form-section">
+                        <div class="row">
+                            <mat-form-field appearance="outline">
+                                <mat-label>Nombre</mat-label>
+                                <input matInput formControlName="name" placeholder="Ej. Contrato indefinido">
+                            </mat-form-field>
 
-                <mat-form-field appearance="outline">
-                    <mat-label>Módulo</mat-label>
-                    <mat-select formControlName="module">
-                        @for (item of moduleOptions; track item.id) {
-                            <mat-option [value]="item.id">{{ item.label }}</mat-option>
+                            <mat-form-field appearance="outline">
+                                <mat-label>Módulo</mat-label>
+                                <mat-select formControlName="module">
+                                    @for (item of moduleOptions; track item.id) {
+                                        <mat-option [value]="item.id">{{ item.label }}</mat-option>
+                                    }
+                                </mat-select>
+                            </mat-form-field>
+                        </div>
+
+                    </section>
+
+                    <section class="placeholders-panel">
+                        <div class="placeholders-header">
+                            <span class="placeholders-title">Variables</span>
+                            <span class="placeholders-hint">Clic para insertar</span>
+                        </div>
+                        <div class="placeholders-row">
+                            @for (ph of availablePlaceholders; track ph.key) {
+                                <button type="button" class="placeholder-chip"
+                                        [matTooltip]="ph.description" matTooltipPosition="above"
+                                        (click)="insertPlaceholder(ph.key)">
+                                    {{ '{{' }} {{ ph.key }} {{ '}}' }}
+                                </button>
+                            }
+                        </div>
+                    </section>
+
+                    <section class="editor-section">
+                        <span class="section-label">Contenido</span>
+                        <div class="editor-wrapper">
+                            <editor [init]="editorConfig" formControlName="content"></editor>
+                        </div>
+                    </section>
+                </div>
+            </mat-tab>
+
+            <!-- ============ Pestaña: Cadena de firmas ============ -->
+            <mat-tab>
+                <ng-template mat-tab-label>
+                    Cadena de firmas
+                    @if (approvalSteps.length) {
+                        <span class="tab-badge">{{ approvalSteps.length }}</span>
+                    }
+                </ng-template>
+
+                <div class="tab-body">
+                    <div class="chain-header">
+                        <p class="chain-help">
+                            Define el orden de firmas de este contrato. El alcance determina quién firma:
+                            el jefe del departamento del empleado, o un rol a nivel empresa.
+                        </p>
+                        <button type="button" mat-stroked-button color="primary" (click)="addStep()">
+                            <mat-icon>add</mat-icon> Agregar nivel
+                        </button>
+                    </div>
+
+                    <div class="chain-list" formArrayName="approvalSteps">
+                        @for (step of approvalSteps.controls; track $index) {
+                            <div class="chain-step" [formGroupName]="$index">
+                                <span class="chain-step__order">{{ $index + 1 }}</span>
+                                <div class="chain-step__fields">
+                                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                                        <mat-label>Rol que firma</mat-label>
+                                        <mat-select formControlName="roleId">
+                                            @for (role of roles(); track role.id) {
+                                                <mat-option [value]="role.id">{{ role.label }}</mat-option>
+                                            }
+                                        </mat-select>
+                                    </mat-form-field>
+                                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                                        <mat-label>Alcance</mat-label>
+                                        <mat-select formControlName="scope">
+                                            @for (opt of scopeOptions; track opt.value) {
+                                                <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+                                            }
+                                        </mat-select>
+                                    </mat-form-field>
+                                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                                        <mat-label>Firmantes</mat-label>
+                                        <mat-select formControlName="mode">
+                                            @for (opt of modeOptions; track opt.value) {
+                                                <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+                                            }
+                                        </mat-select>
+                                    </mat-form-field>
+                                    <mat-checkbox formControlName="isOptional">Opcional</mat-checkbox>
+                                </div>
+                                <div class="chain-step__actions">
+                                    <button type="button" mat-icon-button [disabled]="$first" matTooltip="Subir" (click)="moveStep($index, -1)">
+                                        <mat-icon>arrow_upward</mat-icon>
+                                    </button>
+                                    <button type="button" mat-icon-button [disabled]="$last" matTooltip="Bajar" (click)="moveStep($index, 1)">
+                                        <mat-icon>arrow_downward</mat-icon>
+                                    </button>
+                                    <button type="button" mat-icon-button color="warn" matTooltip="Eliminar" (click)="removeStep($index)">
+                                        <mat-icon>delete</mat-icon>
+                                    </button>
+                                </div>
+                            </div>
+                        } @empty {
+                            <div class="chain-empty">
+                                <mat-icon>fact_check</mat-icon>
+                                <p>Sin niveles configurados.</p>
+                                <span>Agrega los firmantes que validarán este contrato.</span>
+                            </div>
                         }
-                    </mat-select>
-                </mat-form-field>
-            </div>
-
-            <mat-form-field appearance="outline">
-                <mat-label>Parámetros (separados por coma)</mat-label>
-                <input matInput formControlName="keyParams" placeholder="employeeName, startDate, ...">
-                <mat-hint>Lista de variables que se usarán al renderizar la plantilla.</mat-hint>
-            </mat-form-field>
-        </section>
-
-        <section class="placeholders-panel">
-            <div class="placeholders-header">
-                <span class="placeholders-title">Variables</span>
-                <span class="placeholders-hint">Clic para insertar</span>
-            </div>
-            <div class="placeholders-row">
-                @for (ph of availablePlaceholders; track ph) {
-                    <button type="button" class="placeholder-chip" (click)="insertPlaceholder(ph)">
-                        {{ '{{' }} {{ ph }} {{ '}}' }}
-                    </button>
-                }
-            </div>
-        </section>
-
-        <section class="editor-section">
-            <span class="section-label">Contenido</span>
-            <div class="editor-wrapper">
-                <editor [init]="editorConfig" [apiKey]="tinymceApiKey" formControlName="content"></editor>
-            </div>
-        </section>
+                    </div>
+                </div>
+            </mat-tab>
+        </mat-tab-group>
     </mat-dialog-content>
 
     <mat-dialog-actions align="end" class="dialog-actions">

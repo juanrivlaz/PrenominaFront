@@ -82,6 +82,11 @@ export const routes: Routes = [
     canActivate: [AuthGuard]
   },
   {
+    path: 'approver-delegations',
+    loadComponent: () => import('./features/approver-delegations/approver-delegations.component').then(m => m.ApproverDelegationsComponent),
+    canActivate: [AuthGuard]
+  },
+  {
     path: 'clocks',
     loadComponent: () => import('./features/clocks/clocks.component').then(m => m.ClocksComponent),
     canActivate: [AuthGuard]

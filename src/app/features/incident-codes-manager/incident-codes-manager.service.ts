@@ -18,6 +18,10 @@ export class IncidentCodesManagerService {
         return this.httpService.get<Array<IIncidentCode>>('/IncidentCode');
     }
 
+    public getDocuments(): Observable<Array<{ id: string; name: string; module: number }>> {
+        return this.httpService.get<Array<{ id: string; name: string; module: number }>>('/Documents');
+    }
+
     public store(form: IStoreIncidentCode): Observable<IIncidentCode> {
         return this.httpService.post<IIncidentCode>('/IncidentCode', form);
     }

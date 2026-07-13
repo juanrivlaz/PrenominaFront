@@ -13,4 +13,5 @@ export interface IStoreIncidentCode {
         columnForOperation: string;
     },
     incidentApprovers: Array<string>;
+    documentId?: string | null;
 }

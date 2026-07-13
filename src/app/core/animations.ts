@@ -72,8 +72,13 @@ export const appAnimations = [
             display: 'block',
             opacity: 1
         })),
-        transition('1 => 0', animate('150ms ease-out')),
-        transition('0 => 1', animate('150ms ease-in'))
+        // Se anima solo `opacity` (animable). `display` queda como estilo de reposo
+        // del estado destino y no entra en el keyframe, evitando el warning.
+        transition('1 => 0', animate('150ms ease-out', style({ opacity: 0 }))),
+        transition('0 => 1', [
+            style({ display: 'block' }),
+            animate('150ms ease-in', style({ opacity: 1 }))
+        ])
     ]),
 
     trigger('fontSizeIncrement', [

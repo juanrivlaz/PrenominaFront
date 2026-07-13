@@ -5,6 +5,17 @@
             <mat-icon>post_add</mat-icon>
             Registro externo
         </button>
+        <button mat-stroked-button (click)="openPaymentPreview()" [disabled]="loading()"
+            [class.already-generated]="paymentFileStatus()?.generated"
+            [matTooltip]="paymentFileStatus()?.generated
+                ? 'Este periodo ya fue generado. Ábrelo para revisar antes de volver a generar (no pagues dos veces).'
+                : 'Previsualizar y descargar archivo de importación de tiempo extra autorizado (conceptos 11/12/13)'">
+            <mat-icon>{{ paymentFileStatus()?.generated ? 'task_alt' : 'receipt_long' }}</mat-icon>
+            Archivo tpo. extra
+            @if (paymentFileStatus()?.generated) {
+                <span class="generated-badge">Ya generado</span>
+            }
+        </button>
         <div class="filter-chips">
             <mat-chip-set>
                 <mat-chip [class.active-filter]="statusFilter() === 'all'" (click)="statusFilter.set('all')">Todos</mat-chip>
@@ -200,9 +211,18 @@
                                 <ng-container matColumnDef="status">
                                     <th mat-header-cell *matHeaderCellDef>Estado</th>
                                     <td mat-cell *matCellDef="let day">
-                                        <mat-chip [ngClass]="getStatusClass(day.status)">
-                                            {{day.statusLabel}}
-                                        </mat-chip>
+                                        <div class="status-cell">
+                                            <mat-chip [ngClass]="getStatusClass(day.status)" [class.rejected-chip]="day.wasRejected">
+                                                {{day.statusLabel}}
+                                            </mat-chip>
+                                            @if (day.wasRejected && day.rejectionNote) {
+                                                <mat-icon class="rejection-info"
+                                                          [matTooltip]="'Rechazado: ' + day.rejectionNote"
+                                                          matTooltipClass="rejection-tooltip">
+                                                    error_outline
+                                                </mat-icon>
+                                            }
+                                        </div>
                                     </td>
                                 </ng-container>
 
@@ -228,12 +248,28 @@
                                                 <mat-icon>block</mat-icon>
                                             </button>
                                         }
-                                        @if (day.status === 1 || day.status === 2) {
+                                        @if (day.status === 1) {
                                             <button mat-icon-button color="warn"
                                                     (click)="cancelMovement(row, day)"
                                                     matTooltip="Cancelar">
                                                 <mat-icon>cancel</mat-icon>
                                             </button>
+                                        }
+                                        @if (day.status === 2) {
+                                            @if (day.paymentRequestApproved) {
+                                                <span matTooltip="La solicitud de pago ya fue aprobada; no se puede cancelar"
+                                                      class="locked-action">
+                                                    <button mat-icon-button disabled>
+                                                        <mat-icon>lock</mat-icon>
+                                                    </button>
+                                                </span>
+                                            } @else {
+                                                <button mat-icon-button color="warn"
+                                                        (click)="cancelMovement(row, day)"
+                                                        matTooltip="Cancelar pago y eliminar solicitud">
+                                                    <mat-icon>cancel</mat-icon>
+                                                </button>
+                                            }
                                         }
                                     </td>
                                 </ng-container>

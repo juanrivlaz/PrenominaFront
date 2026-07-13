@@ -15,10 +15,18 @@
         <mat-list-item *ngFor="let incident of data.assistanceIncidents" [ngClass]="{'delete': isForDelete(incident.id)}">
             <span matListItemTitle>{{ incident.incidentCode }} | {{ incident.label }}</span>
             <span matListItemLine>{{ incident.updatedAt | date: 'dd/MM/yyyy HH:mm:ss' }}</span>
-            <button mat-icon-button [disabled]="data.closedPeriod" matListItemMeta (click)="deleteItem(incident.id)" *ngIf="!isForDelete(incident.id)">
+            <span
+                matListItemMeta
+                class="approval-locked"
+                matTooltip="Incidencia generada por flujo de aprobación, no se puede editar ni eliminar"
+                *ngIf="incident.fromApprovalFlow"
+            >
+                <mat-icon>lock</mat-icon>
+            </span>
+            <button mat-icon-button [disabled]="data.closedPeriod" matListItemMeta (click)="deleteItem(incident.id)" *ngIf="!incident.fromApprovalFlow && !isForDelete(incident.id)">
                 <mat-icon>delete</mat-icon>
             </button>
-            <button mat-icon-button [disabled]="data.closedPeriod" matListItemMeta (click)="rollbackDelete(incident.id)" *ngIf="isForDelete(incident.id)">
+            <button mat-icon-button [disabled]="data.closedPeriod" matListItemMeta (click)="rollbackDelete(incident.id)" *ngIf="!incident.fromApprovalFlow && isForDelete(incident.id)">
                 <mat-icon>history</mat-icon>
             </button>
         </mat-list-item>

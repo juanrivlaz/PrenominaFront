@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, ViewEncapsulation } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewEncapsulation, signal, WritableSignal } from '@angular/core';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { AppConfigService } from '@core/services/app-config/app-config.service';
 import { AppNavbar } from '@shared/components/navbar/navbar.component';
@@ -33,7 +33,7 @@ import { SocketService } from '@core/services/socket/socket.service';
 })
 export class AppComponent implements OnInit, OnDestroy {
   public readonly onSettingsChanged: Subscription;
-  public appSettings: AppConfigInterface;
+  public readonly appSettings: WritableSignal<AppConfigInterface>;
   private navigationSubscription: Subscription;
 
   constructor(
@@ -41,9 +41,9 @@ export class AppComponent implements OnInit, OnDestroy {
     private readonly router: Router,
     private readonly socketService: SocketService
   ) {
-    this.appSettings = this.appConfigService.settings;
+    this.appSettings = signal<AppConfigInterface>(this.appConfigService.settings);
     this.onSettingsChanged = this.appConfigService.onSettingsObserver.subscribe((settings) => {
-      this.appSettings = settings;
+      this.appSettings.set(settings);
     });
 
     this.navigationSubscription = this.router.events.subscribe((e: any) => {

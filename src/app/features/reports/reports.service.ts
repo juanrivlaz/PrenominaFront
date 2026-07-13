@@ -16,6 +16,8 @@ import {
     IManualOvertimeEntryInput,
     OvertimeMovementType
 } from "@core/models/reports/overtime-accumulation.interface";
+import { IOvertimePaymentLine } from "@core/models/reports/overtime-payment-line.interface";
+import { IOvertimePaymentFileStatus } from "@core/models/reports/overtime-payment-file-status.interface";
 import { Observable } from "rxjs";
 
 @Injectable()
@@ -372,6 +374,36 @@ export class ReportsService {
      */
     public addManualOvertimeEntry(input: IManualOvertimeEntryInput): Observable<IOvertimeOperationResult> {
         return this.httpService.post<IOvertimeOperationResult>('/OvertimeAccumulation/manual-entry', input);
+    }
+
+    /**
+     * Previsualiza los renglones de pago de tiempo extra autorizado (concepto/importe/fecha/horas).
+     */
+    public getOvertimePaymentPreview(typeNomina: number, numPeriod: number): Observable<IOvertimePaymentLine[]> {
+        return this.httpService.get<IOvertimePaymentLine[]>('/OvertimePaymentFile/preview', {
+            params: { typeNomina, numPeriod }
+        });
+    }
+
+    /**
+     * Estado de generación del archivo de tiempo extra del periodo (indicador anti doble-pago).
+     */
+    public getOvertimePaymentStatus(typeNomina: number, numPeriod: number): Observable<IOvertimePaymentFileStatus> {
+        return this.httpService.get<IOvertimePaymentFileStatus>('/OvertimePaymentFile/status', {
+            params: { typeNomina, numPeriod }
+        });
+    }
+
+    /**
+     * Descarga el archivo XLSX de importación de tiempo extra autorizado
+     * (CODIGO | CONCEPTO | IMPORTE | FECHA | HORAS) repartido en conceptos 11/12/13.
+     */
+    public downloadOvertimePaymentFile(typeNomina: number, numPeriod: number): Observable<HttpResponse<Blob>> {
+        return this.httpService.get('/OvertimePaymentFile/download', {
+            observe: 'response',
+            responseType: 'blob',
+            params: { typeNomina, numPeriod }
+        });
     }
 
     /**

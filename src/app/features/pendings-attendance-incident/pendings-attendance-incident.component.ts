@@ -1,19 +1,22 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, OnInit, signal, ViewEncapsulation, WritableSignal } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit, signal, ViewEncapsulation, WritableSignal } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { AvatarComponent } from '@shared/components/avatar/avatar.component';
 import { MaterialModule } from '@shared/modules/material/material.module';
 import { ConfirmActionComponent } from './confirm-action/confirm-action.component';
-import { IConfirmAction } from './confirm-action/confirm-action.interface';
+import { IConfirmAction, IConfirmActionResult } from './confirm-action/confirm-action.interface';
 import { AbsenceRequestDetailComponent } from './absence-request-detail/absence-request-detail.component';
 import { IEmployeeAbsenceRequestDetail } from '@core/models/pendings-attendance-incident/employee-absence-request-detail.interface';
+import { OvertimePaymentDetailComponent } from './overtime-payment-detail/overtime-payment-detail.component';
+import { IOvertimePaymentRequest, IOvertimePaymentRequestDetail } from '@core/models/pendings-attendance-incident/overtime-payment-request.interface';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { IEmployeeAbsenceRequests } from '@core/models/pendings-attendance-incident/employee-absence-requests.interface';
 import { IPendingIncidenceApproval, IPendingIncidenceRow } from '@core/models/pendings-attendance-incident/pending-incidence-approval.interface';
 import { PendingsAttendanceIncidentService } from './pendings-attendance-incident.service';
 import { AppConfigService } from '@core/services/app-config/app-config.service';
-import { finalize } from 'rxjs';
+import { AuthService } from '@core/services/auth/auth.service';
+import { finalize, skip, Subject, takeUntil } from 'rxjs';
 import { AbsenceRequestStatus } from '@core/models/enum/absence-request-status';
 import { MatTooltip } from "@angular/material/tooltip";
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
@@ -29,9 +32,10 @@ import dayjs from 'dayjs';
   styleUrl: './pendings-attendance-incident.component.scss',
   encapsulation: ViewEncapsulation.None,
 })
-export class PendingsAttendanceIncidentComponent implements OnInit {
+export class PendingsAttendanceIncidentComponent implements OnInit, OnDestroy {
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly destroy$ = new Subject<void>();
   public dataSource: MatTableDataSource<IEmployeeAbsenceRequests> =
     new MatTableDataSource<IEmployeeAbsenceRequests>([]);
   private allRequests: WritableSignal<Array<IEmployeeAbsenceRequests>> = signal([]);
@@ -56,8 +60,18 @@ export class PendingsAttendanceIncidentComponent implements OnInit {
     'actions',
   ];
 
-  // Active view: absence requests (permits) or incidences to approve.
-  public view: WritableSignal<'requests' | 'incidences'> = signal('requests');
+  // Active view: absence requests (permits), incidences, or overtime payment papeletas.
+  public view: WritableSignal<'requests' | 'incidences' | 'overtimePayments'> = signal('requests');
+  public overtimePaymentsDataSource: MatTableDataSource<IOvertimePaymentRequest> =
+    new MatTableDataSource<IOvertimePaymentRequest>([]);
+  public overtimePaymentColumns: Array<string> = [
+    'employee',
+    'totalMinutes',
+    'approvals',
+    'status',
+    'createdAt',
+    'actions',
+  ];
   public incidencesDataSource: MatTableDataSource<IPendingIncidenceRow> =
     new MatTableDataSource<IPendingIncidenceRow>([]);
   // Status filter for the "Incidences to approve" tab (Pending by default).
@@ -76,21 +90,146 @@ export class PendingsAttendanceIncidentComponent implements OnInit {
   constructor(
     private readonly service: PendingsAttendanceIncidentService,
     private readonly configService: AppConfigService,
+    private readonly authService: AuthService,
 ) {}
 
   ngOnInit(): void {
     this.get();
-    this.dateRange.valueChanges.subscribe(() => this.applyFilters());
-    this.searchControl.valueChanges.subscribe(() => this.applyFilters());
+    this.dateRange.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(() => this.applyFilters());
+    this.searchControl.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(() => this.applyFilters());
+
+    // Al cambiar el centro seleccionado (header "tenant"), recargar la vista activa.
+    // skip(1) evita la doble carga con la emisión inicial del BehaviorSubject.
+    this.authService.activeTenant
+      .pipe(skip(1), takeUntil(this.destroy$))
+      .subscribe(() => this.refreshActiveView());
   }
 
-  public setView(view: 'requests' | 'incidences'): void {
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  // Recarga los datos de la pestaña actualmente visible.
+  private refreshActiveView(): void {
+    switch (this.view()) {
+      case 'incidences':
+        this.getPendingIncidences();
+        break;
+      case 'overtimePayments':
+        this.getOvertimePayments();
+        break;
+      default:
+        this.get();
+        break;
+    }
+  }
+
+  public setView(view: 'requests' | 'incidences' | 'overtimePayments'): void {
     this.view.set(view);
     // Always refresh when opening the tab to avoid showing a cached list
     // (e.g. when a new incidence was registered after the first load).
     if (view === 'incidences') {
       this.getPendingIncidences();
+    } else if (view === 'overtimePayments') {
+      this.getOvertimePayments();
     }
+  }
+
+  private getOvertimePayments(): void {
+    this.configService.setLoading(true);
+    this.service.getOvertimePayments().pipe(finalize(() => {
+      this.configService.setLoading(false);
+    })).subscribe({
+      next: (data) => { this.overtimePaymentsDataSource.data = data; },
+      error: (err) => {
+        const message = err?.error?.message || 'Error al obtener las papeletas de pago de horas extras';
+        this.snackBar.open(message, '❌', { horizontalPosition: 'center', verticalPosition: 'top', panelClass: 'alert-error', duration: 3000 });
+      },
+    });
+  }
+
+  public openOvertimePaymentDetail(row: IOvertimePaymentRequest): void {
+    this.configService.setLoading(true);
+    this.service.getOvertimePaymentDetail(row.id).pipe(finalize(() => {
+      this.configService.setLoading(false);
+    })).subscribe({
+      next: (detail) => {
+        const dialogRef = this.dialog.open<OvertimePaymentDetailComponent, IOvertimePaymentRequestDetail, string>(
+          OvertimePaymentDetailComponent,
+          { data: detail, autoFocus: false, maxWidth: '95vw' },
+        );
+        dialogRef.afterClosed().subscribe((action) => {
+          if (action === 'reresolve') {
+            this.service.reResolveOvertimePayment(row.id).pipe(finalize(() => this.configService.setLoading(false))).subscribe({
+              next: () => { this.openOvertimePaymentDetail(row); this.getOvertimePayments(); },
+              error: () => this.snackBar.open('No se pudo re-resolver la cadena', '❌', { horizontalPosition: 'center', verticalPosition: 'top', panelClass: 'alert-error', duration: 3000 }),
+            });
+          }
+        });
+      },
+      error: (err) => {
+        const message = err?.error?.message || 'Error al obtener el detalle de la papeleta';
+        this.snackBar.open(message, '❌', { horizontalPosition: 'center', verticalPosition: 'top', panelClass: 'alert-error', duration: 3000 });
+      },
+    });
+  }
+
+  public downloadOvertimePaymentPdf(row: IOvertimePaymentRequest): void {
+    this.configService.setLoading(true);
+    this.service.downloadOvertimePayment(row.id).pipe(finalize(() => {
+      this.configService.setLoading(false);
+    })).subscribe({
+      next: (response) => {
+        const blob = response.body!;
+        const contentDisposition = response.headers.get('Content-Disposition') || '';
+        const match = /filename="?([^";]+)"?/i.exec(contentDisposition);
+        const fileName = match?.[1] || `PagoHorasExtra_${row.id}.pdf`;
+
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        a.click();
+        window.URL.revokeObjectURL(url);
+      },
+      error: (err) => {
+        const message = err?.error?.message || 'Error al descargar la papeleta';
+        this.snackBar.open(message, '❌', { horizontalPosition: 'center', verticalPosition: 'top', panelClass: 'alert-error', duration: 3000 });
+      },
+    });
+  }
+
+  public handleOvertimePaymentAction(approve: boolean, row: IOvertimePaymentRequest): void {
+    const dialogRef = this.dialog.open<ConfirmActionComponent, IConfirmAction, IConfirmActionResult>(ConfirmActionComponent, {
+      data: {
+        type: approve ? 'Aprobar' : 'Rechazar',
+        name: row.employeeName,
+        incident: 'Pago de horas extras',
+        date: row.totalMinutesFormatted,
+        note: row.notes || 'Sin notas',
+      },
+    });
+
+    dialogRef.afterClosed().subscribe((result) => {
+      if (!result) { return; }
+
+      this.configService.setLoading(true);
+      const request$ = approve
+        ? this.service.approveOvertimePayment(row.id)
+        : this.service.rejectOvertimePayment(row.id, result.comment);
+
+      request$.pipe(finalize(() => this.configService.setLoading(false))).subscribe({
+        next: () => {
+          this.snackBar.open(`Papeleta ${approve ? 'aprobada' : 'rechazada'} correctamente`, '✅', { horizontalPosition: 'center', verticalPosition: 'top', panelClass: 'alert-success', duration: 3000 });
+          this.getOvertimePayments();
+        },
+        error: (err) => {
+          const message = err?.error?.message || `Error al ${approve ? 'aprobar' : 'rechazar'} la papeleta`;
+          this.snackBar.open(message, '❌', { horizontalPosition: 'center', verticalPosition: 'top', panelClass: 'alert-error', duration: 3000 });
+        },
+      });
+    });
   }
 
   public setIncidenceStatusFilter(status: AbsenceRequestStatus | -1): void {
@@ -119,7 +258,7 @@ export class PendingsAttendanceIncidentComponent implements OnInit {
   }
 
   public handleIncidenceAction(approve: boolean, item: IPendingIncidenceApproval): void {
-    const dialogRef = this.dialog.open<ConfirmActionComponent, IConfirmAction>(
+    const dialogRef = this.dialog.open<ConfirmActionComponent, IConfirmAction, IConfirmActionResult>(
       ConfirmActionComponent,
       {
         data: {
@@ -140,7 +279,7 @@ export class PendingsAttendanceIncidentComponent implements OnInit {
       this.configService.setLoading(true);
       const request$ = approve
         ? this.service.approveIncidence(item.id)
-        : this.service.rejectIncidence(item.id);
+        : this.service.rejectIncidence(item.id, result.comment);
 
       request$.pipe(finalize(() => {
         this.configService.setLoading(false);
@@ -259,7 +398,7 @@ export class PendingsAttendanceIncidentComponent implements OnInit {
       return;
     }
 
-    const dialogRef = this.dialog.open<ConfirmActionComponent, IConfirmAction>(
+    const dialogRef = this.dialog.open<ConfirmActionComponent, IConfirmAction, IConfirmActionResult>(
       ConfirmActionComponent,
       {
         data: {
@@ -280,7 +419,7 @@ export class PendingsAttendanceIncidentComponent implements OnInit {
       this.configService.setLoading(true);
       const request$ = approve
         ? this.service.approveIncidenceGroup(row.requestGroupId!)
-        : this.service.rejectIncidenceGroup(row.requestGroupId!);
+        : this.service.rejectIncidenceGroup(row.requestGroupId!, result.comment);
 
       request$.pipe(finalize(() => {
         this.configService.setLoading(false);
@@ -309,13 +448,46 @@ export class PendingsAttendanceIncidentComponent implements OnInit {
       this.configService.setLoading(false);
     })).subscribe({
       next: (detail: IEmployeeAbsenceRequestDetail) => {
-        this.dialog.open<AbsenceRequestDetailComponent, IEmployeeAbsenceRequestDetail>(
+        const dialogRef = this.dialog.open<AbsenceRequestDetailComponent, IEmployeeAbsenceRequestDetail, string>(
           AbsenceRequestDetailComponent,
           { data: detail, autoFocus: false, maxWidth: '95vw' },
         );
+
+        dialogRef.afterClosed().subscribe((action) => {
+          if (action === 'reresolve') {
+            this.reResolveChain(request);
+          }
+        });
       },
       error: (err) => {
         const message = err?.error?.message || 'Error al obtener el detalle de la solicitud';
+        this.snackBar.open(message, '❌', {
+          horizontalPosition: 'center',
+          verticalPosition: 'top',
+          panelClass: 'alert-error',
+          duration: 3000,
+        });
+      },
+    });
+  }
+
+  // Recalcula los candidatos de la cadena (tras corregir asignaciones) y reabre el detalle.
+  private reResolveChain(request: IEmployeeAbsenceRequests): void {
+    this.configService.setLoading(true);
+    this.service.reResolveChain(request.id).pipe(finalize(() => {
+      this.configService.setLoading(false);
+    })).subscribe({
+      next: (result) => {
+        this.snackBar.open(result.message, '✅', {
+          horizontalPosition: 'center',
+          verticalPosition: 'top',
+          panelClass: 'alert-success',
+          duration: 3000,
+        });
+        this.openDetail(request);
+      },
+      error: (err) => {
+        const message = err?.error?.message || 'No se pudo re-resolver la cadena de firmas';
         this.snackBar.open(message, '❌', {
           horizontalPosition: 'center',
           verticalPosition: 'top',
@@ -376,7 +548,7 @@ export class PendingsAttendanceIncidentComponent implements OnInit {
   }
 
   public handleClickAction(approve: boolean, item: IEmployeeAbsenceRequests): void {
-    const dialogRef = this.dialog.open<ConfirmActionComponent, IConfirmAction>(
+    const dialogRef = this.dialog.open<ConfirmActionComponent, IConfirmAction, IConfirmActionResult>(
       ConfirmActionComponent,
       {
         data: {
@@ -395,6 +567,7 @@ export class PendingsAttendanceIncidentComponent implements OnInit {
         this.service.changeStatus(
           item.id,
           approve ? AbsenceRequestStatus.Approved : AbsenceRequestStatus.Rejected,
+          result.comment,
         ).pipe(finalize(() => {
             this.configService.setLoading(false);
         })).subscribe({

@@ -69,6 +69,39 @@
                     </button>
                 </div>
             }
+            <div class="ctn-help">
+                <button
+                    class="btn-help"
+                    mat-icon-button
+                    [matMenuTriggerFor]="legendMenu"
+                    matTooltip="Ayuda: códigos de colores"
+                    aria-label="Ayuda de códigos de colores">
+                    <mat-icon>help_outline</mat-icon>
+                </button>
+                <mat-menu #legendMenu="matMenu" class="attendance-legend-menu">
+                    <div class="attendance-legend" (click)="$event.stopPropagation()">
+                        <h4 class="legend-title">Códigos de colores</h4>
+                        <ul>
+                            <li>
+                                <span class="swatch swatch-blue"></span>
+                                <span class="legend-text"><strong>Azul</strong> — Registro de checada</span>
+                            </li>
+                            <li>
+                                <span class="swatch swatch-green"></span>
+                                <span class="legend-text"><strong>Verde</strong> — Incidencia</span>
+                            </li>
+                            <li>
+                                <span class="swatch swatch-yellow"></span>
+                                <span class="legend-text"><strong>Amarillo</strong> — Checadas incompletas</span>
+                            </li>
+                            <li>
+                                <span class="swatch swatch-red"></span>
+                                <span class="legend-text"><strong>Rojo</strong> — Sin registro de checada</span>
+                            </li>
+                        </ul>
+                    </div>
+                </mat-menu>
+            </div>
             <div class="ctn-close-period">
                 @if (isAdmin) {
                     <button (click)="syncIncapacity()" mat-icon-button color="primary" matTooltip="Sincronizar Incapacidades / Vacaciones (solo admin)">
@@ -158,7 +191,11 @@
                                             <div class="ctn-registers no-data" [ngClass]="{'saved': attendance.incidentCode !== 'N/A', 'isNightShift': attendance.isNightShift, 'hasOrphanCheckOut': attendance.checkOut}">
                                             @if (!getIsLoading(employee.codigo, employee.company, attendance.date)) {
                                                 <div class="entry">
-                                                    <button [disabled]="closedPeriod" mat-button [matMenuTriggerFor]="menuIncidents">{{ attendance.incidentCode }}</button>
+                                                    @if (hasApprovalFlowIncident(attendance)) {
+                                                        <button mat-button disabled matTooltip="Incidencia del flujo de aprobación, no editable" matTooltipPosition="above">{{ attendance.incidentCode }}</button>
+                                                    } @else {
+                                                        <button [disabled]="closedPeriod" mat-button [matMenuTriggerFor]="menuIncidents">{{ attendance.incidentCode }}</button>
+                                                    }
                                                     <mat-menu #menuIncidents="matMenu">
                                                         @for (incident of listIncidentCodes(); track incident.code) {
                                                             <button

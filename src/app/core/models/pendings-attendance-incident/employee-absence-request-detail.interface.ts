@@ -6,6 +6,22 @@ export interface IAbsenceRequestDayDetail {
   overtimeFormatted: string;
 }
 
+export type ApprovalStepStatus = 'Pending' | 'Approved' | 'Rejected' | 'Skipped' | 'Blocked';
+
+export interface IAbsenceRequestApprovalStep {
+  stepOrder: number;
+  roleLabel: string;
+  scope: string;
+  status: ApprovalStepStatus;
+  isCurrent: boolean;
+  approvedByName?: string;
+  approvedAt?: Date;
+  comment?: string;
+  daysPending?: number;
+  isOverdue?: boolean;
+  candidateNames?: Array<string>;
+}
+
 export interface IEmployeeAbsenceRequestDetail {
   id: string;
   employeeName: string;
@@ -26,4 +42,5 @@ export interface IEmployeeAbsenceRequestDetail {
   totalOvertimeMinutes: number;
   totalOvertimeFormatted: string;
   days: Array<IAbsenceRequestDayDetail>;
+  approvalChain: Array<IAbsenceRequestApprovalStep>;
 }

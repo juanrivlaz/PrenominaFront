@@ -31,7 +31,7 @@ export class DocumentsComponent implements OnInit {
     public columns: Array<string> = [
         'name',
         'module',
-        'keyParams',
+        'signers',
         'actions'
     ];
     public loading: WritableSignal<boolean> = signal(false);
@@ -41,6 +41,7 @@ export class DocumentsComponent implements OnInit {
         [DocumentModule.Contracts]: 'Contratos',
         [DocumentModule.Permits]: 'Permisos',
         [DocumentModule.Notifications]: 'Notificaciones',
+        [DocumentModule.OvertimePayment]: 'Pago de horas extras',
     };
 
     constructor(

@@ -1,6 +1,7 @@
 import { HttpClient } from "@angular/common/http";
 import { Injectable } from "@angular/core";
 import { Document, IDocumentInput } from "@core/models/document";
+import { Role } from "@core/models/role";
 import { Observable } from "rxjs";
 
 @Injectable()
@@ -9,6 +10,10 @@ export class DocumentsService {
 
     public get(): Observable<Array<Document>> {
         return this.httpService.get<Array<Document>>('/Documents');
+    }
+
+    public getRoles(): Observable<Array<Role>> {
+        return this.httpService.get<Array<Role>>('/Roles');
     }
 
     public getById(id: string): Observable<Document> {

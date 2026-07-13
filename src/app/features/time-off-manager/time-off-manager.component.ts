@@ -9,7 +9,7 @@ import { AssignTimeOffComponent } from "./assign-time-off/assign-time-off.compon
 import { IAssignTimeOff } from "./assign-time-off/assign-time-off.interface";
 import { AttendaceService } from "../attendace/attendace.service";
 import { AuthService } from "@core/services/auth/auth.service";
-import { combineLatest, debounceTime, finalize, Subject, switchMap, takeUntil, timer, of } from "rxjs";
+import { combineLatest, debounceTime, finalize, Subject, switchMap, takeUntil, of } from "rxjs";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { IPayroll } from "@core/models/payroll.interface";
 import { IPrenominaPeriod } from "@core/models/prenomina-period.interface";
@@ -187,19 +187,15 @@ export class TimeOffManagerComponent implements OnInit, OnDestroy {
                 this.searchTrigger$.next(value || '');
             });
 
+        // Restaurar la nómina guardada. El periodo se restaura/valida dentro de getInit(),
+        // una vez que los catálogos (periodos) ya están cargados, evitando la carrera que
+        // disparaba el falso "Selecciona un periodo".
         const storageTypeNom = window.localStorage.getItem(SysKey.ActiveTypeNom);
         if (storageTypeNom) {
-            this.setPayroll(parseInt(storageTypeNom, 10));
-        }
-
-        const storageNumPeriod = window.localStorage.getItem(SysKey.ActiveNumPeriod);
-        if (storageNumPeriod) {
-            // Usar timer de RxJS en lugar de setTimeout
-            timer(800)
-                .pipe(takeUntil(this.destroy$))
-                .subscribe(() => {
-                    this.setPeriod(parseInt(storageNumPeriod, 10));
-                });
+            const parsedTypeNom = parseInt(storageTypeNom, 10);
+            if (!isNaN(parsedTypeNom)) {
+                this.activePayroll.set(parsedTypeNom);
+            }
         }
     }
 
@@ -227,6 +223,10 @@ export class TimeOffManagerComponent implements OnInit, OnDestroy {
                         item.availableForTimeOff
                     ));
                     this.listIncidentCodesAditional.set(response.incidentCodes.filter((item) => item.isAdditional && item.availableForTimeOff));
+
+                    // Ya con los catálogos cargados, seleccionar un periodo válido para la
+                    // nómina activa (restaura el guardado o cae al periodo activo/primero).
+                    this.selectValidPeriod();
                 },
                 error: (err) => {
                     this.showError(err.error?.message || 'Ocurrió un error, por favor intentalo más tarde');
@@ -391,14 +391,29 @@ export class TimeOffManagerComponent implements OnInit, OnDestroy {
         this.activePayroll.set(id);
         window.localStorage.setItem(SysKey.ActiveTypeNom, id.toString());
 
-        // Usar timer en lugar de setTimeout
-        timer(200)
-            .pipe(takeUntil(this.destroy$))
-            .subscribe(() => {
-                this.listDates.set([]);
-                this.setPeriod(0, true);
-                this.getEmployee();
-            });
+        // Al cambiar de nómina, seleccionar un periodo válido de esa nómina (sin alerta).
+        this.listDates.set([]);
+        this.selectValidPeriod();
+    }
+
+    // Selecciona un periodo válido para la nómina activa: conserva el actual si sigue siendo
+    // válido, si no usa el guardado, el periodo activo o el primero. Nunca muestra alerta
+    // (es selección programática). Si no hay periodos, sólo refresca la lista de empleados.
+    private selectValidPeriod(): void {
+        const periods = this.listPeriods;
+        if (!periods.length) {
+            this.getEmployee();
+            return;
+        }
+
+        const stored = parseInt(window.localStorage.getItem(SysKey.ActiveNumPeriod) || '', 10);
+        const target =
+            periods.find((p) => p.numPeriod === this.activePeriod()) ??
+            periods.find((p) => p.numPeriod === stored) ??
+            periods.find((p) => p.isActive) ??
+            periods[0];
+
+        this.setPeriod(target.numPeriod, true);
     }
 
     public getIncidentForDate(employeeCode: number, date: string) {

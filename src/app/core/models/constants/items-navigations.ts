@@ -139,6 +139,15 @@ export const ItemsNavigations: Array<MenuIntemInterface | MenuCollapseInterface 
         isItemConfig: true,
     },
     {
+        id: 'approverdelegations',
+        title: 'Suplencias',
+        type: 'item',
+        exactMatch: true,
+        icon: 'switch_account',
+        url: '/approver-delegations',
+        isItemConfig: true,
+    },
+    {
         id: 'clocks',
         title: 'Relojes',
         type: 'item',

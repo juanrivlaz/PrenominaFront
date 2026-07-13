@@ -101,11 +101,21 @@ export class ConfirmClosePeriodComponent {
             return false;
         }
 
-        return this.data.listPeriodStatus.some(
-            (item) => item.typePayroll === this.data.TypePayroll && 
-                item.numPeriod === this.data.NumPeriod && 
-                (item.tenantId === '-999' || item.tenantId === this.formGroup.value.tenant) &&
-                item.companyId === this.activeCompany()
+        const tenant = this.formGroup.value.tenant;
+
+        const rows = this.data.listPeriodStatus.filter(
+            (item) => item.typePayroll === this.data.TypePayroll &&
+                item.numPeriod === this.data.NumPeriod &&
+                item.companyId === this.activeCompany() &&
+                (item.tenantId === '-999' || item.tenantId === tenant)
         );
+
+        // Una excepción de apertura para el tenant seleccionado gana sobre el cierre global.
+        if (tenant !== '-999' && rows.some((item) => item.tenantId === tenant && item.isOpen)) {
+            return false;
+        }
+
+        // Cerrado si hay un cierre para el tenant o un cierre global ('-999').
+        return rows.some((item) => !item.isOpen);
     }
 }

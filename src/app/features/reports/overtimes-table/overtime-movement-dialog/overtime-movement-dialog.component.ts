@@ -23,6 +23,8 @@ export interface OvertimeMovementDialogData {
     currentBalance?: number;
     currentBalanceFormatted?: string;
     action: 'accumulate' | 'pay' | 'cancel' | 'use-rest-day' | 'hour-bank';
+    // Mensaje de advertencia opcional mostrado de forma destacada (ej. cancelación en cascada).
+    warningMessage?: string;
     service: ReportsService;
 }
 
@@ -103,7 +105,7 @@ export class OvertimeMovementDialogComponent implements OnDestroy {
             case 'pay': return 'Pagar tiempo extra';
             case 'cancel': return 'Cancelar movimiento';
             case 'use-rest-day': return 'Aplicar dia de descanso';
-            case 'hour-bank': return 'Enviar a Banco de Horas';
+            case 'hour-bank': return 'Descartar Horas';
             default: return '';
         }
     }
@@ -114,7 +116,7 @@ export class OvertimeMovementDialogComponent implements OnDestroy {
             case 'pay': return 'Pagar';
             case 'cancel': return 'Cancelar movimiento';
             case 'use-rest-day': return 'Aplicar descanso';
-            case 'hour-bank': return 'Enviar a Banco';
+            case 'hour-bank': return 'Descartar';
             default: return 'Confirmar';
         }
     }

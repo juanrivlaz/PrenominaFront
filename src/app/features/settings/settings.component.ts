@@ -22,7 +22,6 @@ import { TypeDayOffReport } from "@core/models/config-day-off-report.interface";
 import { finalize } from "rxjs";
 import { TypeAttendance } from "@core/models/reports/type-attendance.enum";
 import { NameOrder } from "@core/models/reports/config-name-format.interface";
-import { environment } from "../../../environments/environment";
 
 @Component({
     selector: 'app-settings',
@@ -67,8 +66,11 @@ export class SettingsComponent implements OnInit {
     public loadingYear = model<boolean>(false);
     public typeTenantsOptions: Array<{ id: number, label: string }>;
     public timeZoneOptions: Array<{ id: string, label: string }>;
-    public readonly tinymceApiKey = environment.tinymceApiKey;
     public initConfigEditor = {
+        // TinyMCE auto-alojado (gratuito, sin API key).
+        base_url: '/tinymce',
+        suffix: '.min',
+        license_key: 'gpl',
         plugins: [
             // Core editing features
             'anchor', 'autolink', 'charmap', 'codesample', 'emoticons', 'image', 'link', 'lists', 'media', 'searchreplace', 'table', 'visualblocks', 'wordcount',

@@ -15,6 +15,7 @@ import { MatDividerModule } from "@angular/material/divider";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { SelectionModel } from "@angular/cdk/collections";
 import { IOvertimeSummary, IOvertimeDayDetail, OvertimeDayStatus, IOvertimeMovementLog, IOvertimeMovementsPaged } from "@core/models/reports/overtime-accumulation.interface";
+import { IOvertimePaymentFileStatus } from "@core/models/reports/overtime-payment-file-status.interface";
 import { IOvertimeReport } from "@core/models/reports/overtimes.interface";
 import { ReportsService } from "../reports.service";
 import { Subject, finalize, takeUntil } from "rxjs";
@@ -22,6 +23,7 @@ import { OvertimeMovementDialogComponent, OvertimeMovementDialogData } from "./o
 import { OvertimeHistoryDialogComponent, OvertimeHistoryDialogData } from "./overtime-history-dialog/overtime-history-dialog.component";
 import { OvertimeManualEntryDialogComponent, OvertimeManualEntryDialogData } from "./overtime-manual-entry-dialog/overtime-manual-entry-dialog.component";
 import { OvertimeBatchNotesDialogComponent, BatchNotesDialogData, BatchNotesDialogResult } from "./overtime-batch-notes-dialog/overtime-batch-notes-dialog.component";
+import { OvertimePaymentPreviewDialogComponent, OvertimePaymentPreviewDialogData } from "./overtime-payment-preview-dialog/overtime-payment-preview-dialog.component";
 import { appAnimations } from "@core/animations";
 import dayjs from "dayjs";
 
@@ -100,6 +102,7 @@ export class OvertimesTableComponent implements OnInit, OnDestroy {
 
     public loading: WritableSignal<boolean> = signal(false);
     public summaryData: WritableSignal<IOvertimeSummary[]> = signal([]);
+    public paymentFileStatus: WritableSignal<IOvertimePaymentFileStatus | null> = signal(null);
     public expandedEmployee: number | null = null;
     public activeTab: WritableSignal<'summary' | 'history'> = signal('summary');
     public statusFilter: WritableSignal<'all' | 'pending' | 'applied'> = signal('all');
@@ -197,6 +200,24 @@ export class OvertimesTableComponent implements OnInit, OnDestroy {
                     this.showError(err.error?.message || 'Error al cargar datos');
                 }
             });
+
+        this.loadPaymentFileStatus();
+    }
+
+    /**
+     * Carga el indicador de "archivo ya generado" del periodo (anti doble-pago).
+     */
+    public loadPaymentFileStatus(): void {
+        if (!this.typeNomina() || !this.numPeriod()) {
+            return;
+        }
+
+        this.reportsService.getOvertimePaymentStatus(this.typeNomina(), this.numPeriod())
+            .pipe(takeUntil(this.destroy$))
+            .subscribe({
+                next: (status) => this.paymentFileStatus.set(status),
+                error: () => { /* indicador informativo; no interrumpe la vista */ }
+            });
     }
 
     public toggleExpand(employeeCode: number): void {
@@ -274,8 +295,11 @@ export class OvertimesTableComponent implements OnInit, OnDestroy {
         )
         .subscribe({
             next: (result) => {
-                const action = accumulate ? 'acumulados' : 'pagados';
-                this.showSuccess(`${result.successCount} registros ${action}`);
+                if (accumulate) {
+                    this.showSuccess(`${result.successCount} registros acumulados`);
+                } else {
+                    this.showSuccess(`Se generó la solicitud de pago de horas extras (${result.successCount} registros). Quedó pendiente de firmas.`);
+                }
                 this.daySelection.clear();
                 this.loadSummaryData();
                 this.onRefresh.emit();
@@ -453,9 +477,15 @@ export class OvertimesTableComponent implements OnInit, OnDestroy {
                 )
                 .subscribe({
                     next: (result) => {
-                        this.showSuccess(
-                            `Procesados ${result.successCount} de ${result.totalProcessed} registros`
-                        );
+                        if (accumulate) {
+                            this.showSuccess(
+                                `Procesados ${result.successCount} de ${result.totalProcessed} registros`
+                            );
+                        } else {
+                            this.showSuccess(
+                                `Se generaron las solicitudes de pago de horas extras (${result.successCount} de ${result.totalProcessed} registros). Quedaron pendientes de firmas.`
+                            );
+                        }
                         this.loadSummaryData();
                         this.onRefresh.emit();
                     },
@@ -467,6 +497,35 @@ export class OvertimesTableComponent implements OnInit, OnDestroy {
             dates,
             totalPending
         );
+    }
+
+    /**
+     * Abre la previsualización de los renglones de tiempo extra autorizado (conceptos 11/12/13),
+     * desde donde se puede descargar el archivo XLSX de importación.
+     */
+    public openPaymentPreview(): void {
+        if (!this.typeNomina() || !this.numPeriod()) {
+            this.showError('Selecciona un periodo válido');
+            return;
+        }
+
+        const dialogRef = this.dialog.open<OvertimePaymentPreviewDialogComponent, OvertimePaymentPreviewDialogData>(
+            OvertimePaymentPreviewDialogComponent,
+            {
+                width: '90%',
+                maxWidth: '820px',
+                data: {
+                    typeNomina: this.typeNomina(),
+                    numPeriod: this.numPeriod(),
+                    service: this.reportsService
+                }
+            }
+        );
+
+        // Al cerrar, refresca el indicador por si se (re)generó el archivo.
+        dialogRef.afterClosed()
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(() => this.loadPaymentFileStatus());
     }
 
     public getFilteredDayDetails(dayDetails: IOvertimeDayDetail[]): IOvertimeDayDetail[] {
@@ -516,6 +575,9 @@ export class OvertimesTableComponent implements OnInit, OnDestroy {
     }
 
     private openMovementDialog(summary: IOvertimeSummary, day: IOvertimeDayDetail, action: 'accumulate' | 'pay' | 'cancel' | 'hour-bank'): void {
+        // Cancelar un día pagado con papeleta pendiente elimina toda la solicitud en cascada.
+        const isPaidWithRequest = action === 'cancel' && day.status === OvertimeDayStatus.Paid && !!day.paymentRequestId;
+
         const dialogData: OvertimeMovementDialogData = {
             employeeCode: summary.employeeCode,
             employeeName: summary.fullName,
@@ -525,6 +587,9 @@ export class OvertimesTableComponent implements OnInit, OnDestroy {
             checkOut: day.checkOut,
             movementId: day.movementId,
             action,
+            warningMessage: isPaidWithRequest
+                ? 'Al cancelar este pago se eliminará la solicitud de pago asociada y se revertirán TODAS las horas extras relacionadas a esa solicitud (volverán a pendientes). Esta acción no se puede deshacer.'
+                : undefined,
             service: this.reportsService
         };
 
@@ -537,9 +602,16 @@ export class OvertimesTableComponent implements OnInit, OnDestroy {
             .pipe(takeUntil(this.destroy$))
             .subscribe(result => {
                 if (result?.success) {
-                    const actionLabel = action === 'accumulate' ? 'acumulado' :
-                                       action === 'pay' ? 'pagado' : 'cancelado';
-                    this.showSuccess(`Movimiento ${actionLabel} correctamente`);
+                    if (action === 'pay') {
+                        this.showSuccess('Se generó la solicitud de pago de horas extras. Quedó pendiente de firmas.');
+                    } else if (isPaidWithRequest) {
+                        this.showSuccess('Solicitud de pago eliminada. Las horas extras relacionadas volvieron a pendientes.');
+                    } else if (action === 'hour-bank') {
+                        this.showSuccess('Horas descartadas correctamente');
+                    } else {
+                        const actionLabel = action === 'accumulate' ? 'acumulado' : 'cancelado';
+                        this.showSuccess(`Movimiento ${actionLabel} correctamente`);
+                    }
                     this.loadSummaryData();
                     this.onRefresh.emit();
                 }
@@ -561,8 +633,11 @@ export class OvertimesTableComponent implements OnInit, OnDestroy {
         )
         .subscribe({
             next: (result) => {
-                const action = accumulate ? 'acumulados' : 'pagados';
-                this.showSuccess(`${result.successCount} registros ${action}`);
+                if (accumulate) {
+                    this.showSuccess(`${result.successCount} registros acumulados`);
+                } else {
+                    this.showSuccess(`Se generó la solicitud de pago de horas extras (${result.successCount} registros). Quedó pendiente de firmas.`);
+                }
                 this.loadSummaryData();
                 this.onRefresh.emit();
             },

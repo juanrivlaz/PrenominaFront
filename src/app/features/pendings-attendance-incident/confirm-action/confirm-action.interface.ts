@@ -5,3 +5,8 @@ export interface IConfirmAction {
     date: string;
     note: string;
 }
+
+export interface IConfirmActionResult {
+    /** Motivo del rechazo capturado en el diálogo (solo aplica al rechazar). */
+    comment?: string;
+}
